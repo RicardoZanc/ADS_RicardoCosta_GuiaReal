@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from "express";
 import chalk from "chalk";
-import openAPIRouter from "./openAPI/openAPIRouter.js";
+import openAPIRouter from "./openAPI/openAPIRouter";
 
 const PORT = process.env.PORT || 3000
 
