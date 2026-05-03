@@ -49,6 +49,7 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT UNIQUE,
     username VARCHAR(50) UNIQUE NOT NULL,
+    hashPassword TEXT NOT NULL,
     reputation_score INT DEFAULT 0,
     is_banned BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
