@@ -7,7 +7,7 @@ enum LogLevel {
   ERROR = 3,
 }
 
-// Pega o nível da variável de ambiente ou assume INFO por padrão
+
 const CURRENT_LEVEL = LogLevel[process.env.LOG_LEVEL as keyof typeof LogLevel] ?? LogLevel.INFO;
 
 export const logger = {
