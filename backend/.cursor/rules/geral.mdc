@@ -1,0 +1,58 @@
+---
+globs: backend/**
+alwaysApply: false
+---
+
+# Backend Rules
+
+## Stack
+
+- TypeScript
+- Express
+- Prisma ORM
+
+## API Flow
+
+```txt
+routes -> controller -> service (chama libs e domain rules se necessário)
+```
+
+## Responsabilidades
+
+### Routes
+
+* definição de rotas
+* middleware de validação `/backend/src/middlewares/validate.ts`
+* encaminhamento para controllers
+
+### Controllers
+
+* receber req/res
+* chamar services com passando dado com tipo inferido pelo zod
+* retornar respostas HTTP
+* não implementar regra de negócio
+
+### Services
+
+* regras de negócio
+* comunicação com banco
+* integração com libs/providers
+* transformação de dados
+* chamadas para domain rules
+
+## Domain Rules
+
+Regras de domínio reutilizáveis devem ficar em:
+
+```txt
+*.domainRules.ts
+```
+
+## Padrões
+
+* usar TypeScript estrito
+* evitar `any`
+* funções async para IO
+* erros com mensagens claras
+* usar logger para erros relevantes
+* manter responsabilidades separadas

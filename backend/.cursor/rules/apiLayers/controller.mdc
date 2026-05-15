@@ -1,0 +1,4 @@
+---
+globs: backend/src/**/modules/**/*.controller.ts
+alwaysApply: false
+---

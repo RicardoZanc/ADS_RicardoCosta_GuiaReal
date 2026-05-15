@@ -1,0 +1,65 @@
+---
+globs: backend/src/**/modules/**/*.service.ts
+alwaysApply: false
+---
+
+# Service Rules
+
+Responsável por:
+- regras de negócio
+- comunicação com banco
+- transformação de dados
+- integração com libs/providers
+
+Não deve conter:
+- lógica HTTP
+- req/res
+- validação estrutural de input
+- lógica de controller
+
+## Domain Rules
+
+Toda regra de domínio reutilizável deve ser extraída para:
+
+```txt
+*.domainRules.ts
+````
+
+Evite regras complexas inline no service.
+
+## Padrões
+
+* usar funções async
+* inputs sempre tipados
+* nunca usar `any`
+* usar logger para erros relevantes
+* mensagens de erro claras
+* exports agrupados em objeto final
+
+## Exemplo
+
+```ts
+const signup = async (SignupInput: SignupInput )=> {
+    const { email, password, username } = SignupInput;
+
+    const userExistsResult = await userExists(email);
+    if (!userExistsResult) {
+        logger.warn("User already exists");
+        throw new Error("User already exists");
+    }
+
+    const hashedPassword = await cryptUtils.hashPassword(password);
+    const user = await prisma.users.create({
+        data: {
+            email,
+            username,
+            hashpassword: hashedPassword,
+        }
+    })
+    return user;
+}
+
+export const authService = {
+    signup
+}
+```
