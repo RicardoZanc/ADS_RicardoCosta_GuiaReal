@@ -1,0 +1,55 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Api GuiaReal
+meta:
+  id: wrk_63d28a8821274afaa1ca0f2cf6eff8f4
+  created: 1778802734918
+  modified: 1778884470994
+  description: ""
+collection:
+  - url: http://localhost:3000/signup
+    name: signup
+    meta:
+      id: req_0247dedb509a4c56bc86df7d7b077b4d
+      created: 1778802734948
+      modified: 1778892034489
+      isPrivate: false
+      description: ""
+      sortKey: -1778802734948
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+        	"username": "ricardo123",
+        	"email": "ricardozancan@gmail.com",
+        	"password": "senha@123"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: User-Agent
+        value: insomnia/12.5.0
+        description: ""
+        disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_f7771cc825604e2b6b1cd376bed01e8dbf3e79cd
+    created: 1778802734931
+    modified: 1778802734931
+environments:
+  name: Base Environment
+  meta:
+    id: env_f7771cc825604e2b6b1cd376bed01e8dbf3e79cd
+    created: 1778802734927
+    modified: 1778802734927
+    isPrivate: false
