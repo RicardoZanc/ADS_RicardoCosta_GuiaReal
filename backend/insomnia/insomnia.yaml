@@ -7,39 +7,113 @@ meta:
   modified: 1778884470994
   description: ""
 collection:
-  - url: http://localhost:3000/signup
-    name: signup
+  - name: auth
     meta:
-      id: req_0247dedb509a4c56bc86df7d7b077b4d
-      created: 1778802734948
-      modified: 1778892034489
-      isPrivate: false
+      id: fld_6407135809e34d1e8bf77464d69bf3fc
+      created: 1778893094221
+      modified: 1778893094221
+      sortKey: -1778893094221
       description: ""
-      sortKey: -1778802734948
-    method: POST
-    body:
-      mimeType: application/json
-      text: |-
-        {
-        	"username": "ricardo123",
-        	"email": "ricardozancan@gmail.com",
-        	"password": "senha@123"
-        }
-    headers:
-      - name: Content-Type
-        value: application/json
-      - name: User-Agent
-        value: insomnia/12.5.0
-        description: ""
-        disabled: false
-    settings:
-      renderRequestBody: true
-      encodeUrl: true
-      followRedirects: global
-      cookies:
-        send: true
-        store: true
-      rebuildPath: true
+    children:
+      - url: "{{base_url}}/auth/signup"
+        name: signup
+        meta:
+          id: req_0247dedb509a4c56bc86df7d7b077b4d
+          created: 1778802734948
+          modified: 1778893420032
+          isPrivate: false
+          description: ""
+          sortKey: -1778893109845
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"username": "ricardo123",
+            	"email": "ricardozancan@gmail.com",
+            	"password": "senha@123"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{base_url}}/auth/signup"
+        name: login
+        meta:
+          id: req_26a3b0e93b34499f8fe31758216fe3c1
+          created: 1778893947619
+          modified: 1778893947619
+          isPrivate: false
+          description: ""
+          sortKey: -1778893109795
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"username": "ricardo123",
+            	"email": "ricardozancan@gmail.com",
+            	"password": "senha@123"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{base_url}}/auth/signup"
+        name: refreshToken
+        meta:
+          id: req_6e2a7fac2c674442aec26cd230a0a23c
+          created: 1778893963818
+          modified: 1778893963818
+          isPrivate: false
+          description: ""
+          sortKey: -1778893109745
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"username": "ricardo123",
+            	"email": "ricardozancan@gmail.com",
+            	"password": "senha@123"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
 cookieJar:
   name: Default Jar
   meta:
@@ -47,9 +121,11 @@ cookieJar:
     created: 1778802734931
     modified: 1778802734931
 environments:
-  name: Base Environment
+  name: GuiaReal
   meta:
     id: env_f7771cc825604e2b6b1cd376bed01e8dbf3e79cd
     created: 1778802734927
-    modified: 1778802734927
+    modified: 1778893377312
     isPrivate: false
+  data:
+    base_url: http://localhost:3000/api
