@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import chalk from "chalk";
-import { authRoutes } from "./modules/auth/auth.routes";
+import { apiRoutes } from "./routes/apiRoutes";
 import { errorHandler } from "./middlewares/error.middleware";
 import {
   connectRefreshTokenRedis,
@@ -15,7 +15,9 @@ const app = express();
 
 app.use(express.json());
 
-app.use(authRoutes);
+app.use('/api', apiRoutes);
+
+
 
 app.use(errorHandler);
 
