@@ -5,7 +5,7 @@ import { cryptUtils } from "../../lib/crypt";
 import { userExists, findUserForLoginByEmail } from "./auth.domainRules";
 import { logger } from "../../utils/logger";
 import { getRefreshTokenTtlSeconds, saveRefreshToken, getUserIdByRefreshHash, } from "../../lib/refreshTokenRedis.store";
-import { AuthUnauthorizedError } from "./auth.errors";
+import { ConflictError, UnauthorizedError, } from "../../lib/errors/BaseError";
 const LOGIN_FAIL_MESSAGE = "Credenciais inválidas";
 const REFRESH_FAIL_MESSAGE = "Token de atualização inválido";
 function signAccessToken(userId) {
@@ -22,7 +22,7 @@ const signup = async (SignupInput) => {
     const userExistsResult = await userExists(email);
     if (!userExistsResult) {
         logger.warn("User already exists");
-        throw new Error("User already exists");
+        throw new ConflictError("User already exists");
     }
     const hashedPassword = await cryptUtils.hashPassword(password);
     const user = await prisma.users.create({
@@ -37,11 +37,11 @@ const signup = async (SignupInput) => {
 const login = async (input) => {
     const user = await findUserForLoginByEmail(input.email);
     if (!user || user.deleted_at || user.is_banned === true) {
-        throw new AuthUnauthorizedError(LOGIN_FAIL_MESSAGE);
+        throw new UnauthorizedError(LOGIN_FAIL_MESSAGE);
     }
     const ok = await cryptUtils.comparePassword(input.password, user.hashpassword);
     if (!ok) {
-        throw new AuthUnauthorizedError(LOGIN_FAIL_MESSAGE);
+        throw new UnauthorizedError(LOGIN_FAIL_MESSAGE);
     }
     const refreshToken = randomBytes(32).toString("base64url");
     const hash = cryptUtils.hashRefreshTokenFingerprint(refreshToken);
@@ -62,7 +62,7 @@ const refreshAccessToken = async (input) => {
     const hash = cryptUtils.hashRefreshTokenFingerprint(input.refreshToken);
     const userId = await getUserIdByRefreshHash(hash);
     if (!userId) {
-        throw new AuthUnauthorizedError(REFRESH_FAIL_MESSAGE);
+        throw new UnauthorizedError(REFRESH_FAIL_MESSAGE);
     }
     const user = await prisma.users.findUnique({
         where: { id: userId },
@@ -75,7 +75,7 @@ const refreshAccessToken = async (input) => {
         },
     });
     if (!user || user.deleted_at || user.is_banned === true) {
-        throw new AuthUnauthorizedError(REFRESH_FAIL_MESSAGE);
+        throw new UnauthorizedError(REFRESH_FAIL_MESSAGE);
     }
     const accessToken = signAccessToken(user.id);
     return {

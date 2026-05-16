@@ -14,7 +14,10 @@ import {
   saveRefreshToken,
   getUserIdByRefreshHash,
 } from "../../lib/refreshTokenRedis.store";
-import { AuthUnauthorizedError } from "./auth.errors";
+import {
+  ConflictError,
+  UnauthorizedError,
+} from "../../lib/errors/BaseError";
 
 const LOGIN_FAIL_MESSAGE = "Credenciais inválidas";
 const REFRESH_FAIL_MESSAGE = "Token de atualização inválido";
@@ -35,7 +38,7 @@ const signup = async (SignupInput: SignupInput) => {
   const userExistsResult = await userExists(email);
   if (!userExistsResult) {
     logger.warn("User already exists");
-    throw new Error("User already exists");
+    throw new ConflictError("User already exists");
   }
 
   const hashedPassword = await cryptUtils.hashPassword(password);
@@ -52,14 +55,14 @@ const signup = async (SignupInput: SignupInput) => {
 const login = async (input: LoginInput) => {
   const user = await findUserForLoginByEmail(input.email);
   if (!user || user.deleted_at || user.is_banned === true) {
-    throw new AuthUnauthorizedError(LOGIN_FAIL_MESSAGE);
+    throw new UnauthorizedError(LOGIN_FAIL_MESSAGE);
   }
   const ok = await cryptUtils.comparePassword(
     input.password,
     user.hashpassword
   );
   if (!ok) {
-    throw new AuthUnauthorizedError(LOGIN_FAIL_MESSAGE);
+    throw new UnauthorizedError(LOGIN_FAIL_MESSAGE);
   }
 
   const refreshToken = randomBytes(32).toString("base64url");
@@ -84,7 +87,7 @@ const refreshAccessToken = async (input: RefreshTokenInput) => {
   const hash = cryptUtils.hashRefreshTokenFingerprint(input.refreshToken);
   const userId = await getUserIdByRefreshHash(hash);
   if (!userId) {
-    throw new AuthUnauthorizedError(REFRESH_FAIL_MESSAGE);
+    throw new UnauthorizedError(REFRESH_FAIL_MESSAGE);
   }
 
   const user = await prisma.users.findUnique({
@@ -99,7 +102,7 @@ const refreshAccessToken = async (input: RefreshTokenInput) => {
   });
 
   if (!user || user.deleted_at || user.is_banned === true) {
-    throw new AuthUnauthorizedError(REFRESH_FAIL_MESSAGE);
+    throw new UnauthorizedError(REFRESH_FAIL_MESSAGE);
   }
 
   const accessToken = signAccessToken(user.id);

@@ -50,9 +50,16 @@ Regras de domínio reutilizáveis devem ficar em:
 
 ## Padrões
 
+* sempre utilizar o logger em `bakcend/src/utils/logger.ts` para logs detalhados dos fluxos
 * usar TypeScript estrito
 * evitar `any`
 * funções async para IO
 * erros com mensagens claras
 * usar logger para erros relevantes
 * manter responsabilidades separadas
+
+
+## Erros
+
+* tratamento de erros deve ser feito utilizando as classes de erro definidas em `backend/src/lib/errors`, caso não exista nenhuma classe de erro que faça sentido para o erro atual, deve ser criado uma nova
+* os erros disparados com as classes são tratados com o middleware de erro em `backend/src/middlewares/error.middleware.ts`

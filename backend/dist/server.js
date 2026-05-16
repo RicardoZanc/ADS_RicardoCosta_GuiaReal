@@ -2,12 +2,14 @@ import "dotenv/config";
 import express from "express";
 import chalk from "chalk";
 import { authRoutes } from "./modules/auth/auth.routes";
+import { errorHandler } from "./middlewares/error.middleware";
 import { connectRefreshTokenRedis, registerRefreshTokenRedisShutdown, } from "./lib/redis";
 import { logger } from "./utils/logger";
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
 app.use(authRoutes);
+app.use(errorHandler);
 async function start() {
     try {
         await connectRefreshTokenRedis();
