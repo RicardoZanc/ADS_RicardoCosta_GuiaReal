@@ -2,6 +2,7 @@ volumes:
   db_storage:
   n8n_storage:
   guiareal_db:
+  redisinsight_data:
 
 services:
   redis:
@@ -10,6 +11,17 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: guiareal_redisinsight
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      - redis
 
   guiareal_db:
     image: postgres:16

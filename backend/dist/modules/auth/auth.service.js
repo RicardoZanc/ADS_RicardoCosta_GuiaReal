@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../lib/prisma";
 import { cryptUtils } from "../../lib/crypt";
-import { userExists, findUserForLoginByEmail } from "./auth.domainRules";
+import { userExists, usernameAvailable, findUserForLoginByEmail, } from "./auth.domainRules";
 import { logger } from "../../utils/logger";
 import { getRefreshTokenTtlSeconds, saveRefreshToken, getUserIdByRefreshHash, } from "../../lib/refreshTokenRedis.store";
 import { ConflictError, UnauthorizedError, } from "../../lib/errors/BaseError";
@@ -19,10 +19,18 @@ function signAccessToken(userId) {
 }
 const signup = async (SignupInput) => {
     const { email, password, username } = SignupInput;
+    logger.debug("Cadastro: payload recebido", { email, username });
     const userExistsResult = await userExists(email);
     if (!userExistsResult) {
-        logger.warn("User already exists");
+        logger.warn("Cadastro rejeitado: e-mail já cadastrado", { email });
         throw new ConflictError("User already exists");
+    }
+    const usernameAvailableResult = await usernameAvailable(username);
+    if (!usernameAvailableResult) {
+        logger.warn("Cadastro rejeitado: nome de usuário já cadastrado", {
+            username,
+        });
+        throw new ConflictError("Nome de usuário já cadastrado");
     }
     const hashedPassword = await cryptUtils.hashPassword(password);
     const user = await prisma.users.create({
@@ -32,15 +40,36 @@ const signup = async (SignupInput) => {
             hashpassword: hashedPassword,
         },
     });
+    logger.debug("Cadastro: usuário persistido", { userId: user.id });
     return user;
 };
 const login = async (input) => {
+    logger.debug("Login: início da autenticação", { email: input.email });
     const user = await findUserForLoginByEmail(input.email);
-    if (!user || user.deleted_at || user.is_banned === true) {
+    if (!user) {
+        logger.warn("Login falhou: conta indisponível ou inexistente", {
+            email: input.email,
+            reason: "not_found",
+        });
+        throw new UnauthorizedError(LOGIN_FAIL_MESSAGE);
+    }
+    if (user.deleted_at) {
+        logger.warn("Login falhou: conta indisponível ou inexistente", {
+            email: input.email,
+            reason: "deleted",
+        });
+        throw new UnauthorizedError(LOGIN_FAIL_MESSAGE);
+    }
+    if (user.is_banned === true) {
+        logger.warn("Login falhou: conta indisponível ou inexistente", {
+            email: input.email,
+            reason: "banned",
+        });
         throw new UnauthorizedError(LOGIN_FAIL_MESSAGE);
     }
     const ok = await cryptUtils.comparePassword(input.password, user.hashpassword);
     if (!ok) {
+        logger.warn("Login falhou: senha incorreta", { email: input.email });
         throw new UnauthorizedError(LOGIN_FAIL_MESSAGE);
     }
     const refreshToken = randomBytes(32).toString("base64url");
@@ -48,6 +77,10 @@ const login = async (input) => {
     const ttl = getRefreshTokenTtlSeconds();
     await saveRefreshToken(hash, user.id, ttl);
     const accessToken = signAccessToken(user.id);
+    logger.debug("Login: autenticação concluída", {
+        userId: user.id,
+        refreshTtlSeconds: ttl,
+    });
     return {
         accessToken,
         refreshToken,
@@ -59,9 +92,11 @@ const login = async (input) => {
     };
 };
 const refreshAccessToken = async (input) => {
+    logger.debug("Refresh: validação do token iniciada");
     const hash = cryptUtils.hashRefreshTokenFingerprint(input.refreshToken);
     const userId = await getUserIdByRefreshHash(hash);
     if (!userId) {
+        logger.warn("Refresh falhou: token não encontrado ou expirado no Redis");
         throw new UnauthorizedError(REFRESH_FAIL_MESSAGE);
     }
     const user = await prisma.users.findUnique({
@@ -75,9 +110,11 @@ const refreshAccessToken = async (input) => {
         },
     });
     if (!user || user.deleted_at || user.is_banned === true) {
+        logger.warn("Refresh falhou: usuário indisponível", { userId });
         throw new UnauthorizedError(REFRESH_FAIL_MESSAGE);
     }
     const accessToken = signAccessToken(user.id);
+    logger.debug("Refresh: access token reemitido", { userId: user.id });
     return {
         accessToken,
         user: {

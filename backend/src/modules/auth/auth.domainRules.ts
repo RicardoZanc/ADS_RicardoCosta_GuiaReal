@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { logger } from "../../utils/logger";
 
 export const userExists = async (email: string): Promise<boolean> => {
   const user = await prisma.users.findUnique({
@@ -6,7 +7,32 @@ export const userExists = async (email: string): Promise<boolean> => {
       email,
     },
   });
-  return user === null;
+  const available = user === null;
+  logger.debug("Cadastro: verificação de e-mail no banco", {
+    email,
+    available,
+  });
+  return available;
+};
+
+export const usernameAvailable = async (
+  username: string
+): Promise<boolean> => {
+  const user = await prisma.users.findFirst({
+    where: {
+      username: {
+        equals: username,
+        mode: "insensitive",
+      },
+    },
+    select: { id: true },
+  });
+  const available = user === null;
+  logger.debug("Cadastro: verificação de nome de usuário no banco", {
+    username,
+    available,
+  });
+  return available;
 };
 
 export type UserForLogin = {
@@ -31,6 +57,10 @@ export const findUserForLoginByEmail = async (
       is_banned: true,
       deleted_at: true,
     },
+  });
+  logger.debug("Login: consulta de usuário no banco", {
+    email,
+    found: user !== null,
   });
   return user;
 };

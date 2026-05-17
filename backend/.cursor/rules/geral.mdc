@@ -50,7 +50,6 @@ Regras de domínio reutilizáveis devem ficar em:
 
 ## Padrões
 
-* sempre utilizar o logger em `bakcend/src/utils/logger.ts` para logs detalhados dos fluxos
 * usar TypeScript estrito
 * evitar `any`
 * funções async para IO
@@ -63,3 +62,29 @@ Regras de domínio reutilizáveis devem ficar em:
 
 * tratamento de erros deve ser feito utilizando as classes de erro definidas em `backend/src/lib/errors`, caso não exista nenhuma classe de erro que faça sentido para o erro atual, deve ser criado uma nova
 * os erros disparados com as classes são tratados com o middleware de erro em `backend/src/middlewares/error.middleware.ts`
+
+## Diretrizes Estritas de Logging
+
+Toda nova rota, controller ou serviço deve ser instrumentado utilizando o logger de `backend/src/utils/logger.ts` conforme a matriz de severidade abaixo:
+
+### Matriz de Uso de Logs
+
+| Nível | Onde usar | O que logar (Exemplos) |
+| :--- | :--- | :--- |
+| **`DEBUG`** | Interno de Services / Middlewares | Payloads recebidos, resultados de queries Prisma, tokens decodificados (sem dados sensíveis), dados enviados para o n8n. |
+| **`INFO`** | Controllers / Início e fim de fluxos | "HTTP POST /auth/login - Iniciado", "Pedido de recomendação enviado à IA", "Thread de discussão criada". |
+| **`WARN`** | Casos de borda / Falhas recuperáveis | Tentativa de login com senha errada, refresh token expirado no Redis (antes de gerar erro 401), rate-limit atingido. |
+| **`ERROR`** | `error.middleware.ts` e Blocos Catch | Erros não tratados (500), falhas catastróficas de infraestrutura (banco ou Redis fora do ar). |
+
+### Padrão de Escrita de Código
+
+1. **Mensagens descritivas e estáticas no primeiro argumento:** O primeiro argumento string deve ser uma constante textual clara para permitir buscas textuais rápidas (`grep`) no terminal.
+2. **Contexto dinâmico nos argumentos subsequentes:** Dados mutáveis, objetos e payloads devem ser passados como argumentos adicionais, nunca concatenados diretamente na string.
+
+```typescript
+// ❌ ANTI-PADRÃO (Evitar concatenação e falta de contexto estruturado)
+logger.info(`Usuário com id ${user.id} tentou votar na interaction ${id}`);
+
+//  PADRÃO CORRETO
+logger.info("Tentativa de registro de voto iniciada", { userId: user.id, interactionId: id });
+logger.debug("Payload de validação do voto", { schemaResult });

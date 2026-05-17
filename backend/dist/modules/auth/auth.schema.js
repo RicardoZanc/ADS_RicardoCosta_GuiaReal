@@ -3,7 +3,11 @@ export const signupSchema = z.object({
     body: z.object({
         email: z.email("E-mail inválido"),
         password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
-        username: z.string().min(2, "Nome muito curto"),
+        username: z
+            .string()
+            .trim()
+            .min(2, "Nome muito curto")
+            .max(50, "Nome muito longo"),
     }),
 });
 export const loginSchema = z.object({
