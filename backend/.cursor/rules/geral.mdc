@@ -17,12 +17,30 @@ alwaysApply: false
 routes -> controller -> service (chama libs e domain rules se necessário)
 ```
 
+## Organização do código
+
+  src/
+    lib/
+    modules/
+        [nome_modulo]/
+        [modulo].routes.ts
+        [modulo].domainRules.ts --> validação regras de negócio que comunicam com banco de dados
+        [modulo].schema.ts --> schemas zod
+        [modulo].service.ts --> regras e comunicação com banco de dados, não há camada de repositório
+    middlewares/
+        validate.ts
+        auth.middleware.ts
+        error.middleware.ts
+        validate.middleware.ts
+    routes/
+        apiRoutes.ts --> as rotas de todas as features devem ser registradas aqui
+
 ## Responsabilidades
 
 ### Routes
 
 * definição de rotas
-* middleware de validação `/backend/src/middlewares/validate.ts`
+* middleware de validação `/backend/src/middlewares/validate.middleware.ts`
 * encaminhamento para controllers
 
 ### Controllers

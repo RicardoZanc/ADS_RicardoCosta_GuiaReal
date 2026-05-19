@@ -5,7 +5,7 @@ import {
   loginSchema,
   refreshSchema,
 } from "./auth.schema";
-import { validate } from "../../middlewares/validate";
+import { validate } from "../../middlewares/validate.middleware";
 
 const authRoutes = Router();
 
