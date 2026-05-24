@@ -1,5 +1,8 @@
-Um produto deve pode ter apenas um nó de tipo
-Um produto deve e pode ter apenas um nó de categoria
-Um produto pode ter multiplos nós de tecnologia
-Um produto deve e pode ter apenas um nó de marca
-Um produto pode ter multiplos produtos
+Produtos precisa ter um e apenas um:
+    - Tipo
+    - Categoria
+    - Marca
+
+Produto pode ter de nenhum a vários:
+    - Tecnologia
+    - Atributo

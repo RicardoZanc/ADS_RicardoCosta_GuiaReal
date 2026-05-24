@@ -1,0 +1,70 @@
+---
+description: Explicação da relação entre produtos e nodes, regras de negócio da criação de produto e criação de nodes
+alwaysApply: false
+---
+# Papel dos nodes
+## 1 ROOT
+Ponto de partida universal da arvore de conhecimento, serve puramente como âncora mestre no banco para unificar o grafo. **Existe estritamente um único registro no sistema.**
+## 2 TIPO
+**O que é:** Grande divisão macro do mercado ou macro-ecossistema
+
+**O que faz:** Agrupa grandes verticais com dinâmicas de consumo totalmente distintas. 
+
+**Exemplos:** Instrumentos Musicais, Eletrônicos, Eletrodomésticos.
+
+**Parentesco:** É sempre filho direto do ROOT.
+
+
+## 3 CATEGORIA
+**O que é:** Segmento específico de produto dentro de um determinado TIPO.
+
+**O que faz:** Responde à pergunta: "O que você está procurando comprar?".
+
+**Exemplos:** Guitarras (filha de Instrumentos), Monitores, Notebooks (filhos de Eletrônicos).
+
+**Parentesco:** É sempre filho direto de um TIPO.
+## 4 MARCA
+**O que é:** fabricante ou detentora comercial que assina o produto final.
+
+**O que faz:** Agrupa percepções de pós-venda, garantia e controle de qualidade global. Fica posicionada de forma agnóstica (filha direta do ROOT) para reuso cross-domain
+
+**Exemplos:** Ibanez, Fender, Dell, LG, Samsung.
+
+**Parentesco:** É sempre filho direto do ROOT.
+
+## 5 TECNOLOGIA
+**O que é:** Soluções de engenharia, padrões técnicos ou componentes funcionais
+
+**O que faz:** O coração da "Sabedoria em Camadas". Quando a IA consolida um trade-off sobre uma tecnologia, todos os produtos vinculados a ela herdam a percepção.
+
+**Exemplos:** Floyd Rose, Humbucker, Microafinação (Guitarras); Painel IPS, Freesync (Monitores).
+
+**Parentesco:** É sempre filho direto do ROOT.
+## 6 COMPOSICAO
+**O que é:** Materiais, insumos físicos ou componentes estruturais básicos de fabricação.
+
+**O que faz:** Isola propriedades da matéria que geram trade-offs universais reutilizáveis pela IA em categorias totalmente distintas do ecossistema.
+
+**Exemplos:** Mogno, Maple (Guitarras ou Móveis); Plástico ABS, Alumínio (Eletrônicos ou Carros).
+
+**Parentesco:** É sempre filho direto do ROOT.
+## 7 ATRIBUTO
+**O que é:** Características específicas, métricas, conexões físicas ou propriedades funcionais variáveis.
+
+**O que faz:** Mapeia especificações numéricas ou escalares cruciais que geram discussões ou determinam o comportamento prático direto do modelo.
+
+**Exemplos:** 6 Cordas, 7 Cordas, Captação Ativa, 144Hz, Resolução 4K.
+
+**Parentesco:** É sempre filho direto do ROOT.
+
+## Observação importante
+`TECNOLOGIA` e `ATRIBUTO` são criados de forma plana na raiz. A relação deles com uma categoria é puramente factual e indireta, gerada quando um produto daquela categoria se conecta a eles.
+
+# Criação de produtos
+
+
+**Obrigatório ter um (e apenas um):** Nó do tipo CATEGORIA e nó do tipo MARCA. (O TIPO macro é inferido dinamicamente subindo o parent_id da Categoria, eliminando redundâncias no banco).
+
+**Pode ter de nenhum a vários (0:N):** Nós do tipo TECNOLOGIA, COMPOSICAO e ATRIBUTO.
+
+**Estratégia de Persistência (Vínculo Total):** O produto conecta-se diretamente a todos os nós de folha correspondentes na tabela pivô no momento do insert. Isso otimiza as rotas e queries consumidas pelo n8n e pelo Express, evitando buscas recursivas pesadas em tempo de execução.
