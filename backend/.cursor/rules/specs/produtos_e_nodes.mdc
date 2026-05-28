@@ -68,3 +68,90 @@ Ponto de partida universal da arvore de conhecimento, serve puramente como ânco
 **Pode ter de nenhum a vários (0:N):** Nós do tipo TECNOLOGIA, COMPOSICAO e ATRIBUTO.
 
 **Estratégia de Persistência (Vínculo Total):** O produto conecta-se diretamente a todos os nós de folha correspondentes na tabela pivô no momento do insert. Isso otimiza as rotas e queries consumidas pelo n8n e pelo Express, evitando buscas recursivas pesadas em tempo de execução.
+
+## Arquitetura de Ingestão e Fluxo de Cadastro (MVP)
+
+O sistema adotará a estratégia de **Desacoplamento por Orquestração no Frontend (Múltiplas Requisições)** para viabilizar telas de cadastro altamente dinâmicas, reutilizáveis e modulares, mitigando o acoplamento e o overengineering no Backend.
+
+### 1. Princípio da Responsabilidade Única (API REST)
+* **Módulo de Produtos (`POST /api/products`):** É estritamente agnóstico em relação à criação de infraestrutura de nós. Ele recebe um contrato limpo contendo apenas metadados diretos do produto e um array plano de UUIDs de nós já persistidos no banco de dados.
+* **Módulo de Nodes (`POST /api/nodes`):** Centraliza a criação de qualquer nó da árvore taxonômica (`CATEGORIA`, `MARCA`, `TECNOLOGIA`, `COMPOSICAO`, `ATRIBUTO`), independente de onde o gatilho foi disparado (tela isolada de configuração ou modais embutidos no step-by-step de produtos).
+
+### 2. Dinâmica do Fluxo na Interface (UX/UI)
+Durante o fluxo de passos (steps) do cadastro de um produto:
+1. O usuário interage com o componente reutilizável (ex: Campo "Tecnologia").
+2. Caso a tecnologia desejada não exista, o usuário a digita e clica em adicionar.
+3. O componente do Frontend imediatamente dispara uma requisição isolada para `POST /api/nodes` enviando o nome e o tipo do nó.
+4. O backend valida, persiste o novo nó e retorna o objeto criado com seu respectivo `id` (UUID).
+5. O Frontend captura esse `id` em background, adiciona-o ao estado local do formulário de produto e exibe visualmente a tag ao usuário.
+6. No último clique ("Salvar Produto"), o Frontend envia o payload contendo o array plano de UUIDs coletados para `POST /api/products`.
+
+### 3. Contratos de Dados (Zod Schemas)
+
+#### A. Schema de Criação de Nós (`modules/nodes/nodes.schema.ts`)
+
+```typescript
+import { z } from 'zod';
+
+export const createNodeSchema = z.object({
+  name: z.string().min(1, "O nome do nó é obrigatório").trim(),
+  type: z.enum(['CATEGORIA', 'MARCA', 'TECNOLOGIA', 'COMPOSICAO', 'ATRIBUTO']),
+  parent_id: z.string().uuid("Parent ID inválido").optional()
+});
+```
+
+#### B. Schema de Criação de Produtos (`modules/products/products.schema.ts`)
+
+
+
+```TypeScript
+import { z } from 'zod';
+
+export const createProductSchema = z.object({
+  name: z.string().min(1, "O nome do produto é obrigatório").trim(),
+  ean: z.string().max(13).optional(),
+  brand_name: z.string().optional(), // Nome descritivo comercial (opcional)
+  nodeIds: z.array(z.string().uuid("Cada nó associado deve ser um UUID válido")).min(2, "Um produto precisa obrigatoriamente de ao menos uma CATEGORIA e uma MARCA")
+});
+```
+
+### 4. Regras de Validação em Tempo de Execução (`[modulo].domainRules.ts`)
+
+#### Validação de Nós (`nodes.domainRules.ts`):
+
+- Se `type` for `CATEGORIA`, a query deve validar obrigatoriamente se o `parent_id` fornecido pertence a um nó do tipo `TIPO`. Caso contrário, lança erro de regra de negócio (`400 Bad Request`).
+    
+- Se `type` for `MARCA`, `TECNOLOGIA`, `COMPOSICAO` ou `ATRIBUTO`, o backend deve associar o nó automaticamente ao ID do nó `ROOT` global do sistema (caso o Frontend não envie o `parent_id`).
+    
+
+#### Validação de Produtos (`products.domainRules.ts`):
+
+- Antes de persistir o produto, o backend interceptará a requisição e fará uma contagem/filtro no banco de dados com os `nodeIds` fornecidos:
+    
+    - Deve garantir que **exatamente uma** `CATEGORIA` foi vinculada.
+        
+    - Deve garantir que **exatamente uma** `MARCA` foi vinculada.
+        
+    - O sistema rejeitará a criação se nós do tipo `ROOT` ou `TIPO` forem passados diretamente no array `nodeIds` do produto.
+        
+
+### 5. Mecanismo de Escrita (Atomicidade via Prisma)
+
+A inserção do produto e o povoamento do Grafo de Vínculo Total na tabela pivô `product_nodes` ocorrerão em uma única operação transacionada nativamente usando a API de _Nested Writes_ do Prisma Client:
+
+```TypeScript
+// Exemplo conceitual no products.service.ts
+await prisma.products.create({
+  data: {
+    name: payload.name,
+    ean: payload.ean,
+    brand_name: payload.brand_name,
+    product_nodes: {
+      create: payload.nodeIds.map((id) => ({
+        node_id: id
+      }))
+    }
+  }
+});
+```
+

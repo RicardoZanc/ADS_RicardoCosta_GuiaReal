@@ -5,10 +5,15 @@ import { apiRoutes } from "./routes/apiRoutes";
 import { errorHandler } from "./middlewares/error.middleware";
 import { connectRefreshTokenRedis, registerRefreshTokenRedisShutdown, } from "./lib/redis";
 import { logger } from "./utils/logger";
+import { authenticateJwt } from "./middlewares/auth.middleware";
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
 app.use('/api', apiRoutes);
+app.get('/api/', authenticateJwt, (req, res) => {
+    const message = `Hello ${req.user?.username}`;
+    res.json({ message });
+});
 app.use(errorHandler);
 async function start() {
     try {

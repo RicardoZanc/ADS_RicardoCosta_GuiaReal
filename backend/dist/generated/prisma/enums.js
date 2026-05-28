@@ -16,6 +16,7 @@ export const node_type = {
     ROOT: 'ROOT',
     TIPO: 'TIPO',
     CATEGORIA: 'CATEGORIA',
+    COMPOSICAO: 'COMPOSICAO',
     TECNOLOGIA: 'TECNOLOGIA',
     MARCA: 'MARCA',
     ATRIBUTO: 'ATRIBUTO'
