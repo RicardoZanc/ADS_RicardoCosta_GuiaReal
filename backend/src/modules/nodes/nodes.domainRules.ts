@@ -72,6 +72,7 @@ export async function resolveNodeCreationDependencies(
 
   const rootId = await getRootNodeId();
   const flatRootChildrenTypes: AllowedNodeType[] = [
+    "TIPO",
     "MARCA",
     "TECNOLOGIA",
     "COMPOSICAO",

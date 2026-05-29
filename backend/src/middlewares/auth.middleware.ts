@@ -15,6 +15,7 @@ type AccessTokenPayload = {
 
 function getBearerToken(req: Request): string | null {
   const header = req.headers.authorization;
+  logger.debug("getBearerToken", { header });
   if (!header?.startsWith("Bearer ")) {
     return null;
   }
