@@ -2,14 +2,14 @@ type: collection.insomnia.rest/5.0
 schema_version: "5.1"
 name: Api GuiaReal
 meta:
-  id: wrk_7df6185f87a546d399b0fcf7763d1fe7
-  created: 1779036983478
-  modified: 1779036983478
+  id: wrk_bb251f00691245458d39404edc422ae1
+  created: 1780257198922
+  modified: 1780257198922
   description: ""
 collection:
   - name: auth
     meta:
-      id: fld_07f68b0678c04e0ca2ff1d60787446bd
+      id: fld_b4f29e7de0ae42f1b0debfbba698cddd
       created: 1778893094221
       modified: 1778893094221
       sortKey: -1778893094221
@@ -18,7 +18,7 @@ collection:
       - url: "{{base_url}}/auth/signup"
         name: signup
         meta:
-          id: req_8e96ee0b4ab94993bd94725a1e8bf05d
+          id: req_70b9b53a1a3b4af6a8d9faa5472827a8
           created: 1778802734948
           modified: 1779050859478
           isPrivate: false
@@ -51,9 +51,9 @@ collection:
       - url: "{{base_url}}/auth/login"
         name: login
         meta:
-          id: req_1d459fdc3a9b45618ec01b4712934116
+          id: req_2ab1fcff7f454867ba9725695236fa24
           created: 1778893947619
-          modified: 1779048043809
+          modified: 1780257215514
           isPrivate: false
           description: ""
           sortKey: -1778893109795
@@ -83,7 +83,7 @@ collection:
       - url: "{{base_url}}/auth/refresh"
         name: refreshToken
         meta:
-          id: req_82bb78a058c14b24945b791ca4b9acdc
+          id: req_e2b528af717644d0bc51a3b0f6c3dc6a
           created: 1778893963818
           modified: 1779048277685
           isPrivate: false
@@ -111,16 +111,354 @@ collection:
             send: true
             store: true
           rebuildPath: true
+  - name: nodes
+    meta:
+      id: fld_7918950adb3647e88f534b56b2b0103c
+      created: 1780257243287
+      modified: 1780257243287
+      sortKey: -1780257243287
+      description: ""
+    children:
+      - name: criar
+        meta:
+          id: fld_616a0edb2a3248568cc73030a19efcc2
+          created: 1780259300163
+          modified: 1780259300163
+          sortKey: -1780259300163
+          description: ""
+        children:
+          - url: "{{ base_url }}/nodes"
+            name: Tipo
+            meta:
+              id: req_826d08130da440f2bcb40e549d9da1d8
+              created: 1780258680908
+              modified: 1780259305378
+              isPrivate: false
+              description: ""
+              sortKey: -1780259305329
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {
+                  "name": "Instrumentos Musicais",
+                  "type": "TIPO"
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ base_url }}/nodes"
+            name: Categoria
+            meta:
+              id: req_a71f652f1fd54f29b44f19b68005c91e
+              created: 1780259072593
+              modified: 1780259332164
+              isPrivate: false
+              description: ""
+              sortKey: -1780259305354
+            method: POST
+            body:
+              mimeType: application/json
+              text: |+
+                {
+                  "name": "Guitarras",
+                  "type": "CATEGORIA",
+                  "parent_id": "cd258e1f-7870-40a2-8eeb-773fb5552295"
+                }
+
+            headers:
+              - name: Content-Type
+                value: application/json
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ base_url }}/nodes"
+            name: Marca
+            meta:
+              id: req_c9b287a985d94ab5a5b2211c8d98f04b
+              created: 1780259130489
+              modified: 1780259330324
+              isPrivate: false
+              description: ""
+              sortKey: -1780259305404
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {
+                  "name": "Ibanez",
+                  "type": "MARCA"
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ base_url }}/nodes"
+            name: Tecnologia
+            meta:
+              id: req_e55a772abb714732bffb5f83774f6a26
+              created: 1780259149377
+              modified: 1780259308238
+              isPrivate: false
+              description: ""
+              sortKey: -1780259305429
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {
+                  "name": "Floyd Rose",
+                  "type": "TECNOLOGIA"
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{ base_url }}/nodes"
+            name: Atributo
+            meta:
+              id: req_fce75f76eaa4452e8a9395444439ea87
+              created: 1780259202441
+              modified: 1780259311841
+              isPrivate: false
+              description: ""
+              sortKey: -1780259305379
+            method: POST
+            body:
+              mimeType: application/json
+              text: |-
+                {
+                  "name": "Maple",
+                  "type": "COMPOSICAO"
+                }
+            headers:
+              - name: Content-Type
+                value: application/json
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+      - name: Pesquisa
+        meta:
+          id: fld_6ebe4431ecd04317a01d558eb7485048
+          created: 1780262433960
+          modified: 1780262433960
+          sortKey: -1780262433960
+          description: ""
+        children:
+          - url: "{{base_url}}/nodes"
+            name: Geral
+            meta:
+              id: req_bd5bd9556e9e4745aaee4ee393a78d95
+              created: 1780262440707
+              modified: 1780262581858
+              isPrivate: false
+              description: ""
+              sortKey: -1780262440707
+            method: GET
+            headers:
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{base_url}}/nodes?page=1&limit=10"
+            name: Geral (paginação custom)
+            meta:
+              id: req_b2582991da9640d2a83558ab42fac17f
+              created: 1780263023278
+              modified: 1780263034989
+              isPrivate: false
+              description: ""
+              sortKey: -1780260873068
+            method: GET
+            headers:
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{base_url}}/nodes?tipo_id=cd258e1f-7870-40a2-8eeb-773fb5552295"
+            name: Pesquisa geral
+            meta:
+              id: req_0cc63cd4ea9d4d6c9772e6d8c0e5f211
+              created: 1780263064095
+              modified: 1780264087872
+              isPrivate: false
+              description: ""
+              sortKey: -1780260089248.5
+            method: GET
+            headers:
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{base_url}}/nodes??q=Maple&type=COMPOSICAO&page=1&limit=5"
+            name: Texto+tipo+pag
+            meta:
+              id: req_4a93a0226e604bc2b68f74d4724402be
+              created: 1780263156974
+              modified: 1780263172703
+              isPrivate: false
+              description: ""
+              sortKey: -1780259697338.75
+            method: GET
+            headers:
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+          - url: "{{base_url}}/nodes?tipo_id="
+            name: Pesquisa categorias por tipo
+            meta:
+              id: req_26b7f3619cbe40fa81dd01a557d01af0
+              created: 1780264009753
+              modified: 1780264058616
+              isPrivate: false
+              description: ""
+              sortKey: -1780259893293.625
+            method: GET
+            headers:
+              - name: User-Agent
+                value: insomnia/12.5.0
+                description: ""
+                disabled: false
+            authentication:
+              type: bearer
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+            settings:
+              renderRequestBody: true
+              encodeUrl: true
+              followRedirects: global
+              cookies:
+                send: true
+                store: true
+              rebuildPath: true
+  - name: products
+    meta:
+      id: fld_dfe7d916ecda412fa654421e64fec616
+      created: 1780257252953
+      modified: 1780257262924
+      sortKey: -1780257252953
+      description: ""
 cookieJar:
   name: Default Jar
   meta:
-    id: jar_665c800c449f4a18abfdfd0d757b0571
+    id: jar_22627624b4d44c2fb45341a6d3e88f9f
     created: 1778802734931
     modified: 1778802734931
 environments:
   name: GuiaReal
   meta:
-    id: env_0c0a479588364a66b5c559dedb15ce2a
+    id: env_1ef170b25ae547498b195d6c011f9fc1
     created: 1778802734927
     modified: 1778893377312
     isPrivate: false

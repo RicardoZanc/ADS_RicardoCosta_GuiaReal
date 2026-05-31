@@ -46,6 +46,7 @@ export async function resolveNodeCreationDependencies(input) {
     });
     const rootId = await getRootNodeId();
     const flatRootChildrenTypes = [
+        "TIPO",
         "MARCA",
         "TECNOLOGIA",
         "COMPOSICAO",
@@ -76,4 +77,19 @@ export async function resolveNodeCreationDependencies(input) {
         type: input.type,
     });
     throw new BadRequestError("Tipo de nó não suportado para criação");
+}
+export async function resolveNodeSearchQuery(query) {
+    if (!query.tipo_id) {
+        return query;
+    }
+    logger.debug("Resolução de filtros para busca de categorias por TIPO", {
+        tipoId: query.tipo_id,
+        q: query.q,
+    });
+    await ensureParentIsTipo(query.tipo_id);
+    return {
+        ...query,
+        type: "CATEGORIA",
+        parent_id: query.tipo_id,
+    };
 }

@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { BadRequestError, NotFoundError } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
-import type { CreateNodeInput } from "./nodes.schema";
+import type { CreateNodeInput, ListNodesQuery, ResolvedNodeSearchQuery } from "./nodes.schema";
 
 type AllowedNodeType = CreateNodeInput["type"];
 
@@ -109,4 +109,25 @@ export async function resolveNodeCreationDependencies(
     type: input.type,
   });
   throw new BadRequestError("Tipo de nó não suportado para criação");
+}
+
+export async function resolveNodeSearchQuery(
+  query: ListNodesQuery
+): Promise<ResolvedNodeSearchQuery> {
+  if (!query.tipo_id) {
+    return query;
+  }
+
+  logger.debug("Resolução de filtros para busca de categorias por TIPO", {
+    tipoId: query.tipo_id,
+    q: query.q,
+  });
+
+  await ensureParentIsTipo(query.tipo_id);
+
+  return {
+    ...query,
+    type: "CATEGORIA",
+    parent_id: query.tipo_id,
+  };
 }

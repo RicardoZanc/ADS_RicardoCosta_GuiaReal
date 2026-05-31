@@ -19,13 +19,29 @@ export const createNodeSchema = z.object({
 });
 
 export const listNodesSchema = z.object({
-  query: z.object({
-    q: z.string().trim().min(1).optional(),
-    type: z.enum(searchableNodeTypes).optional(),
-    page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
-  }),
+  query: z
+    .object({
+      q: z.string().trim().min(1).optional(),
+      type: z.enum(searchableNodeTypes).optional(),
+      tipo_id: z.uuid("tipo_id inválido").optional(),
+      page: z.coerce.number().int().min(1).default(1),
+      limit: z.coerce.number().int().min(1).max(100).default(20),
+    })
+    .superRefine((data, ctx) => {
+      if (data.tipo_id && data.type && data.type !== "CATEGORIA") {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "Quando tipo_id é informado, type deve ser CATEGORIA ou omitido",
+          path: ["type"],
+        });
+      }
+    }),
 });
 
 export type CreateNodeInput = z.infer<typeof createNodeSchema>["body"];
 export type ListNodesQuery = z.infer<typeof listNodesSchema>["query"];
+
+export type ResolvedNodeSearchQuery = ListNodesQuery & {
+  parent_id?: string;
+};

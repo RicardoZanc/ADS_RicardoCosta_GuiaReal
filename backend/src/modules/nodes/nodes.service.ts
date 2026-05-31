@@ -3,8 +3,11 @@ import { prisma } from "../../lib/prisma";
 import { ConflictError } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
 import { getNodesSearchFuzziness } from "./nodes.config";
-import type { CreateNodeInput, ListNodesQuery } from "./nodes.schema";
-import { resolveNodeCreationDependencies } from "./nodes.domainRules";
+import type { CreateNodeInput, ResolvedNodeSearchQuery } from "./nodes.schema";
+import {
+  resolveNodeCreationDependencies,
+  resolveNodeSearchQuery,
+} from "./nodes.domainRules";
 import type { node_type } from "../../generated/prisma/enums";
 
 type PrismaErrorWithCode = {
@@ -34,11 +37,18 @@ function isUniqueConstraintError(error: unknown): error is PrismaErrorWithCode {
   );
 }
 
-function buildWhereClause(query: ListNodesQuery, fuzziness: number): Prisma.Sql {
+function buildWhereClause(
+  query: ResolvedNodeSearchQuery,
+  fuzziness: number
+): Prisma.Sql {
   const conditions: Prisma.Sql[] = [Prisma.sql`type <> 'ROOT'::node_type`];
 
   if (query.type) {
     conditions.push(Prisma.sql`type = ${query.type}::node_type`);
+  }
+
+  if (query.parent_id) {
+    conditions.push(Prisma.sql`parent_id = ${query.parent_id}::uuid`);
   }
 
   if (query.q) {
@@ -48,7 +58,7 @@ function buildWhereClause(query: ListNodesQuery, fuzziness: number): Prisma.Sql 
   return Prisma.join(conditions, " AND ");
 }
 
-function buildOrderClause(query: ListNodesQuery): Prisma.Sql {
+function buildOrderClause(query: ResolvedNodeSearchQuery): Prisma.Sql {
   if (query.q) {
     return Prisma.sql`similarity(name, ${query.q}) DESC, name ASC`;
   }
@@ -98,7 +108,7 @@ const create = async (input: CreateNodeInput) => {
   }
 };
 
-const search = async (query: ListNodesQuery) => {
+const search = async (query: ResolvedNodeSearchQuery) => {
   const fuzziness = getNodesSearchFuzziness();
   const offset = (query.page - 1) * query.limit;
   const whereClause = buildWhereClause(query, fuzziness);
@@ -107,6 +117,8 @@ const search = async (query: ListNodesQuery) => {
   logger.debug("Busca de nós: consulta iniciada", {
     q: query.q,
     type: query.type,
+    tipoId: query.tipo_id,
+    parentId: query.parent_id,
     page: query.page,
     limit: query.limit,
     fuzziness,
@@ -134,6 +146,8 @@ const search = async (query: ListNodesQuery) => {
   logger.debug("Busca de nós: consulta concluída", {
     q: query.q,
     type: query.type,
+    tipoId: query.tipo_id,
+    parentId: query.parent_id,
     page: query.page,
     limit: query.limit,
     total,

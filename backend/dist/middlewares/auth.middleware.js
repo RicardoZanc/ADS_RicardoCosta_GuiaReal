@@ -7,6 +7,7 @@ const INVALID_TOKEN_MESSAGE = "Token de acesso inválido ou expirado";
 const UNAVAILABLE_ACCOUNT_MESSAGE = "Conta indisponível";
 function getBearerToken(req) {
     const header = req.headers.authorization;
+    logger.debug("getBearerToken", { header });
     if (!header?.startsWith("Bearer ")) {
         return null;
     }
