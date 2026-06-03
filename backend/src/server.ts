@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
 import chalk from "chalk";
 import { apiRoutes } from "./routes/apiRoutes";
 import { errorHandler } from "./middlewares/error.middleware";
@@ -13,6 +14,8 @@ import { authenticateJwt } from "./middlewares/auth.middleware";
 const PORT = process.env.PORT || 3000;
 
 const app = express();
+
+app.use(cors());
 
 app.use(express.json());
 
