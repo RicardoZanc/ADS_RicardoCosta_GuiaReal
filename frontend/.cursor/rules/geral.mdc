@@ -1,0 +1,85 @@
+# Stack
+
+- Next.js 15 (App Router)
+- TypeScript
+- ShadCN/UI
+- Tailwind CSS
+- Zustand
+- React Hook Form
+- Zod
+
+# Componentes
+
+- Sempre reutilizar componentes de `@components`.
+- Evitar HTML puro quando existir equivalente no Design System.
+- Caso um componente não exista, criá-lo em `@components` utilizando ShadCN.
+- Componentes não devem conter regras de negócio.
+
+# Organização
+
+## page.tsx
+
+Responsável apenas pela interface e composição dos componentes.
+
+Não deve conter:
+- chamadas de API;
+- regras de negócio;
+- validações;
+- gerenciamento complexo de estado.
+
+## controller.tsx
+
+Responsável por:
+- estados;
+- chamadas de API;
+- regras de negócio;
+- formulários;
+- integração com stores.
+
+# API
+
+- Toda comunicação com APIs deve ser feita exclusivamente através de `@/lib/api.ts`.
+- Não utilizar `fetch`, `axios` ou similares diretamente em componentes, páginas ou stores.
+
+# Estado
+
+- Utilizar `useState` para estado local.
+- Utilizar Zustand para estado compartilhado.
+- Não utilizar Context API para estado global.
+- Stores devem conter apenas estado e actions.
+- Não realizar chamadas de API dentro das stores.
+
+# Formulários
+
+- Utilizar React Hook Form.
+- Utilizar Zod para todas as validações.
+- Exibir erros abaixo do campo correspondente em vermelho.
+- Não utilizar alerts para erros de validação.
+- Erros retornados da API devem ser tratados com sonner
+
+# Qualidade
+
+- Não utilizar `any`.
+- Reutilizar código antes de criar novas implementações.
+- Evitar duplicação de código.
+- Manter componentes pequenos e com responsabilidade única.
+
+# Fluxo Arquitetural
+
+Controller
+↓
+@/lib/api.ts
+↓
+Zustand Store
+↓
+Page
+↓
+Componentes
+
+# Prioridades
+
+1. Reutilização
+2. Simplicidade
+3. Consistência
+4. Legibilidade
+5. Manutenibilidade
