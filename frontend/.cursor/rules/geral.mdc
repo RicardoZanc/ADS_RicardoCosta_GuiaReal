@@ -19,22 +19,43 @@
 
 ## page.tsx
 
-Responsável apenas pela interface e composição dos componentes.
+Responsável pela interface: JSX, composição de componentes do Design System e ligação com o hook do controller.
+
+Deve conter:
+- markup do formulário e da tela;
+- `use client` quando consumir hook do controller;
+- chamada ao hook exportado pelo `controller.tsx` (ex.: `useLoginController()`).
 
 Não deve conter:
 - chamadas de API;
 - regras de negócio;
-- validações;
-- gerenciamento complexo de estado.
+- schemas/validações Zod;
+- configuração de `useForm` ou handlers de submit com lógica de negócio.
+
+Exemplo:
+
+```tsx
+// page.tsx
+const { register, handleSubmit, onSubmit, errors, isSubmitting } = useLoginController();
+return ( /* JSX do formulário */ );
+```
 
 ## controller.tsx
 
-Responsável por:
-- estados;
-- chamadas de API;
-- regras de negócio;
-- formulários;
-- integração com stores.
+Responsável apenas pela lógica: exportar um hook (ex.: `useLoginController`) sem retornar JSX.
+
+Deve conter:
+- estados e efeitos;
+- chamadas de API (`apiClient`);
+- `useForm`, resolvers Zod e handlers (`onSubmit`);
+- integração com stores;
+- `notifyApiError` no `catch`.
+
+Não deve conter:
+- JSX / `return` de interface;
+- imports de componentes de UI (`Card`, `Input`, `Button`, etc.), exceto se inevitável.
+
+O hook retorna apenas o necessário para a `page.tsx` renderizar (ex.: `register`, `handleSubmit`, `onSubmit`, `errors`, `isSubmitting`).
 
 # API
 
@@ -81,15 +102,15 @@ Responsável por:
 
 # Fluxo Arquitetural
 
-Controller
+Page (UI)
+↓ consome hook
+Controller (lógica)
 ↓
 @/lib/api.ts
 ↓
 Zustand Store
 ↓
-Page
-↓
-Componentes
+Componentes (@/components)
 
 # Prioridades
 
