@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import {
   ApiError,
@@ -42,7 +41,6 @@ export async function apiClient(
       headers,
     });
   } catch {
-    toast.error(GENERIC_NETWORK_MESSAGE);
     throw new ApiError(0, GENERIC_NETWORK_MESSAGE);
   }
 
@@ -50,7 +48,6 @@ export async function apiClient(
     const body = await response.json().catch(() => ({}));
     const { message, details } = parseApiErrorResponse(body, response.status);
 
-    toast.error(message);
     throw new ApiError(response.status, message, details);
   }
 

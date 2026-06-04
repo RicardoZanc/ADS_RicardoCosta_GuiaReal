@@ -40,6 +40,20 @@ Responsável por:
 
 - Toda comunicação com APIs deve ser feita exclusivamente através de `@/lib/api.ts`.
 - Não utilizar `fetch`, `axios` ou similares diretamente em componentes, páginas ou stores.
+- O `apiClient` apenas transporta HTTP, faz parse de erros e lança `ApiError`; sem Sonner.
+- Controllers exibem erros de API com Sonner via `notifyApiError` (`@/lib/notifyApiError`) no `catch`.
+- Padrão obrigatório em handlers async após `apiClient`:
+
+```tsx
+} catch (error) {
+  if (notifyApiError(error)) return;
+  throw error;
+}
+```
+
+- Não usar `catch {}` vazio para erros de API.
+- Não duplicar `toast.error` manualmente quando `notifyApiError` já cobre o caso.
+- Após falha, interromper o fluxo (sem `setAuth`, `router.push`, etc.).
 
 # Estado
 
@@ -53,9 +67,10 @@ Responsável por:
 
 - Utilizar React Hook Form.
 - Utilizar Zod para todas as validações.
+- Utilizar atributo `noValidate` para evitar conflitos entre validações html e validações customizadas
 - Exibir erros abaixo do campo correspondente em vermelho.
 - Não utilizar alerts para erros de validação.
-- Erros retornados da API devem ser tratados com sonner
+- Erros retornados da API devem ser tratados com Sonner no controller (via `notifyApiError`), não no `apiClient`
 
 # Qualidade
 

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { registerSchema, type RegisterFormData } from "@/lib/schemas/auth";
 import { apiClient } from "@/lib/api";
+import { notifyApiError } from "@/lib/notifyApiError";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,8 +44,9 @@ export function RegisterController() {
 
       setAuth(response.token, response.user);
       router.push("/");
-    } catch {
-      // ApiError: toast já exibido pelo apiClient
+    } catch (error) {
+      if (notifyApiError(error)) return;
+      throw error;
     }
   }
 
@@ -60,7 +62,7 @@ export function RegisterController() {
         </CardDescription>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <CardContent className="flex flex-col gap-4">
           <div className="space-y-2">
             <label
