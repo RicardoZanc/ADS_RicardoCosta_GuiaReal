@@ -4,7 +4,7 @@ import { prisma } from "../../lib/prisma";
 import { cryptUtils } from "../../lib/crypt";
 import { userExists, usernameAvailable, findUserForLoginByEmail, } from "./auth.domainRules";
 import { logger } from "../../utils/logger";
-import { getRefreshTokenTtlSeconds, saveRefreshToken, getUserIdByRefreshHash, } from "../../lib/refreshTokenRedis.store";
+import { getRefreshTokenTtlSeconds, saveRefreshToken, getUserIdByRefreshHash, deleteRefreshToken, } from "../../lib/refreshTokenRedis.store";
 import { ConflictError, UnauthorizedError, } from "../../lib/errors/BaseError";
 const LOGIN_FAIL_MESSAGE = "Credenciais inválidas";
 const REFRESH_FAIL_MESSAGE = "Token de atualização inválido";
@@ -124,8 +124,14 @@ const refreshAccessToken = async (input) => {
         },
     };
 };
+const logout = async (refreshToken) => {
+    const hash = cryptUtils.hashRefreshTokenFingerprint(refreshToken);
+    await deleteRefreshToken(hash);
+    logger.debug("Logout: refresh token revogado no Redis");
+};
 export const authService = {
     signup,
     login,
     refreshAccessToken,
+    logout,
 };

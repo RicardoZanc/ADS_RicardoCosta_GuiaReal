@@ -17,6 +17,7 @@ import {
   getRefreshTokenTtlSeconds,
   saveRefreshToken,
   getUserIdByRefreshHash,
+  deleteRefreshToken,
 } from "../../lib/refreshTokenRedis.store";
 import {
   ConflictError,
@@ -169,8 +170,15 @@ const refreshAccessToken = async (input: RefreshTokenInput) => {
   };
 };
 
+const logout = async (refreshToken: string) => {
+  const hash = cryptUtils.hashRefreshTokenFingerprint(refreshToken);
+  await deleteRefreshToken(hash);
+  logger.debug("Logout: refresh token revogado no Redis");
+};
+
 export const authService = {
   signup,
   login,
   refreshAccessToken,
+  logout,
 };

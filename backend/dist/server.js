@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 import chalk from "chalk";
 import { apiRoutes } from "./routes/apiRoutes";
 import { errorHandler } from "./middlewares/error.middleware";
@@ -8,7 +10,16 @@ import { logger } from "./utils/logger";
 import { authenticateJwt } from "./middlewares/auth.middleware";
 const PORT = process.env.PORT || 3000;
 const app = express();
+const corsOrigin = process.env.CORS_ORIGIN?.trim() || "http://localhost:3001";
+app.use(cors({
+    origin: corsOrigin,
+    credentials: true,
+}));
+app.use(cookieParser());
 app.use(express.json());
+if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+}
 app.use('/api', apiRoutes);
 app.get('/api/', authenticateJwt, (req, res) => {
     const message = `Hello ${req.user?.username}`;

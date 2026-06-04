@@ -19,3 +19,6 @@ export async function getUserIdByRefreshHash(hash) {
     const value = await refreshTokenRedis.get(keyForHash(hash));
     return value;
 }
+export async function deleteRefreshToken(hash) {
+    await refreshTokenRedis.del(keyForHash(hash));
+}

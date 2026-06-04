@@ -87,15 +87,34 @@ collection:
           created: 1778893963818
           modified: 1779048277685
           isPrivate: false
-          description: ""
+          description: "Usa cookie guiareal_refresh definido no login (sem body)"
           sortKey: -1778893109745
         method: POST
-        body:
-          mimeType: application/json
-          text: |-
-            {
-            	"refreshToken": "7hliEXpzT8AyPOES4DvGoD01qZy7akpjJ8LthXeTgkA"
-            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{base_url}}/auth/logout"
+        name: logout
+        meta:
+          id: req_auth_logout_guiareal
+          created: 1780000000000
+          modified: 1780000000000
+          isPrivate: false
+          description: "Revoga refresh no Redis e limpa cookie"
+          sortKey: -1778893109695
+        method: POST
         headers:
           - name: Content-Type
             value: application/json

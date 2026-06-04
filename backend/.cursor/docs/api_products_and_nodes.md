@@ -19,7 +19,7 @@ Documentação de referência para clientes (humanos e LLM) da API REST do GuiaR
 Authorization: Bearer <accessToken>
 ```
 
-Obtenha `accessToken` via `POST /api/auth/login` com `{ "email", "password" }`.
+Obtenha `accessToken` via `POST /api/auth/login` com `{ "email", "password" }`. A resposta inclui `accessToken` e `user` no JSON; o refresh token é enviado em cookie HttpOnly (`guiareal_refresh`, path `/api/auth`). Renove o access com `POST /api/auth/refresh` (cookie automático, sem body).
 
 ---
 

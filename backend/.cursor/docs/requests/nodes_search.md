@@ -25,7 +25,7 @@ Authorization: Bearer SEU_ACCESS_TOKEN
 }
 ```
 
-Copie `accessToken` da resposta e use no header `Authorization`.
+Copie `accessToken` da resposta JSON e use no header `Authorization`. O refresh token é definido como cookie HttpOnly (`guiareal_refresh`) no login; use `POST /auth/refresh` (sem body, cookie automático) para renovar o access.
 
 ---
 
