@@ -1,21 +1,31 @@
 import { create } from "zustand";
+import type { AuthUser } from "@/lib/types/auth";
 
 interface AuthState {
-  token: string | null;
+  accessToken: string | null;
+  user: AuthUser | null;
+  isHydrated: boolean;
 
-  user: { username: string; email: string } | null;
-
-  setAuth: (token: string, user: AuthState["user"]) => void;
-
+  setAuth: (accessToken: string, user: AuthUser) => void;
+  setAccessToken: (accessToken: string) => void;
+  setHydrated: (value: boolean) => void;
   clearAuth: () => void;
 }
 
+export function selectIsAuthenticated(state: AuthState): boolean {
+  return state.accessToken !== null && state.user !== null;
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
-  token: null,
-
+  accessToken: null,
   user: null,
+  isHydrated: false,
 
-  setAuth: (token, user) => set({ token, user }),
+  setAuth: (accessToken, user) => set({ accessToken, user }),
 
-  clearAuth: () => set({ token: null, user: null }),
+  setAccessToken: (accessToken) => set({ accessToken }),
+
+  setHydrated: (isHydrated) => set({ isHydrated }),
+
+  clearAuth: () => set({ accessToken: null, user: null }),
 }));

@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { HomeAuthRedirect } from "@/components/HomeAuthRedirect";
 
 export default function HomePage() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-background px-6 py-20">
+      <HomeAuthRedirect />
       <div className="w-full max-w-2xl space-y-12">
         <header className="space-y-4">
           <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">

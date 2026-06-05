@@ -76,6 +76,16 @@ O hook retorna apenas o necessário para a `page.tsx` renderizar (ex.: `register
 - Não duplicar `toast.error` manualmente quando `notifyApiError` já cobre o caso.
 - Após falha, interromper o fluxo (sem `setAuth`, `router.push`, etc.).
 
+# Autenticação
+
+- `accessToken` + `user` no `authStore` (memória); refresh só em cookie HttpOnly na API — nunca no store nem em `localStorage`.
+- HTTP sempre via `apiClient` (`credentials: "include"`, Bearer automático, refresh em 401).
+- Login: `apiClient<AuthTokenResponse>("/auth/login")` → `setAuth(response.accessToken, response.user)`.
+- Signup: sem `setAuth`; redirecionar para `/login`.
+- Logout: `logout()` de `@/lib/auth` → `router.push("/login")`.
+- Rotas privadas: `useRequireAuth()`; loading enquanto `!isReady` (aguardar `AuthBootstrap`).
+- Não usar `middleware.ts` para auth; não chamar `refreshSession()` nos controllers; detalhes em `docs/AUTENTICACAO.md`.
+
 # Estado
 
 - Utilizar `useState` para estado local.

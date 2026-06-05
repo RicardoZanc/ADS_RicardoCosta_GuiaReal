@@ -6,11 +6,10 @@ import { useRouter } from "next/navigation";
 import { registerSchema, type RegisterFormData } from "@/lib/schemas/auth";
 import { apiClient } from "@/lib/api";
 import { notifyApiError } from "@/lib/notifyApiError";
-import { useAuthStore } from "@/store/authStore";
+import { toast } from "sonner";
 
 export function useRegisterController() {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
 
   const {
     register,
@@ -22,7 +21,7 @@ export function useRegisterController() {
 
   async function onSubmit(data: RegisterFormData) {
     try {
-      const response = await apiClient("/auth/signup", {
+      await apiClient("/auth/signup", {
         method: "POST",
         body: JSON.stringify({
           username: data.username.trim(),
@@ -31,8 +30,8 @@ export function useRegisterController() {
         }),
       });
 
-      setAuth(response.token, response.user);
-      router.push("/");
+      toast.success("Conta criada. Faça login para continuar.");
+      router.push("/login");
     } catch (error) {
       if (notifyApiError(error)) return;
       throw error;

@@ -7,6 +7,7 @@ import { loginSchema, type LoginFormData } from "@/lib/schemas/auth";
 import { apiClient } from "@/lib/api";
 import { notifyApiError } from "@/lib/notifyApiError";
 import { useAuthStore } from "@/store/authStore";
+import type { AuthTokenResponse } from "@/lib/types/auth";
 
 export function useLoginController() {
   const router = useRouter();
@@ -22,13 +23,13 @@ export function useLoginController() {
 
   async function onSubmit(data: LoginFormData) {
     try {
-      const response = await apiClient("/auth/login", {
+      const response = await apiClient<AuthTokenResponse>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email: data.email, password: data.password }),
       });
 
-      setAuth(response.token, response.user);
-      router.push("/");
+      setAuth(response.accessToken, response.user);
+      router.push("/feed");
     } catch (error) {
       if (notifyApiError(error)) return;
       throw error;
