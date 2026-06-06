@@ -21,7 +21,7 @@ const corsOrigin =
 
 app.use(
   cors({
-    origin: '*',
+    origin: corsOrigin,
     credentials: true,
   })
 );
