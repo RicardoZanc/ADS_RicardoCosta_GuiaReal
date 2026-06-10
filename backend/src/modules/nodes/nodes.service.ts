@@ -5,6 +5,7 @@ import { logger } from "../../utils/logger";
 import { getNodesSearchFuzziness } from "./nodes.config";
 import type { CreateNodeInput, ResolvedNodeSearchQuery } from "./nodes.schema";
 import {
+  ensureNodeRenamable,
   resolveNodeCreationDependencies,
   resolveNodeSearchQuery,
 } from "./nodes.domainRules";
@@ -108,6 +109,43 @@ const create = async (input: CreateNodeInput) => {
   }
 };
 
+const update = async (id: string, name: string) => {
+  logger.debug("Renomeação de nó: payload recebido", { id, name });
+
+  await ensureNodeRenamable(id, name);
+
+  try {
+    const node = await prisma.nodes.update({
+      where: { id },
+      data: { name },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        parent_id: true,
+        wikidata_id: true,
+        created_at: true,
+      },
+    });
+
+    logger.debug("Renomeação de nó: persistência concluída", {
+      nodeId: node.id,
+      type: node.type,
+    });
+
+    return node;
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      logger.warn("Renomeação de nó rejeitada: conflito de unicidade", {
+        id,
+        name,
+      });
+      throw new ConflictError("Já existe um nó com os mesmos dados únicos");
+    }
+    throw error;
+  }
+};
+
 const search = async (query: ResolvedNodeSearchQuery) => {
   const fuzziness = getNodesSearchFuzziness();
   const offset = (query.page - 1) * query.limit;
@@ -167,5 +205,6 @@ const search = async (query: ResolvedNodeSearchQuery) => {
 
 export const nodesService = {
   create,
+  update,
   search,
 };

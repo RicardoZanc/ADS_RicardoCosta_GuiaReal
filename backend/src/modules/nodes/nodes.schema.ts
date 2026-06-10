@@ -39,7 +39,17 @@ export const listNodesSchema = z.object({
     }),
 });
 
+export const updateNodeSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID do nó inválido"),
+  }),
+  body: z.object({
+    name: z.string().trim().min(1, "O nome do nó é obrigatório"),
+  }),
+});
+
 export type CreateNodeInput = z.infer<typeof createNodeSchema>["body"];
+export type UpdateNodeInput = z.infer<typeof updateNodeSchema>["body"];
 export type ListNodesQuery = z.infer<typeof listNodesSchema>["query"];
 
 export type ResolvedNodeSearchQuery = ListNodesQuery & {

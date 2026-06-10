@@ -4,6 +4,7 @@ import { logger } from "../../utils/logger";
 import type { CreateProductInput } from "./products.schema";
 import {
   ensureEanAvailable,
+  ensureNameAvailable,
   validateProductNodeDependencies,
 } from "./products.domainRules";
 
@@ -27,6 +28,7 @@ const create = async (input: CreateProductInput) => {
     nodeCount: input.nodeIds.length,
   });
 
+  await ensureNameAvailable(input.name);
   await ensureEanAvailable(input.ean);
   const validNodeIds = await validateProductNodeDependencies(input.nodeIds);
 

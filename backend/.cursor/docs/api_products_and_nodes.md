@@ -181,7 +181,10 @@ Cria um nó taxonômico.
 | CATEGORIA sem `parent_id` | 400 | `Para criar CATEGORIA, o campo parent_id é obrigatório...` |
 | `parent_id` não é TIPO | 400 | `Para criar CATEGORIA, o parent_id deve apontar para um nó do tipo TIPO` |
 | `parent_id` inexistente | 404 | `Parent ID não encontrado` |
+| Nome já usado no mesmo escopo | 409 | `Já existe um nó com este nome para o tipo informado` |
 | Nó duplicado (unicidade) | 409 | `Já existe um nó com os mesmos dados únicos` |
+
+> Unicidade de nome é validada por escopo: `CATEGORIA` é única por `parent_id` (TIPO); os demais tipos são únicos sob o `ROOT`. A comparação é case-insensitive.
 
 #### Exemplo — criar categoria
 
@@ -204,6 +207,50 @@ Cria um nó taxonômico.
 
 ---
 
+### `PATCH /api/nodes/:id`
+
+Renomeia um nó existente. Apenas o campo `name` pode ser alterado.
+
+**Auth:** obrigatória
+
+#### Path params
+
+| Param | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | UUID | ID do nó a renomear |
+
+#### Request body
+
+```json
+{
+  "name": "string (obrigatório, trim, min 1)"
+}
+```
+
+#### Resposta `200`
+
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "type": "MARCA",
+  "parent_id": "uuid",
+  "wikidata_id": "string | null",
+  "created_at": "ISO-8601"
+}
+```
+
+#### Erros de negócio comuns
+
+| Situação | HTTP | message (exemplo) |
+|----------|------|-------------------|
+| `id` inválido (não-UUID) | 422 | `ID do nó inválido` |
+| Nó inexistente | 404 | `Nó não encontrado` |
+| Nó do tipo `ROOT` ou `TIPO` | 400 | `Nós do tipo ROOT ou TIPO não podem ser renomeados` |
+| Nome já usado no mesmo escopo | 409 | `Já existe um nó com este nome para o tipo informado` |
+
+---
+
 ## Rotas — Products
 
 ### `POST /api/products`
@@ -217,7 +264,7 @@ Cria um produto e vincula nós já existentes (tabela pivô `product_nodes`).
 
 ```json
 {
-  "name": "string (obrigatório, trim, min 1)",
+  "name": "string (obrigatório, trim, min 1; único case-insensitive)",
   "ean": "string (opcional; só dígitos, 1–13 chars)",
   "brand_name": "string (opcional, max 100; nome comercial descritivo)",
   "image_url": "string (opcional; URL válida)",
@@ -259,6 +306,7 @@ O TIPO macro do produto **não** vai em `nodeIds`; é inferido pelo `parent_id` 
 
 | Situação | HTTP | message (exemplo) |
 |----------|------|-------------------|
+| Nome já cadastrado (case-insensitive) | 409 | `Já existe produto com este nome` |
 | EAN já cadastrado | 409 | `Já existe produto com este EAN` |
 | 0 ou >1 CATEGORIA/MARCA | 400 | `O produto deve possuir exatamente uma CATEGORIA e exatamente uma MARCA` |
 | nodeIds com ROOT/TIPO | 400 | `nodeIds não pode conter nós do tipo ROOT ou TIPO` |

@@ -1,7 +1,12 @@
 import { prisma } from "../../lib/prisma";
-import { BadRequestError, NotFoundError } from "../../lib/errors/BaseError";
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
 import type { CreateNodeInput, ListNodesQuery, ResolvedNodeSearchQuery } from "./nodes.schema";
+import type { node_type } from "../../generated/prisma/enums";
 
 type AllowedNodeType = CreateNodeInput["type"];
 
@@ -14,6 +19,8 @@ type DomainResolvedNodeInput = {
 
 const ROOT_TYPE = "ROOT";
 const TIPO_TYPE = "TIPO";
+
+const UNRENAMABLE_TYPES = new Set<string>([ROOT_TYPE, TIPO_TYPE]);
 
 async function getRootNodeId(): Promise<string> {
   const roots = await prisma.nodes.findMany({
@@ -62,6 +69,67 @@ async function ensureParentIsTipo(parentId: string): Promise<void> {
   }
 }
 
+async function ensureNodeNameAvailable(
+  type: AllowedNodeType,
+  name: string,
+  parentId: string,
+  excludeId?: string
+): Promise<void> {
+  const existing = await prisma.nodes.findFirst({
+    where: {
+      type: type as node_type,
+      parent_id: parentId,
+      name: { equals: name, mode: "insensitive" },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    logger.warn("Operação de nó rejeitada: nome duplicado para o tipo", {
+      type,
+      name,
+    });
+    throw new ConflictError(
+      "Já existe um nó com este nome para o tipo informado"
+    );
+  }
+}
+
+export async function ensureNodeRenamable(
+  id: string,
+  name: string
+): Promise<{ id: string; type: node_type; parent_id: string | null }> {
+  const node = await prisma.nodes.findUnique({
+    where: { id },
+    select: { id: true, type: true, parent_id: true },
+  });
+
+  if (!node) {
+    logger.warn("Renomeação de nó rejeitada: nó não encontrado", { id });
+    throw new NotFoundError("Nó não encontrado");
+  }
+
+  if (UNRENAMABLE_TYPES.has(node.type)) {
+    logger.warn("Renomeação de nó rejeitada: tipo de infraestrutura", {
+      id,
+      type: node.type,
+    });
+    throw new BadRequestError(
+      "Nós do tipo ROOT ou TIPO não podem ser renomeados"
+    );
+  }
+
+  await ensureNodeNameAvailable(
+    node.type as AllowedNodeType,
+    name,
+    node.parent_id ?? "",
+    id
+  );
+
+  return node;
+}
+
 export async function resolveNodeCreationDependencies(
   input: CreateNodeInput
 ): Promise<DomainResolvedNodeInput> {
@@ -88,6 +156,7 @@ export async function resolveNodeCreationDependencies(
     }
 
     await ensureParentIsTipo(input.parent_id);
+    await ensureNodeNameAvailable(input.type, input.name, input.parent_id);
     return {
       name: input.name,
       type: input.type,
@@ -97,6 +166,7 @@ export async function resolveNodeCreationDependencies(
   }
 
   if (flatRootChildrenTypes.includes(input.type)) {
+    await ensureNodeNameAvailable(input.type, input.name, rootId);
     return {
       name: input.name,
       type: input.type,

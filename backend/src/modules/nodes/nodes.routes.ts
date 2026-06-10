@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { nodesController } from "./nodes.controller";
-import { createNodeSchema, listNodesSchema } from "./nodes.schema";
+import {
+  createNodeSchema,
+  listNodesSchema,
+  updateNodeSchema,
+} from "./nodes.schema";
 import { validate } from "../../middlewares/validate.middleware";
 import { authenticateJwt } from "../../middlewares/auth.middleware";
 
@@ -18,6 +22,13 @@ nodesRoutes.post(
   authenticateJwt,
   validate(createNodeSchema),
   nodesController.create
+);
+
+nodesRoutes.patch(
+  "/:id",
+  authenticateJwt,
+  validate(updateNodeSchema),
+  nodesController.update
 );
 
 export { nodesRoutes };
