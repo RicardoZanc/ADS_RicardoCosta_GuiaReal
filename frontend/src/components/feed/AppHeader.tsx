@@ -30,6 +30,9 @@ export function AppHeader({ username }: AppHeaderProps) {
           <span className="hidden text-body text-muted sm:inline">
             @{username}
           </span>
+          <Button asChild variant="default" size="sm">
+            <Link href="/products/new">Cadastrar produto</Link>
+          </Button>
           <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
             Sair
           </Button>
