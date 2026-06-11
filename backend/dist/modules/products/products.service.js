@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { ConflictError } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
-import { ensureEanAvailable, validateProductNodeDependencies, } from "./products.domainRules";
+import { ensureEanAvailable, ensureNameAvailable, validateProductNodeDependencies, } from "./products.domainRules";
 function isUniqueConstraintError(error) {
     return (typeof error === "object" &&
         error !== null &&
@@ -14,6 +14,7 @@ const create = async (input) => {
         hasEan: Boolean(input.ean),
         nodeCount: input.nodeIds.length,
     });
+    await ensureNameAvailable(input.name);
     await ensureEanAvailable(input.ean);
     const validNodeIds = await validateProductNodeDependencies(input.nodeIds);
     try {

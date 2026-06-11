@@ -30,5 +30,18 @@ const nodesController = {
         });
         res.status(201).json(node);
     },
+    update: async (req, res) => {
+        const { id } = req.params;
+        logger.info("HTTP PATCH /api/nodes/:id - Iniciado", {
+            nodeId: id,
+            name: req.body.name,
+        });
+        const node = await nodesService.update(id, req.body.name);
+        logger.info("HTTP PATCH /api/nodes/:id - Concluído", {
+            nodeId: node.id,
+            type: node.type,
+        });
+        res.status(200).json(node);
+    },
 };
 export { nodesController };

@@ -34,3 +34,11 @@ export const listNodesSchema = z.object({
         }
     }),
 });
+export const updateNodeSchema = z.object({
+    params: z.object({
+        id: z.uuid("ID do nó inválido"),
+    }),
+    body: z.object({
+        name: z.string().trim().min(1, "O nome do nó é obrigatório"),
+    }),
+});

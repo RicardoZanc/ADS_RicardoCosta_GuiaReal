@@ -84,7 +84,8 @@ export const NodesScalarFieldEnum = {
 export const OpinionsScalarFieldEnum = {
     id: 'id',
     user_id: 'user_id',
-    target_id: 'target_id',
+    product_id: 'product_id',
+    node_id: 'node_id',
     title: 'title',
     content: 'content',
     is_eligible_for_ai: 'is_eligible_for_ai',

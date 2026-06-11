@@ -64,6 +64,16 @@ export async function validateProductNodeDependencies(nodeIds) {
     assertExactlyOneCategoryAndBrand(nodeTypes);
     return uniqueNodeIds;
 }
+export async function ensureNameAvailable(name) {
+    const existing = await prisma.products.findFirst({
+        where: { name: { equals: name.trim(), mode: "insensitive" } },
+        select: { id: true },
+    });
+    if (existing) {
+        logger.warn("Cadastro de produto rejeitado: nome já cadastrado", { name });
+        throw new ConflictError("Já existe produto com este nome");
+    }
+}
 export async function ensureEanAvailable(ean) {
     if (!ean) {
         return;

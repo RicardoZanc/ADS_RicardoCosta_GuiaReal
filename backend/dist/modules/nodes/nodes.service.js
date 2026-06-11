@@ -3,7 +3,7 @@ import { prisma } from "../../lib/prisma";
 import { ConflictError } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
 import { getNodesSearchFuzziness } from "./nodes.config";
-import { resolveNodeCreationDependencies, } from "./nodes.domainRules";
+import { ensureNodeRenamable, resolveNodeCreationDependencies, } from "./nodes.domainRules";
 function isUniqueConstraintError(error) {
     return (typeof error === "object" &&
         error !== null &&
@@ -67,6 +67,39 @@ const create = async (input) => {
         throw error;
     }
 };
+const update = async (id, name) => {
+    logger.debug("Renomeação de nó: payload recebido", { id, name });
+    await ensureNodeRenamable(id, name);
+    try {
+        const node = await prisma.nodes.update({
+            where: { id },
+            data: { name },
+            select: {
+                id: true,
+                name: true,
+                type: true,
+                parent_id: true,
+                wikidata_id: true,
+                created_at: true,
+            },
+        });
+        logger.debug("Renomeação de nó: persistência concluída", {
+            nodeId: node.id,
+            type: node.type,
+        });
+        return node;
+    }
+    catch (error) {
+        if (isUniqueConstraintError(error)) {
+            logger.warn("Renomeação de nó rejeitada: conflito de unicidade", {
+                id,
+                name,
+            });
+            throw new ConflictError("Já existe um nó com os mesmos dados únicos");
+        }
+        throw error;
+    }
+};
 const search = async (query) => {
     const fuzziness = getNodesSearchFuzziness();
     const offset = (query.page - 1) * query.limit;
@@ -120,5 +153,6 @@ const search = async (query) => {
 };
 export const nodesService = {
     create,
+    update,
     search,
 };
