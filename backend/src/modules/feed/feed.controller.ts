@@ -1,0 +1,26 @@
+import { Request, Response } from "express";
+import { feedService } from "./feed.service";
+import type { ListFeedQuery } from "./feed.schema";
+import { logger } from "../../utils/logger";
+
+const feedController = {
+  list: async (req: Request, res: Response) => {
+    const query = req.query as unknown as ListFeedQuery;
+
+    logger.info("HTTP GET /api/feed - Iniciado", {
+      page: query.page,
+      limit: query.limit,
+    });
+
+    const result = await feedService.list(query);
+
+    logger.info("HTTP GET /api/feed - Concluído", {
+      total: result.pagination.total,
+      page: result.pagination.page,
+    });
+
+    res.status(200).json(result);
+  },
+};
+
+export { feedController };

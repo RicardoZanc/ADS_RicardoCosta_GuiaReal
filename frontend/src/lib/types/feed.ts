@@ -5,6 +5,8 @@ export type FeedNodeType =
   | "COMPOSICAO"
   | "ATRIBUTO";
 
+export type FeedItemKind = "product" | "node";
+
 export interface FeedNode {
   id: string;
   name: string;
@@ -23,7 +25,8 @@ export interface FeedDiscussionPreview {
   author: FeedDiscussionAuthor;
 }
 
-export interface FeedProduct {
+export interface FeedItem {
+  kind: FeedItemKind;
   id: string;
   name: string;
   brand_name: string | null;
@@ -41,6 +44,6 @@ export interface FeedPagination {
 }
 
 export interface FeedResponse {
-  data: FeedProduct[];
+  data: FeedItem[];
   pagination: FeedPagination;
 }

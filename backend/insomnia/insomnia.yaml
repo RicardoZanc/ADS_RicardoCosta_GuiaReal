@@ -468,6 +468,178 @@ collection:
       modified: 1780257262924
       sortKey: -1780257252953
       description: ""
+  - name: feed
+    meta:
+      id: fld_feed_guiareal_api
+      created: 1780266000000
+      modified: 1780266000000
+      sortKey: -1780266000000
+      description: ""
+    children:
+      - url: "{{ base_url }}/feed"
+        name: feed (padrão)
+        meta:
+          id: req_feed_list_guiareal
+          created: 1780266000001
+          modified: 1780266000001
+          isPrivate: false
+          description: "GET /api/feed"
+          sortKey: -1780266000001
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        authentication:
+          type: bearer
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ base_url }}/feed?page=1&limit=10"
+        name: feed (paginação)
+        meta:
+          id: req_feed_list_paginated_guiareal
+          created: 1780266000002
+          modified: 1780266000002
+          isPrivate: false
+          description: "GET /api/feed?page=1&limit=10"
+          sortKey: -1780266000002
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        authentication:
+          type: bearer
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: opinions
+    meta:
+      id: fld_opinions_guiareal_api
+      created: 1780265000000
+      modified: 1780265000000
+      sortKey: -1780265000000
+      description: ""
+    children:
+      - url: "{{ base_url }}/opinions/products/{{ product_id }}"
+        name: opinar em produto
+        meta:
+          id: req_opinion_product_guiareal
+          created: 1780265000001
+          modified: 1780265000001
+          isPrivate: false
+          description: "POST /api/opinions/products/:product_id"
+          sortKey: -1780265000001
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "title": "Ótimo produto",
+              "content": "Uso há 2 anos e recomendo."
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        authentication:
+          type: bearer
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ base_url }}/opinions/nodes/{{ node_id }}"
+        name: opinar em nó
+        meta:
+          id: req_opinion_node_guiareal
+          created: 1780265000002
+          modified: 1780265000002
+          isPrivate: false
+          description: "POST /api/opinions/nodes/:node_id"
+          sortKey: -1780265000002
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "title": "Marca confiável",
+              "content": "Sempre entregou qualidade consistente."
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        authentication:
+          type: bearer
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ base_url }}/opinions/{{ opinion_id }}/threads"
+        name: responder opinião
+        meta:
+          id: req_opinion_thread_guiareal
+          created: 1780265000003
+          modified: 1780265000003
+          isPrivate: false
+          description: "POST /api/opinions/:opinion_id/threads"
+          sortKey: -1780265000003
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "content": "Concordo, mas vale considerar o contexto de uso."
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/12.5.0
+            description: ""
+            disabled: false
+        authentication:
+          type: bearer
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNjRlZDk5Ni1iMGJjLTQ4ZDYtYTFhMy1kZjc5NGYzMDk1NjAiLCJpYXQiOjE3ODAyNTg2NDUsImV4cCI6MTc4MDI2NTg0NX0.snqPTHAwodvGCJttXwu8ExN9ParXaaip76SndHhn4DI
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
 cookieJar:
   name: Default Jar
   meta:
@@ -483,3 +655,6 @@ environments:
     isPrivate: false
   data:
     base_url: http://localhost:3000/api
+    product_id: ""
+    node_id: ""
+    opinion_id: ""

@@ -18,8 +18,8 @@ export default function FeedPage() {
           O que a comunidade está discutindo
         </h1>
         <p className="max-w-2xl text-body text-muted">
-          Produtos com debates recentes. Clique em um card para ver mais detalhes
-          e participar da conversa.
+          Produtos e tópicos com debates recentes. Clique em um card para ver
+          mais detalhes e participar da conversa.
         </p>
       </header>
 
@@ -35,13 +35,13 @@ export default function FeedPage() {
         </div>
       ) : items.length === 0 ? (
         <p className="text-body text-muted">
-          Nenhum produto no feed no momento.
+          Nenhum item no feed no momento.
         </p>
       ) : (
         <>
           <div className="grid gap-6 md:grid-cols-2">
-            {items.map((product) => (
-              <FeedProductCard key={product.id} product={product} />
+            {items.map((item) => (
+              <FeedProductCard key={`${item.kind}-${item.id}`} item={item} />
             ))}
           </div>
 
