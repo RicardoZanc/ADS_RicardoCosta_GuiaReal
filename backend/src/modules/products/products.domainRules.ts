@@ -5,6 +5,8 @@ import {
   NotFoundError,
 } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
+import type { NodeGraphRow } from "../../lib/nodeGraph";
+import type { node_type } from "../../generated/prisma/enums";
 
 const forbiddenProductNodeTypes = ["ROOT", "TIPO"] as const;
 const forbiddenProductNodeTypesSet = new Set<string>(forbiddenProductNodeTypes);
@@ -17,6 +19,56 @@ const allowedProductNodeTypes = [
 ] as const;
 
 type ProductNodeType = (typeof allowedProductNodeTypes)[number];
+
+const discussionTabNodeTypes = [
+  "MARCA",
+  "TECNOLOGIA",
+  "COMPOSICAO",
+  "ATRIBUTO",
+] as const;
+
+type DiscussionTabNodeType = (typeof discussionTabNodeTypes)[number];
+
+const discussionTabNodeTypesSet = new Set<string>(discussionTabNodeTypes);
+
+export type ProductNodeRef = {
+  id: string;
+  name: string;
+};
+
+export type ProductTaxonomy = {
+  tipo: ProductNodeRef | null;
+  categoria: ProductNodeRef | null;
+  marca: ProductNodeRef | null;
+  tecnologias: ProductNodeRef[];
+  composicoes: ProductNodeRef[];
+  atributos: ProductNodeRef[];
+};
+
+export type ProductDiscussionTab =
+  | {
+      scope: "product";
+      label: string;
+      opinionCount: number;
+    }
+  | {
+      scope: "node";
+      nodeId: string;
+      type: DiscussionTabNodeType;
+      label: string;
+      opinionCount: number;
+    };
+
+type LinkedProductNode = {
+  id: string;
+  name: string;
+  type: node_type;
+  parent_id: string | null;
+};
+
+function toNodeRef(node: LinkedProductNode): ProductNodeRef {
+  return { id: node.id, name: node.name };
+}
 
 function countNodeType(types: ProductNodeType[], target: ProductNodeType) {
   return types.filter((type) => type === target).length;
@@ -93,6 +145,100 @@ export async function validateProductNodeDependencies(nodeIds: string[]) {
   assertExactlyOneCategoryAndBrand(nodeTypes as ProductNodeType[]);
 
   return uniqueNodeIds;
+}
+
+export async function ensureProductExists(productId: string) {
+  const product = await prisma.products.findUnique({
+    where: { id: productId },
+    select: { id: true },
+  });
+
+  if (!product) {
+    throw new NotFoundError("Produto não encontrado");
+  }
+}
+
+export async function ensureProductLinkedNode(
+  productId: string,
+  nodeId: string
+) {
+  await ensureProductExists(productId);
+
+  const link = await prisma.product_nodes.findUnique({
+    where: {
+      product_id_node_id: {
+        product_id: productId,
+        node_id: nodeId,
+      },
+    },
+    select: { node_id: true },
+  });
+
+  if (!link) {
+    throw new BadRequestError("Nó não vinculado a este produto");
+  }
+}
+
+export function buildProductTaxonomy(
+  seedNodes: LinkedProductNode[],
+  nodeById: Map<string, NodeGraphRow>
+): ProductTaxonomy {
+  const categoria = seedNodes.find((node) => node.type === "CATEGORIA");
+  const tipo =
+    categoria?.parent_id != null
+      ? nodeById.get(categoria.parent_id)
+      : undefined;
+
+  return {
+    tipo: tipo ? { id: tipo.id, name: tipo.name } : null,
+    categoria: categoria ? toNodeRef(categoria) : null,
+    marca: toNodeRefOrNull(seedNodes.find((node) => node.type === "MARCA")),
+    tecnologias: seedNodes
+      .filter((node) => node.type === "TECNOLOGIA")
+      .map(toNodeRef),
+    composicoes: seedNodes
+      .filter((node) => node.type === "COMPOSICAO")
+      .map(toNodeRef),
+    atributos: seedNodes
+      .filter((node) => node.type === "ATRIBUTO")
+      .map(toNodeRef),
+  };
+}
+
+function toNodeRefOrNull(
+  node: LinkedProductNode | undefined
+): ProductNodeRef | null {
+  return node ? toNodeRef(node) : null;
+}
+
+export function buildDiscussionTabs(
+  linkedNodes: LinkedProductNode[],
+  productOpinionCount: number,
+  nodeOpinionCounts: Map<string, number>
+): ProductDiscussionTab[] {
+  const tabs: ProductDiscussionTab[] = [
+    {
+      scope: "product",
+      label: "Produto",
+      opinionCount: productOpinionCount,
+    },
+  ];
+
+  for (const node of linkedNodes) {
+    if (!discussionTabNodeTypesSet.has(node.type)) {
+      continue;
+    }
+
+    tabs.push({
+      scope: "node",
+      nodeId: node.id,
+      type: node.type as DiscussionTabNodeType,
+      label: node.name,
+      opinionCount: nodeOpinionCounts.get(node.id) ?? 0,
+    });
+  }
+
+  return tabs;
 }
 
 export async function ensureNameAvailable(name: string) {

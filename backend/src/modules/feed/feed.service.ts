@@ -1,5 +1,6 @@
 import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
+import { fetchNodeGraph, type NodeGraphRow } from "../../lib/nodeGraph";
 import { logger } from "../../utils/logger";
 import type { node_type } from "../../generated/prisma/enums";
 import type { ListFeedQuery } from "./feed.schema";
@@ -56,13 +57,6 @@ type FeedItemRow = {
 
 type CountRow = {
   count: number;
-};
-
-type NodeGraphRow = {
-  id: string;
-  name: string;
-  type: node_type;
-  parent_id: string | null;
 };
 
 type OpinionWithThreads = {
@@ -170,28 +164,6 @@ function resolveNodesWithParents(
   }
 
   return Array.from(result.values());
-}
-
-async function fetchNodeGraph(nodeIds: string[]): Promise<Map<string, NodeGraphRow>> {
-  if (nodeIds.length === 0) {
-    return new Map();
-  }
-
-  const rows = await prisma.$queryRaw<NodeGraphRow[]>`
-    WITH RECURSIVE node_tree AS (
-      SELECT id, name, type, parent_id
-      FROM nodes
-      WHERE id IN (${Prisma.join(nodeIds)})
-      UNION
-      SELECT n.id, n.name, n.type, n.parent_id
-      FROM nodes n
-      INNER JOIN node_tree nt ON n.id = nt.parent_id
-    )
-    SELECT DISTINCT id, name, type, parent_id
-    FROM node_tree
-  `;
-
-  return new Map(rows.map((row) => [row.id, row]));
 }
 
 const opinionSelect = {

@@ -3,7 +3,7 @@
 Documentação de referência para clientes (humanos e LLM) da API REST do GuiaReal.
 
 **Escopo deste arquivo:** rotas em `/api/nodes` e `/api/products`.  
-**Fora do escopo:** autenticação detalhada (`/api/auth/*`), listagem/busca de produtos (não implementada).
+**Fora do escopo:** autenticação detalhada (`/api/auth/*`), listagem/busca paginada de produtos (não implementada).
 
 ---
 
@@ -253,12 +253,152 @@ Renomeia um nó existente. Apenas o campo `name` pode ser alterado.
 
 ## Rotas — Products
 
+### `GET /api/products/:id`
+
+Retorna metadados do produto, taxonomia agrupada e abas de discussão com contagem de opiniões. **Não inclui comentários** — use `GET /api/products/:id/opinions` (lazy load).
+
+**Auth:** obrigatória
+
+#### Path params
+
+| Param | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | UUID | ID do produto |
+
+#### Resposta `200`
+
+```json
+{
+  "id": "uuid",
+  "name": "string",
+  "ean": "string | null",
+  "brand_name": "string | null",
+  "image_url": "string | null",
+  "created_at": "ISO-8601",
+  "taxonomy": {
+    "tipo": { "id": "uuid", "name": "string" },
+    "categoria": { "id": "uuid", "name": "string" },
+    "marca": { "id": "uuid", "name": "string" },
+    "tecnologias": [{ "id": "uuid", "name": "string" }],
+    "composicoes": [{ "id": "uuid", "name": "string" }],
+    "atributos": [{ "id": "uuid", "name": "string" }]
+  },
+  "discussionTabs": [
+    { "scope": "product", "label": "Produto", "opinionCount": 5 },
+    {
+      "scope": "node",
+      "nodeId": "uuid",
+      "type": "MARCA",
+      "label": "Ibanez",
+      "opinionCount": 12
+    }
+  ]
+}
+```
+
+- `tipo` é inferido pelo `parent_id` da `CATEGORIA` vinculada (via grafo ascendente).
+- `discussionTabs` inclui aba `product` + uma aba por nó vinculado dos tipos `MARCA`, `TECNOLOGIA`, `COMPOSICAO`, `ATRIBUTO`.
+
+#### Erros comuns
+
+| Situação | HTTP | message (exemplo) |
+|----------|------|-------------------|
+| `id` inválido | 422 | `ID do produto inválido` |
+| Produto inexistente | 404 | `Produto não encontrado` |
+
+---
+
+### `GET /api/products/:id/opinions`
+
+Lista paginada de opiniões da aba ativa (produto ou nó vinculado).
+
+**Auth:** obrigatória
+
+#### Path params
+
+| Param | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | UUID | ID do produto |
+
+#### Query parameters
+
+| Param | Tipo | Obrigatório | Default | Descrição |
+|-------|------|-------------|---------|-----------|
+| `scope` | enum | não | `product` | `product` ou `node` |
+| `node_id` | UUID | sim se `scope=node` | — | Nó vinculado ao produto |
+| `page` | int ≥ 1 | não | `1` | Página |
+| `limit` | int 1–100 | não | `20` | Itens por página |
+
+#### Ordenação (opção A)
+
+1. Opiniões **com respostas** primeiro, ordenadas pela soma de `cached_upvotes` das respostas (`score DESC`).
+2. Opiniões **sem respostas** no final, ordenadas por `created_at DESC`.
+3. Respostas dentro de cada opinião: `cached_upvotes DESC`, depois `created_at DESC`.
+
+#### Resposta `200`
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "title": "string | null",
+      "content": "string",
+      "created_at": "ISO-8601",
+      "author": { "id": "uuid", "username": "string" },
+      "score": 8,
+      "replies": [
+        {
+          "id": "uuid",
+          "content": "string",
+          "created_at": "ISO-8601",
+          "author": { "id": "uuid", "username": "string" },
+          "cached_upvotes": 8
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 5,
+    "totalPages": 1
+  }
+}
+```
+
+#### Erros comuns
+
+| Situação | HTTP | message (exemplo) |
+|----------|------|-------------------|
+| `scope=node` sem `node_id` | 422 | `node_id é obrigatório quando scope é node` |
+| Produto inexistente | 404 | `Produto não encontrado` |
+| Nó não vinculado ao produto | 400 | `Nó não vinculado a este produto` |
+
+#### Exemplos
+
+```
+GET /api/products/<uuid>/opinions?scope=product&page=1&limit=20
+GET /api/products/<uuid>/opinions?scope=node&node_id=<uuid-marca>&page=1
+```
+
+#### Escrita na view de detalhe
+
+Rotas já existentes em `/api/opinions`:
+
+| Método | Path | Uso |
+|--------|------|-----|
+| `POST` | `/api/opinions/products/:product_id` | Nova opinião na aba Produto |
+| `POST` | `/api/opinions/nodes/:node_id` | Nova opinião na aba de um nó |
+| `POST` | `/api/opinions/:opinion_id/threads` | Resposta direta a uma opinião (1 nível) |
+
+---
+
 ### `POST /api/products`
 
 Cria um produto e vincula nós já existentes (tabela pivô `product_nodes`).
 
-**Auth:** obrigatória  
-**Rotas de leitura:** não há `GET /api/products` implementado.
+**Auth:** obrigatória
 
 #### Request body
 
@@ -382,6 +522,9 @@ GET /api/nodes?tipo_id=<uuid-tipo>&q=<nome>
 |--------|------|--------|
 | `GET` | `/api/nodes` | Buscar/listar nós |
 | `POST` | `/api/nodes` | Criar nó |
+| `PATCH` | `/api/nodes/:id` | Renomear nó |
+| `GET` | `/api/products/:id` | Detalhe do produto (metadados + abas) |
+| `GET` | `/api/products/:id/opinions` | Opiniões paginadas por aba |
 | `POST` | `/api/products` | Criar produto |
 
 ---

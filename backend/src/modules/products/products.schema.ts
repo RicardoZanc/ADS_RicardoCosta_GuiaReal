@@ -20,3 +20,36 @@ export const createProductSchema = z.object({
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>["body"];
+
+export const getProductSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID do produto inválido"),
+  }),
+});
+
+export const listProductOpinionsSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID do produto inválido"),
+  }),
+  query: z
+    .object({
+      scope: z.enum(["product", "node"]).default("product"),
+      node_id: z.uuid("ID do nó inválido").optional(),
+      page: z.coerce.number().int().min(1).default(1),
+      limit: z.coerce.number().int().min(1).max(100).default(20),
+    })
+    .superRefine((data, ctx) => {
+      if (data.scope === "node" && !data.node_id) {
+        ctx.addIssue({
+          code: "custom",
+          message: "node_id é obrigatório quando scope é node",
+          path: ["node_id"],
+        });
+      }
+    }),
+});
+
+export type GetProductParams = z.infer<typeof getProductSchema>["params"];
+export type ListProductOpinionsQuery = z.infer<
+  typeof listProductOpinionsSchema
+>["query"];

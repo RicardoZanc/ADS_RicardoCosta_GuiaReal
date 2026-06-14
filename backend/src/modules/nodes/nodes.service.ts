@@ -1,11 +1,19 @@
 import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
+import { fetchNodeGraph } from "../../lib/nodeGraph";
+import { listOpinionsPage } from "../../lib/opinionListing";
 import { ConflictError } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
 import { getNodesSearchFuzziness } from "./nodes.config";
-import type { CreateNodeInput, ResolvedNodeSearchQuery } from "./nodes.schema";
+import type {
+  CreateNodeInput,
+  ListNodeOpinionsQuery,
+  ResolvedNodeSearchQuery,
+} from "./nodes.schema";
 import {
+  buildNodeContext,
   ensureNodeRenamable,
+  ensureNodeViewable,
   resolveNodeCreationDependencies,
   resolveNodeSearchQuery,
 } from "./nodes.domainRules";
@@ -66,6 +74,58 @@ function buildOrderClause(query: ResolvedNodeSearchQuery): Prisma.Sql {
 
   return Prisma.sql`name ASC`;
 }
+
+function toIsoString(date: Date | null | undefined): string {
+  return (date ?? new Date(0)).toISOString();
+}
+
+const getById = async (id: string) => {
+  logger.debug("Detalhe de nó: consulta iniciada", { nodeId: id });
+
+  const node = await ensureNodeViewable(id);
+  const nodeById = await fetchNodeGraph([node.id]);
+  const context = buildNodeContext(node, nodeById);
+
+  const opinionCount = await prisma.opinions.count({
+    where: { node_id: id },
+  });
+
+  logger.debug("Detalhe de nó: consulta concluída", { nodeId: id });
+
+  return {
+    id: node.id,
+    name: node.name,
+    type: node.type,
+    wikidata_id: node.wikidata_id,
+    created_at: toIsoString(node.created_at),
+    context,
+    opinionCount,
+  };
+};
+
+const listOpinions = async (nodeId: string, query: ListNodeOpinionsQuery) => {
+  logger.debug("Opiniões de nó: consulta iniciada", {
+    nodeId,
+    page: query.page,
+    limit: query.limit,
+  });
+
+  await ensureNodeViewable(nodeId);
+
+  const result = await listOpinionsPage({
+    whereClause: Prisma.sql`o.node_id = ${nodeId}::uuid`,
+    page: query.page,
+    limit: query.limit,
+  });
+
+  logger.debug("Opiniões de nó: consulta concluída", {
+    nodeId,
+    total: result.pagination.total,
+    returned: result.data.length,
+  });
+
+  return result;
+};
 
 const create = async (input: CreateNodeInput) => {
   logger.debug("Criação de nó: payload recebido", {
@@ -207,4 +267,6 @@ export const nodesService = {
   create,
   update,
   search,
+  getById,
+  listOpinions,
 };

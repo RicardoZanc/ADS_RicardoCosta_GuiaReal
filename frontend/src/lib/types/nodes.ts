@@ -6,6 +6,27 @@ export type NodeType =
   | "COMPOSICAO"
   | "ATRIBUTO";
 
+export type ViewableNodeType =
+  | "CATEGORIA"
+  | "MARCA"
+  | "TECNOLOGIA"
+  | "COMPOSICAO"
+  | "ATRIBUTO";
+
+export interface NodeContext {
+  parentTipo: { id: string; name: string } | null;
+}
+
+export interface NodeDetailResponse {
+  id: string;
+  name: string;
+  type: ViewableNodeType;
+  wikidata_id: string | null;
+  created_at: string;
+  context: NodeContext;
+  opinionCount: number;
+}
+
 export interface NodeRecord {
   id: string;
   name: string;

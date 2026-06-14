@@ -2,6 +2,8 @@ import { Router } from "express";
 import { nodesController } from "./nodes.controller";
 import {
   createNodeSchema,
+  getNodeSchema,
+  listNodeOpinionsSchema,
   listNodesSchema,
   updateNodeSchema,
 } from "./nodes.schema";
@@ -22,6 +24,20 @@ nodesRoutes.post(
   authenticateJwt,
   validate(createNodeSchema),
   nodesController.create
+);
+
+nodesRoutes.get(
+  "/:id/opinions",
+  authenticateJwt,
+  validate(listNodeOpinionsSchema),
+  nodesController.listOpinions
+);
+
+nodesRoutes.get(
+  "/:id",
+  authenticateJwt,
+  validate(getNodeSchema),
+  nodesController.getById
 );
 
 nodesRoutes.patch(

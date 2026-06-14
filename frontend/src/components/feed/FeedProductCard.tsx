@@ -8,15 +8,8 @@ import {
 } from "@/components/ui/card";
 import { DiscussionPreviewList } from "@/components/feed/DiscussionPreviewList";
 import type { FeedItem } from "@/lib/types/feed";
+import { getNodeTypeLabel, NODE_TYPE_LABELS } from "@/lib/nodeLabels";
 import { cn } from "@/lib/utils";
-
-const NODE_TYPE_LABELS: Record<string, string> = {
-  CATEGORIA: "Categoria",
-  MARCA: "Marca",
-  TECNOLOGIA: "Tecnologia",
-  COMPOSICAO: "Composição",
-  ATRIBUTO: "Atributo",
-};
 
 interface FeedProductCardProps {
   item: FeedItem;
@@ -28,16 +21,16 @@ function getItemHref(item: FeedItem): string {
     : `/nodes/${item.id}`;
 }
 
-function getNodeTypeLabel(item: FeedItem): string {
+function getNodeTypeLabelForItem(item: FeedItem): string {
   const selfNode = item.nodes.find((node) => node.id === item.id);
   const type = selfNode?.type ?? item.nodes[0]?.type;
   if (!type) return "";
-  return NODE_TYPE_LABELS[type] ?? type;
+  return getNodeTypeLabel(type);
 }
 
 function ProductFeedCardContent({ item }: FeedProductCardProps) {
   return (
-    <Card className="flex h-full flex-col transition-colors group-hover:border-accent/50">
+    <Card className="transition-colors group-hover:border-accent/50">
       <CardHeader className="pb-3">
         <div className="flex gap-4">
           <div
@@ -77,7 +70,7 @@ function ProductFeedCardContent({ item }: FeedProductCardProps) {
           </ul>
         )}
       </CardHeader>
-      <CardContent className="mt-auto border-t border-border/30 pt-4">
+      <CardContent className="border-t border-border/30 pt-4">
         <DiscussionPreviewList previews={item.discussionPreviews} />
       </CardContent>
     </Card>
@@ -85,10 +78,10 @@ function ProductFeedCardContent({ item }: FeedProductCardProps) {
 }
 
 function NodeFeedCardContent({ item }: FeedProductCardProps) {
-  const typeLabel = getNodeTypeLabel(item);
+  const typeLabel = getNodeTypeLabelForItem(item);
 
   return (
-    <Card className="flex h-full flex-col transition-colors group-hover:border-accent/50">
+    <Card className="transition-colors group-hover:border-accent/50">
       <CardHeader className="pb-3">
         <div className="flex gap-4">
           <div
@@ -112,7 +105,7 @@ function NodeFeedCardContent({ item }: FeedProductCardProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="mt-auto border-t border-border/30 pt-4">
+      <CardContent className="border-t border-border/30 pt-4">
         <DiscussionPreviewList previews={item.discussionPreviews} />
       </CardContent>
     </Card>
@@ -123,7 +116,7 @@ export function FeedProductCard({ item }: FeedProductCardProps) {
   const href = getItemHref(item);
 
   return (
-    <Link href={href} className="group block h-full">
+    <Link href={href} className="group block">
       {item.kind === "product" ? (
         <ProductFeedCardContent item={item} />
       ) : (

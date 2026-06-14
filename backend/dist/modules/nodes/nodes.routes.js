@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { nodesController } from "./nodes.controller";
-import { createNodeSchema, listNodesSchema, updateNodeSchema, } from "./nodes.schema";
+import { createNodeSchema, getNodeSchema, listNodeOpinionsSchema, listNodesSchema, updateNodeSchema, } from "./nodes.schema";
 import { validate } from "../../middlewares/validate.middleware";
 import { authenticateJwt } from "../../middlewares/auth.middleware";
 const nodesRoutes = Router();
 nodesRoutes.get("/", authenticateJwt, validate(listNodesSchema), nodesController.list);
 nodesRoutes.post("/", authenticateJwt, validate(createNodeSchema), nodesController.create);
+nodesRoutes.get("/:id/opinions", authenticateJwt, validate(listNodeOpinionsSchema), nodesController.listOpinions);
+nodesRoutes.get("/:id", authenticateJwt, validate(getNodeSchema), nodesController.getById);
 nodesRoutes.patch("/:id", authenticateJwt, validate(updateNodeSchema), nodesController.update);
 export { nodesRoutes };

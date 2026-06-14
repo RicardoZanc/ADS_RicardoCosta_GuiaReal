@@ -24,13 +24,14 @@ export default function FeedPage() {
       </header>
 
       {isLoading ? (
-        <div className="grid gap-6 md:grid-cols-2">
-          {[0, 1].map((key) => (
-            <div
-              key={key}
-              className="h-72 animate-pulse rounded-xl border border-border/30 bg-muted/20"
-              aria-hidden
-            />
+        <div className="columns-1 gap-6 md:columns-2">
+          {[0, 1, 2].map((key) => (
+            <div key={key} className="mb-6 break-inside-avoid">
+              <div
+                className="h-48 animate-pulse rounded-xl border border-border/30 bg-muted/20"
+                aria-hidden
+              />
+            </div>
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -39,9 +40,14 @@ export default function FeedPage() {
         </p>
       ) : (
         <>
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="columns-1 gap-6 md:columns-2">
             {items.map((item) => (
-              <FeedProductCard key={`${item.kind}-${item.id}`} item={item} />
+              <div
+                key={`${item.kind}-${item.id}`}
+                className="mb-6 break-inside-avoid"
+              >
+                <FeedProductCard item={item} />
+              </div>
             ))}
           </div>
 

@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import type { NodeGraphRow } from "../../lib/nodeGraph";
 import {
   BadRequestError,
   ConflictError,
@@ -21,6 +22,86 @@ const ROOT_TYPE = "ROOT";
 const TIPO_TYPE = "TIPO";
 
 const UNRENAMABLE_TYPES = new Set<string>([ROOT_TYPE, TIPO_TYPE]);
+
+const viewableNodeTypes = [
+  "CATEGORIA",
+  "MARCA",
+  "TECNOLOGIA",
+  "COMPOSICAO",
+  "ATRIBUTO",
+] as const;
+
+export type ViewableNodeType = (typeof viewableNodeTypes)[number];
+
+const viewableNodeTypesSet = new Set<string>(viewableNodeTypes);
+
+export type ViewableNode = {
+  id: string;
+  name: string;
+  type: ViewableNodeType;
+  parent_id: string | null;
+  wikidata_id: string | null;
+  created_at: Date | null;
+};
+
+export type NodeContext = {
+  parentTipo: { id: string; name: string } | null;
+};
+
+export async function ensureNodeViewable(id: string): Promise<ViewableNode> {
+  const node = await prisma.nodes.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      parent_id: true,
+      wikidata_id: true,
+      created_at: true,
+    },
+  });
+
+  if (!node) {
+    logger.warn("Detalhe de nó rejeitado: nó não encontrado", { id });
+    throw new NotFoundError("Nó não encontrado");
+  }
+
+  if (UNRENAMABLE_TYPES.has(node.type)) {
+    logger.warn("Detalhe de nó rejeitado: tipo de infraestrutura", {
+      id,
+      type: node.type,
+    });
+    throw new BadRequestError("Nó não disponível para visualização");
+  }
+
+  if (!viewableNodeTypesSet.has(node.type)) {
+    logger.warn("Detalhe de nó rejeitado: tipo não suportado", {
+      id,
+      type: node.type,
+    });
+    throw new BadRequestError("Nó não disponível para visualização");
+  }
+
+  return node as ViewableNode;
+}
+
+export function buildNodeContext(
+  node: ViewableNode,
+  nodeById: Map<string, NodeGraphRow>
+): NodeContext {
+  if (node.type !== "CATEGORIA" || node.parent_id == null) {
+    return { parentTipo: null };
+  }
+
+  const parent = nodeById.get(node.parent_id);
+  if (!parent || parent.type !== TIPO_TYPE) {
+    return { parentTipo: null };
+  }
+
+  return {
+    parentTipo: { id: parent.id, name: parent.name },
+  };
+}
 
 async function getRootNodeId(): Promise<string> {
   const roots = await prisma.nodes.findMany({

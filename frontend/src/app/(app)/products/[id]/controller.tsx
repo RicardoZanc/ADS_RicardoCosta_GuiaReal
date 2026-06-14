@@ -1,0 +1,285 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useParams } from "next/navigation";
+import {
+  createNodeOpinion,
+  createOpinionThread,
+  createProductOpinion,
+  fetchProductDetail,
+  fetchProductOpinions,
+} from "@/lib/products";
+import { ApiError } from "@/lib/errors";
+import { notifyApiError } from "@/lib/notifyApiError";
+import {
+  createOpinionSchema,
+  createReplySchema,
+  type CreateOpinionFormData,
+  type CreateReplyFormData,
+} from "@/lib/schemas/productDetail";
+import type {
+  OpinionListItem,
+  ProductDetailResponse,
+  ProductDiscussionTab,
+} from "@/lib/types/products";
+
+function getOpinionParams(
+  productId: string,
+  tab: ProductDiscussionTab | undefined
+) {
+  if (!tab || tab.scope === "product") {
+    return { scope: "product" as const, productId };
+  }
+
+  return {
+    scope: "node" as const,
+    productId,
+    nodeId: tab.nodeId,
+  };
+}
+
+export function useProductDetailController() {
+  const params = useParams();
+  const productId = typeof params.id === "string" ? params.id : "";
+
+  const [product, setProduct] = useState<ProductDetailResponse | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [opinions, setOpinions] = useState<OpinionListItem[]>([]);
+  const [opinionsPage, setOpinionsPage] = useState(1);
+  const [opinionsTotalPages, setOpinionsTotalPages] = useState(1);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(true);
+  const [isLoadingOpinions, setIsLoadingOpinions] = useState(false);
+  const [isLoadingMoreOpinions, setIsLoadingMoreOpinions] = useState(false);
+  const [isSubmittingOpinion, setIsSubmittingOpinion] = useState(false);
+  const [replyingToOpinionId, setReplyingToOpinionId] = useState<string | null>(
+    null
+  );
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+
+  const {
+    register: opinionRegister,
+    handleSubmit: handleOpinionSubmit,
+    reset: resetOpinionForm,
+    formState: { errors: opinionErrors },
+  } = useForm<CreateOpinionFormData>({
+    resolver: zodResolver(createOpinionSchema),
+    defaultValues: { content: "" },
+  });
+
+  const {
+    register: replyRegister,
+    handleSubmit: handleReplySubmit,
+    reset: resetReplyForm,
+    formState: { errors: replyErrors },
+  } = useForm<CreateReplyFormData>({
+    resolver: zodResolver(createReplySchema),
+    defaultValues: { content: "" },
+  });
+
+  const activeTab = product?.discussionTabs[activeTabIndex];
+
+  const loadProduct = useCallback(async () => {
+    if (!productId) {
+      setNotFound(true);
+      setProduct(null);
+      setIsLoadingProduct(false);
+      return;
+    }
+
+    setIsLoadingProduct(true);
+    setNotFound(false);
+
+    try {
+      const detail = await fetchProductDetail(productId);
+      setProduct(detail);
+      setActiveTabIndex(0);
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 404) {
+        setNotFound(true);
+        setProduct(null);
+        return;
+      }
+      if (notifyApiError(error)) return;
+      throw error;
+    } finally {
+      setIsLoadingProduct(false);
+    }
+  }, [productId]);
+
+  const loadOpinions = useCallback(
+    async (targetPage: number, append: boolean) => {
+      if (!productId || !product) return;
+
+      const tab = product.discussionTabs[activeTabIndex];
+      const opinionParams = getOpinionParams(productId, tab);
+
+      if (append) {
+        setIsLoadingMoreOpinions(true);
+      } else {
+        setIsLoadingOpinions(true);
+      }
+
+      try {
+        const response = await fetchProductOpinions(productId, {
+          scope: opinionParams.scope,
+          nodeId:
+            opinionParams.scope === "node" ? opinionParams.nodeId : undefined,
+          page: targetPage,
+        });
+
+        setOpinions((prev) =>
+          append ? [...prev, ...response.data] : response.data
+        );
+        setOpinionsPage(response.pagination.page);
+        setOpinionsTotalPages(response.pagination.totalPages);
+      } catch (error) {
+        if (notifyApiError(error)) return;
+        throw error;
+      } finally {
+        if (append) {
+          setIsLoadingMoreOpinions(false);
+        } else {
+          setIsLoadingOpinions(false);
+        }
+      }
+    },
+    [productId, product, activeTabIndex]
+  );
+
+  const refreshAfterWrite = useCallback(async () => {
+    if (!productId) return;
+
+    const detail = await fetchProductDetail(productId);
+    setProduct(detail);
+
+    const response = await fetchProductOpinions(productId, {
+      scope:
+        detail.discussionTabs[activeTabIndex]?.scope === "node"
+          ? "node"
+          : "product",
+      nodeId:
+        detail.discussionTabs[activeTabIndex]?.scope === "node"
+          ? detail.discussionTabs[activeTabIndex].nodeId
+          : undefined,
+      page: 1,
+    });
+
+    setOpinions(response.data);
+    setOpinionsPage(response.pagination.page);
+    setOpinionsTotalPages(response.pagination.totalPages);
+  }, [productId, activeTabIndex]);
+
+  useEffect(() => {
+    void loadProduct();
+  }, [loadProduct]);
+
+  useEffect(() => {
+    if (!product) return;
+    setReplyingToOpinionId(null);
+    resetReplyForm({ content: "" });
+    void loadOpinions(1, false);
+    // Recarrega opiniões ao trocar produto ou aba; refresh pós-escrita atualiza via refreshAfterWrite.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId, activeTabIndex, product?.id]);
+
+  function selectTab(index: number) {
+    setActiveTabIndex(index);
+    setOpinions([]);
+    setOpinionsPage(1);
+    setReplyingToOpinionId(null);
+    resetReplyForm({ content: "" });
+  }
+
+  function loadMoreOpinions() {
+    if (
+      isLoadingOpinions ||
+      isLoadingMoreOpinions ||
+      opinionsPage >= opinionsTotalPages
+    ) {
+      return;
+    }
+
+    void loadOpinions(opinionsPage + 1, true);
+  }
+
+  const onSubmitOpinion = handleOpinionSubmit(async (data) => {
+    if (!productId || !activeTab) return;
+
+    setIsSubmittingOpinion(true);
+
+    try {
+      if (activeTab.scope === "product") {
+        await createProductOpinion(productId, { content: data.content });
+      } else {
+        await createNodeOpinion(activeTab.nodeId, { content: data.content });
+      }
+
+      resetOpinionForm({ content: "" });
+      await refreshAfterWrite();
+    } catch (error) {
+      if (notifyApiError(error)) return;
+      throw error;
+    } finally {
+      setIsSubmittingOpinion(false);
+    }
+  });
+
+  function startReply(opinionId: string) {
+    setReplyingToOpinionId(opinionId);
+    resetReplyForm({ content: "" });
+  }
+
+  function cancelReply() {
+    setReplyingToOpinionId(null);
+    resetReplyForm({ content: "" });
+  }
+
+  const onSubmitReply = handleReplySubmit(async (data) => {
+    if (!replyingToOpinionId) return;
+
+    setIsSubmittingReply(true);
+
+    try {
+      await createOpinionThread(replyingToOpinionId, data.content);
+      setReplyingToOpinionId(null);
+      resetReplyForm({ content: "" });
+      await refreshAfterWrite();
+    } catch (error) {
+      if (notifyApiError(error)) return;
+      throw error;
+    } finally {
+      setIsSubmittingReply(false);
+    }
+  });
+
+  const hasMoreOpinions = opinionsPage < opinionsTotalPages;
+
+  return {
+    productId,
+    product,
+    notFound,
+    activeTabIndex,
+    activeTab,
+    opinions,
+    isLoadingProduct,
+    isLoadingOpinions,
+    isLoadingMoreOpinions,
+    hasMoreOpinions,
+    isSubmittingOpinion,
+    replyingToOpinionId,
+    isSubmittingReply,
+    opinionRegister,
+    opinionErrors,
+    onSubmitOpinion,
+    replyRegister,
+    replyErrors,
+    selectTab,
+    loadMoreOpinions,
+    startReply,
+    cancelReply,
+    onSubmitReply,
+  };
+}

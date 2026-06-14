@@ -18,6 +18,32 @@ const nodesController = {
         });
         res.status(200).json(result);
     },
+    getById: async (req, res) => {
+        const id = req.params.id;
+        logger.info("HTTP GET /api/nodes/:id - Iniciado", { nodeId: id });
+        const node = await nodesService.getById(id);
+        logger.info("HTTP GET /api/nodes/:id - Concluído", {
+            nodeId: node.id,
+            type: node.type,
+        });
+        res.status(200).json(node);
+    },
+    listOpinions: async (req, res) => {
+        const id = req.params.id;
+        const query = req.query;
+        logger.info("HTTP GET /api/nodes/:id/opinions - Iniciado", {
+            nodeId: id,
+            page: query.page,
+            limit: query.limit,
+        });
+        const result = await nodesService.listOpinions(id, query);
+        logger.info("HTTP GET /api/nodes/:id/opinions - Concluído", {
+            nodeId: id,
+            total: result.pagination.total,
+            page: result.pagination.page,
+        });
+        res.status(200).json(result);
+    },
     create: async (req, res) => {
         logger.info("HTTP POST /api/nodes - Iniciado", {
             type: req.body.type,
@@ -31,7 +57,7 @@ const nodesController = {
         res.status(201).json(node);
     },
     update: async (req, res) => {
-        const { id } = req.params;
+        const id = req.params.id;
         logger.info("HTTP PATCH /api/nodes/:id - Iniciado", {
             nodeId: id,
             name: req.body.name,

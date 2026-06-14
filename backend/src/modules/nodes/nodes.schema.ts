@@ -48,9 +48,28 @@ export const updateNodeSchema = z.object({
   }),
 });
 
+export const getNodeSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID do nó inválido"),
+  }),
+});
+
+export const listNodeOpinionsSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID do nó inválido"),
+  }),
+  query: z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  }),
+});
+
 export type CreateNodeInput = z.infer<typeof createNodeSchema>["body"];
 export type UpdateNodeInput = z.infer<typeof updateNodeSchema>["body"];
 export type ListNodesQuery = z.infer<typeof listNodesSchema>["query"];
+export type ListNodeOpinionsQuery = z.infer<
+  typeof listNodeOpinionsSchema
+>["query"];
 
 export type ResolvedNodeSearchQuery = ListNodesQuery & {
   parent_id?: string;
