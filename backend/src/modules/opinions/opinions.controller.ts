@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { opinionsService } from "./opinions.service";
+import { opinionsReactionsService } from "./opinions.reactions.service";
 import { logger } from "../../utils/logger";
 
 const opinionsController = {
@@ -66,6 +67,54 @@ const opinionsController = {
     });
 
     res.status(201).json(thread);
+  },
+
+  reactToOpinion: async (req: Request, res: Response) => {
+    const opinionId = req.params.opinion_id as string;
+    const userId = req.user!.id;
+
+    logger.info("HTTP PUT /api/opinions/:opinion_id/reaction - Iniciado", {
+      opinionId,
+      userId,
+      action: req.body.action,
+    });
+
+    const result = await opinionsReactionsService.reactToOpinion(
+      opinionId,
+      userId,
+      req.body.action
+    );
+
+    logger.info("HTTP PUT /api/opinions/:opinion_id/reaction - Concluído", {
+      opinionId,
+      cachedUpvotes: result.cached_upvotes,
+    });
+
+    res.status(200).json(result);
+  },
+
+  reactToThread: async (req: Request, res: Response) => {
+    const threadId = req.params.thread_id as string;
+    const userId = req.user!.id;
+
+    logger.info("HTTP PUT /api/opinions/threads/:thread_id/reaction - Iniciado", {
+      threadId,
+      userId,
+      action: req.body.action,
+    });
+
+    const result = await opinionsReactionsService.reactToThread(
+      threadId,
+      userId,
+      req.body.action
+    );
+
+    logger.info("HTTP PUT /api/opinions/threads/:thread_id/reaction - Concluído", {
+      threadId,
+      cachedUpvotes: result.cached_upvotes,
+    });
+
+    res.status(200).json(result);
   },
 };
 

@@ -4,6 +4,8 @@ import {
   createNodeOpinionSchema,
   createOpinionThreadSchema,
   createProductOpinionSchema,
+  reactToOpinionSchema,
+  reactToThreadSchema,
 } from "./opinions.schema";
 import { validate } from "../../middlewares/validate.middleware";
 import { authenticateJwt } from "../../middlewares/auth.middleware";
@@ -29,6 +31,20 @@ opinionsRoutes.post(
   authenticateJwt,
   validate(createOpinionThreadSchema),
   opinionsController.createThread
+);
+
+opinionsRoutes.put(
+  "/threads/:thread_id/reaction",
+  authenticateJwt,
+  validate(reactToThreadSchema),
+  opinionsController.reactToThread
+);
+
+opinionsRoutes.put(
+  "/:opinion_id/reaction",
+  authenticateJwt,
+  validate(reactToOpinionSchema),
+  opinionsController.reactToOpinion
 );
 
 export { opinionsRoutes };

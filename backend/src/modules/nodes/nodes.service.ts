@@ -103,7 +103,11 @@ const getById = async (id: string) => {
   };
 };
 
-const listOpinions = async (nodeId: string, query: ListNodeOpinionsQuery) => {
+const listOpinions = async (
+  nodeId: string,
+  query: ListNodeOpinionsQuery,
+  userId?: string
+) => {
   logger.debug("Opiniões de nó: consulta iniciada", {
     nodeId,
     page: query.page,
@@ -116,6 +120,7 @@ const listOpinions = async (nodeId: string, query: ListNodeOpinionsQuery) => {
     whereClause: Prisma.sql`o.node_id = ${nodeId}::uuid`,
     page: query.page,
     limit: query.limit,
+    userId,
   });
 
   logger.debug("Opiniões de nó: consulta concluída", {

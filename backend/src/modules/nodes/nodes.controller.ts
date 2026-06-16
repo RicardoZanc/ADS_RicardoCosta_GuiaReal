@@ -41,7 +41,7 @@ const nodesController = {
       page: query.page,
       limit: query.limit,
     });
-    const result = await nodesService.listOpinions(id, query);
+    const result = await nodesService.listOpinions(id, query, req.user!.id);
     logger.info("HTTP GET /api/nodes/:id/opinions - Concluído", {
       nodeId: id,
       total: result.pagination.total,

@@ -5,6 +5,8 @@ import type {
   CreateOpinionThreadResponse,
   ProductDetailResponse,
   ProductOpinionsResponse,
+  ReactionAction,
+  ReactionResponse,
 } from "@/lib/types/products";
 
 export const PRODUCT_OPINIONS_PAGE_LIMIT = 20;
@@ -66,13 +68,40 @@ export function createNodeOpinion(
 
 export function createOpinionThread(
   opinionId: string,
-  content: string
+  content: string,
+  parentInteractionId?: string | null
 ): Promise<CreateOpinionThreadResponse> {
+  const body: { content: string; parent_interaction_id?: string } = { content };
+
+  if (parentInteractionId) {
+    body.parent_interaction_id = parentInteractionId;
+  }
+
   return apiClient<CreateOpinionThreadResponse>(
     `/opinions/${opinionId}/threads`,
     {
       method: "POST",
-      body: JSON.stringify({ content }),
+      body: JSON.stringify(body),
     }
   );
+}
+
+export function reactToOpinion(
+  opinionId: string,
+  action: ReactionAction
+): Promise<ReactionResponse> {
+  return apiClient<ReactionResponse>(`/opinions/${opinionId}/reaction`, {
+    method: "PUT",
+    body: JSON.stringify({ action }),
+  });
+}
+
+export function reactToThread(
+  threadId: string,
+  action: ReactionAction
+): Promise<ReactionResponse> {
+  return apiClient<ReactionResponse>(`/opinions/threads/${threadId}/reaction`, {
+    method: "PUT",
+    body: JSON.stringify({ action }),
+  });
 }

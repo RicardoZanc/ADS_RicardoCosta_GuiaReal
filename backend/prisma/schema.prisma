@@ -58,11 +58,13 @@ model opinions {
   title              String?              @db.VarChar(255)
   content            String
   is_eligible_for_ai Boolean?             @default(false)
+  cached_upvotes     Int?                 @default(0)
   created_at         DateTime?            @default(now()) @db.Timestamptz(6)
   discussion_threads discussion_threads[]
   nodes              nodes?               @relation(fields: [node_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   products           products?            @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users              users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reaction_votes     reaction_votes[]
 }
 
 model product_nodes {
@@ -85,15 +87,16 @@ model products {
   product_nodes product_nodes[]
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model reaction_votes {
-  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id            String             @db.Uuid
-  interaction_id     String             @db.Uuid
-  vote_type          Int?               @default(1)
-  discussion_threads discussion_threads @relation(fields: [interaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users              users              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([user_id, interaction_id])
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String              @db.Uuid
+  interaction_id     String?             @db.Uuid
+  opinion_id         String?             @db.Uuid
+  vote_type          Int?                @default(1)
+  discussion_threads discussion_threads? @relation(fields: [interaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  opinions           opinions?           @relation(fields: [opinion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model reports {

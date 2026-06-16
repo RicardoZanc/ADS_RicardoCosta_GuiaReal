@@ -4,6 +4,7 @@ import {
   ensureNodeExists,
   ensureOpinionExists,
   ensureProductExists,
+  ensureThreadBelongsToOpinion,
 } from "./opinions.domainRules";
 import type {
   CreateNodeOpinionInput,
@@ -94,12 +95,18 @@ const createThread = async (
 
   await ensureOpinionExists(opinionId);
 
+  const parentInteractionId = input.parent_interaction_id ?? null;
+
+  if (parentInteractionId) {
+    await ensureThreadBelongsToOpinion(parentInteractionId, opinionId);
+  }
+
   const thread = await prisma.discussion_threads.create({
     data: {
       opinion_id: opinionId,
       user_id: userId,
       content: input.content,
-      parent_interaction_id: null,
+      parent_interaction_id: parentInteractionId,
     },
     select: {
       id: true,

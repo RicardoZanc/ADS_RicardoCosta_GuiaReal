@@ -331,9 +331,10 @@ Lista paginada de opiniões da aba ativa (produto ou nó vinculado).
 
 #### Ordenação (opção A)
 
-1. Opiniões **com respostas** primeiro, ordenadas pela soma de `cached_upvotes` das respostas (`score DESC`).
+1. Opiniões **com respostas** primeiro, ordenadas por `score DESC` (`cached_upvotes` da opinião + soma de `cached_upvotes` de todas as threads).
 2. Opiniões **sem respostas** no final, ordenadas por `created_at DESC`.
-3. Respostas dentro de cada opinião: `cached_upvotes DESC`, depois `created_at DESC`.
+3. Respostas raiz (sem `parent_interaction_id`): `cached_upvotes DESC`, depois `created_at DESC`.
+4. Respostas aninhadas (filhas de outra thread): `created_at ASC` (ordem cronológica de conversa).
 
 #### Resposta `200`
 
@@ -346,14 +347,28 @@ Lista paginada de opiniões da aba ativa (produto ou nó vinculado).
       "content": "string",
       "created_at": "ISO-8601",
       "author": { "id": "uuid", "username": "string" },
-      "score": 8,
+      "cached_upvotes": 3,
+      "user_vote": 1,
+      "score": 11,
       "replies": [
         {
           "id": "uuid",
           "content": "string",
           "created_at": "ISO-8601",
           "author": { "id": "uuid", "username": "string" },
-          "cached_upvotes": 8
+          "cached_upvotes": 8,
+          "user_vote": null,
+          "replies": [
+            {
+              "id": "uuid",
+              "content": "string",
+              "created_at": "ISO-8601",
+              "author": { "id": "uuid", "username": "string" },
+              "cached_upvotes": 2,
+              "user_vote": -1,
+              "replies": []
+            }
+          ]
         }
       ]
     }
@@ -366,6 +381,10 @@ Lista paginada de opiniões da aba ativa (produto ou nó vinculado).
   }
 }
 ```
+
+- `cached_upvotes`: score líquido direto no item (opinião raiz ou thread).
+- `user_vote`: voto do usuário autenticado (`1`, `-1` ou `null`).
+- `score` (somente na opinião raiz): `cached_upvotes` da opinião + soma de `cached_upvotes` de todas as threads — usado na ordenação.
 
 #### Erros comuns
 
@@ -390,7 +409,79 @@ Rotas já existentes em `/api/opinions`:
 |--------|------|-----|
 | `POST` | `/api/opinions/products/:product_id` | Nova opinião na aba Produto |
 | `POST` | `/api/opinions/nodes/:node_id` | Nova opinião na aba de um nó |
-| `POST` | `/api/opinions/:opinion_id/threads` | Resposta direta a uma opinião (1 nível) |
+| `POST` | `/api/opinions/:opinion_id/threads` | Resposta a uma opinião ou a qualquer thread da discussão |
+| `PUT` | `/api/opinions/:opinion_id/reaction` | Like/dislike na opinião raiz |
+| `PUT` | `/api/opinions/threads/:thread_id/reaction` | Like/dislike em uma resposta (thread) |
+
+#### `PUT /api/opinions/:opinion_id/reaction`
+
+**Auth:** obrigatória
+
+##### Request body
+
+```json
+{
+  "action": "like | dislike | remove_like | remove_dislike"
+}
+```
+
+| Ação | Comportamento |
+|------|---------------|
+| `like` | Define voto `+1`; se já for `+1`, remove o voto (toggle) |
+| `dislike` | Define voto `-1`; se já for `-1`, remove o voto (toggle) |
+| `remove_like` | Remove voto somente se atual for `+1` (idempotente) |
+| `remove_dislike` | Remove voto somente se atual for `-1` (idempotente) |
+
+##### Resposta `200`
+
+```json
+{
+  "cached_upvotes": 3,
+  "user_vote": 1
+}
+```
+
+##### Erros comuns
+
+| Situação | HTTP | message (exemplo) |
+|----------|------|-------------------|
+| Opinião inexistente | 404 | `Opinião não encontrada` |
+| `action` inválida | 422 | validação Zod |
+
+#### `PUT /api/opinions/threads/:thread_id/reaction`
+
+Mesmo contrato de body, resposta e ações de `PUT /api/opinions/:opinion_id/reaction`, aplicado à thread indicada.
+
+##### Erros comuns
+
+| Situação | HTTP | message (exemplo) |
+|----------|------|-------------------|
+| Thread inexistente | 404 | `Interação não encontrada` |
+| `action` inválida | 422 | validação Zod |
+
+#### `POST /api/opinions/:opinion_id/threads`
+
+**Auth:** obrigatória
+
+##### Request body
+
+```json
+{
+  "content": "string (obrigatório)",
+  "parent_interaction_id": "uuid | null (opcional)"
+}
+```
+
+- Omitido ou `null`: resposta direta à opinião raiz.
+- Informado: resposta aninhada à thread indicada (deve pertencer à mesma opinião).
+
+##### Erros comuns
+
+| Situação | HTTP | message (exemplo) |
+|----------|------|-------------------|
+| Opinião inexistente | 404 | `Opinião não encontrada` |
+| `parent_interaction_id` inexistente | 400 | `Interação pai não encontrada` |
+| Pai de outra opinião | 400 | `A interação pai não pertence a esta opinião` |
 
 ---
 

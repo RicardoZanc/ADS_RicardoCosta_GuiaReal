@@ -18,8 +18,9 @@ export default function NodeDetailPage() {
     isLoadingMoreOpinions,
     hasMoreOpinions,
     isSubmittingOpinion,
-    replyingToOpinionId,
+    replyTarget,
     isSubmittingReply,
+    votingTargetId,
     opinionRegister,
     opinionErrors,
     onSubmitOpinion,
@@ -29,6 +30,10 @@ export default function NodeDetailPage() {
     startReply,
     cancelReply,
     onSubmitReply,
+    onVoteOpinion,
+    onDislikeOpinion,
+    onVoteThread,
+    onDislikeThread,
   } = useNodeDetailController();
 
   if (isLoadingNode) {
@@ -122,13 +127,18 @@ export default function NodeDetailPage() {
             <>
               <OpinionList
                 opinions={opinions}
-                replyingToOpinionId={replyingToOpinionId}
+                replyTarget={replyTarget}
                 isSubmittingReply={isSubmittingReply}
+                votingTargetId={votingTargetId}
                 replyRegister={replyRegister}
                 replyErrors={replyErrors}
                 onStartReply={startReply}
                 onCancelReply={cancelReply}
                 onSubmitReply={onSubmitReply}
+                onVoteOpinion={onVoteOpinion}
+                onDislikeOpinion={onDislikeOpinion}
+                onVoteThread={onVoteThread}
+                onDislikeThread={onDislikeThread}
               />
 
               {hasMoreOpinions && (

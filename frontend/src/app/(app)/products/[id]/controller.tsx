@@ -10,9 +10,12 @@ import {
   createProductOpinion,
   fetchProductDetail,
   fetchProductOpinions,
+  reactToOpinion,
+  reactToThread,
 } from "@/lib/products";
 import { ApiError } from "@/lib/errors";
 import { notifyApiError } from "@/lib/notifyApiError";
+import { patchOpinionVote, patchThreadVote } from "@/lib/opinionVotes";
 import {
   createOpinionSchema,
   createReplySchema,
@@ -23,6 +26,8 @@ import type {
   OpinionListItem,
   ProductDetailResponse,
   ProductDiscussionTab,
+  ReactionResponse,
+  ReplyTarget,
 } from "@/lib/types/products";
 
 function getOpinionParams(
@@ -54,10 +59,9 @@ export function useProductDetailController() {
   const [isLoadingOpinions, setIsLoadingOpinions] = useState(false);
   const [isLoadingMoreOpinions, setIsLoadingMoreOpinions] = useState(false);
   const [isSubmittingOpinion, setIsSubmittingOpinion] = useState(false);
-  const [replyingToOpinionId, setReplyingToOpinionId] = useState<string | null>(
-    null
-  );
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget>(null);
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [votingTargetId, setVotingTargetId] = useState<string | null>(null);
 
   const {
     register: opinionRegister,
@@ -178,7 +182,7 @@ export function useProductDetailController() {
 
   useEffect(() => {
     if (!product) return;
-    setReplyingToOpinionId(null);
+    setReplyTarget(null);
     resetReplyForm({ content: "" });
     void loadOpinions(1, false);
     // Recarrega opiniões ao trocar produto ou aba; refresh pós-escrita atualiza via refreshAfterWrite.
@@ -189,7 +193,7 @@ export function useProductDetailController() {
     setActiveTabIndex(index);
     setOpinions([]);
     setOpinionsPage(1);
-    setReplyingToOpinionId(null);
+    setReplyTarget(null);
     resetReplyForm({ content: "" });
   }
 
@@ -227,24 +231,31 @@ export function useProductDetailController() {
     }
   });
 
-  function startReply(opinionId: string) {
-    setReplyingToOpinionId(opinionId);
+  function startReply(opinionId: string, parentInteractionId?: string) {
+    setReplyTarget({
+      opinionId,
+      ...(parentInteractionId ? { parentInteractionId } : {}),
+    });
     resetReplyForm({ content: "" });
   }
 
   function cancelReply() {
-    setReplyingToOpinionId(null);
+    setReplyTarget(null);
     resetReplyForm({ content: "" });
   }
 
   const onSubmitReply = handleReplySubmit(async (data) => {
-    if (!replyingToOpinionId) return;
+    if (!replyTarget) return;
 
     setIsSubmittingReply(true);
 
     try {
-      await createOpinionThread(replyingToOpinionId, data.content);
-      setReplyingToOpinionId(null);
+      await createOpinionThread(
+        replyTarget.opinionId,
+        data.content,
+        replyTarget.parentInteractionId
+      );
+      setReplyTarget(null);
       resetReplyForm({ content: "" });
       await refreshAfterWrite();
     } catch (error) {
@@ -254,6 +265,64 @@ export function useProductDetailController() {
       setIsSubmittingReply(false);
     }
   });
+
+  async function applyReaction(
+    targetId: string,
+    request: () => Promise<ReactionResponse>,
+    patch: (reaction: ReactionResponse) => void
+  ) {
+    setVotingTargetId(targetId);
+
+    try {
+      const reaction = await request();
+      patch(reaction);
+    } catch (error) {
+      if (notifyApiError(error)) return;
+      throw error;
+    } finally {
+      setVotingTargetId(null);
+    }
+  }
+
+  function onVoteOpinion(opinionId: string) {
+    void applyReaction(
+      opinionId,
+      () => reactToOpinion(opinionId, "like"),
+      (reaction) => {
+        setOpinions((prev) => patchOpinionVote(prev, opinionId, reaction));
+      }
+    );
+  }
+
+  function onDislikeOpinion(opinionId: string) {
+    void applyReaction(
+      opinionId,
+      () => reactToOpinion(opinionId, "dislike"),
+      (reaction) => {
+        setOpinions((prev) => patchOpinionVote(prev, opinionId, reaction));
+      }
+    );
+  }
+
+  function onVoteThread(threadId: string) {
+    void applyReaction(
+      threadId,
+      () => reactToThread(threadId, "like"),
+      (reaction) => {
+        setOpinions((prev) => patchThreadVote(prev, threadId, reaction));
+      }
+    );
+  }
+
+  function onDislikeThread(threadId: string) {
+    void applyReaction(
+      threadId,
+      () => reactToThread(threadId, "dislike"),
+      (reaction) => {
+        setOpinions((prev) => patchThreadVote(prev, threadId, reaction));
+      }
+    );
+  }
 
   const hasMoreOpinions = opinionsPage < opinionsTotalPages;
 
@@ -269,8 +338,9 @@ export function useProductDetailController() {
     isLoadingMoreOpinions,
     hasMoreOpinions,
     isSubmittingOpinion,
-    replyingToOpinionId,
+    replyTarget,
     isSubmittingReply,
+    votingTargetId,
     opinionRegister,
     opinionErrors,
     onSubmitOpinion,
@@ -281,5 +351,9 @@ export function useProductDetailController() {
     startReply,
     cancelReply,
     onSubmitReply,
+    onVoteOpinion,
+    onDislikeOpinion,
+    onVoteThread,
+    onDislikeThread,
   };
 }

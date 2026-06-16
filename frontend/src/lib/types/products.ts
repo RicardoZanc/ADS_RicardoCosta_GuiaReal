@@ -63,13 +63,29 @@ export interface OpinionAuthor {
   username: string;
 }
 
+export type UserVote = 1 | -1 | null;
+
+export type ReactionAction = "like" | "dislike" | "remove_like" | "remove_dislike";
+
+export interface ReactionResponse {
+  cached_upvotes: number;
+  user_vote: UserVote;
+}
+
 export interface OpinionReply {
   id: string;
   content: string;
   created_at: string;
   author: OpinionAuthor;
   cached_upvotes: number;
+  user_vote: UserVote;
+  replies: OpinionReply[];
 }
+
+export type ReplyTarget = {
+  opinionId: string;
+  parentInteractionId?: string;
+} | null;
 
 export interface OpinionListItem {
   id: string;
@@ -77,6 +93,8 @@ export interface OpinionListItem {
   content: string;
   created_at: string;
   author: OpinionAuthor;
+  cached_upvotes: number;
+  user_vote: UserVote;
   score: number;
   replies: OpinionReply[];
 }

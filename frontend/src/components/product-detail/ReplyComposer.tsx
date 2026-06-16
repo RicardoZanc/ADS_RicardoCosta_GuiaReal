@@ -2,6 +2,7 @@ import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { CreateReplyFormData } from "@/lib/schemas/productDetail";
+import { THREAD_CONNECTOR_CLASS } from "./threadLayout";
 
 interface ReplyComposerProps {
   register: UseFormRegister<CreateReplyFormData>;
@@ -20,7 +21,7 @@ export function ReplyComposer({
 }: ReplyComposerProps) {
   return (
     <form
-      className="mt-3 space-y-3 border-l-2 border-accent/30 pl-3"
+      className={`mt-3 space-y-3 pl-3 ${THREAD_CONNECTOR_CLASS}`}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();

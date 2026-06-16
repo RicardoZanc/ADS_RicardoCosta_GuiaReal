@@ -19,8 +19,9 @@ export default function ProductDetailPage() {
     isLoadingMoreOpinions,
     hasMoreOpinions,
     isSubmittingOpinion,
-    replyingToOpinionId,
+    replyTarget,
     isSubmittingReply,
+    votingTargetId,
     opinionRegister,
     opinionErrors,
     onSubmitOpinion,
@@ -31,6 +32,10 @@ export default function ProductDetailPage() {
     startReply,
     cancelReply,
     onSubmitReply,
+    onVoteOpinion,
+    onDislikeOpinion,
+    onVoteThread,
+    onDislikeThread,
   } = useProductDetailController();
 
   if (isLoadingProduct) {
@@ -112,13 +117,18 @@ export default function ProductDetailPage() {
             <>
               <OpinionList
                 opinions={opinions}
-                replyingToOpinionId={replyingToOpinionId}
+                replyTarget={replyTarget}
                 isSubmittingReply={isSubmittingReply}
+                votingTargetId={votingTargetId}
                 replyRegister={replyRegister}
                 replyErrors={replyErrors}
                 onStartReply={startReply}
                 onCancelReply={cancelReply}
                 onSubmitReply={onSubmitReply}
+                onVoteOpinion={onVoteOpinion}
+                onDislikeOpinion={onDislikeOpinion}
+                onVoteThread={onVoteThread}
+                onDislikeThread={onDislikeThread}
               />
 
               {hasMoreOpinions && (
