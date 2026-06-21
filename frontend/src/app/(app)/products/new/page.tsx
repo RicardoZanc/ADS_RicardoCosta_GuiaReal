@@ -40,7 +40,7 @@ export default function ProductCreatePage() {
   } = useProductCreateController();
 
   return (
-    <div className="w-full px-4 py-8 sm:px-6">
+    <div className="mx-auto flex-1 flex flex-col justify-center max-w-2xl px-4 py-8 sm:px-6">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div className="space-y-2">
           <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">

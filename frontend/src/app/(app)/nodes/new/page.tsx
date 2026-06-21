@@ -27,7 +27,7 @@ function NodeNameForm({
   onSubmit: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+    <div className="flex gap-3 sm:flex-row sm:items-start">
       <Input
         type="text"
         autoComplete="off"
@@ -42,15 +42,17 @@ function NodeNameForm({
           }
         }}
       />
-      <Button
-        type="button"
-        className="shrink-0"
-        loading={isSubmitting}
-        disabled={disabled || !canSubmit}
-        onClick={onSubmit}
-      >
-        Criar
-      </Button>
+      <div className="m-auto">
+          <Button
+            type="button"
+            loading={isSubmitting}
+            disabled={disabled || !canSubmit}
+            onClick={onSubmit}
+          >
+            Criar
+          </Button>
+        </div>
+      
     </div>
   );
 }
@@ -81,7 +83,7 @@ export default function NodeCreatePage() {
   const nameFormDisabled = isSubmitting || (isCategoriaFlow && !selectedTipo);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
+    <div className="mx-auto flex-1 flex flex-col justify-center w-full max-w-2xl px-4 py-8 sm:px-6">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div className="space-y-2">
           <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">

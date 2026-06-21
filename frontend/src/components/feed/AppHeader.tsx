@@ -44,7 +44,7 @@ export function AppHeader({ username }: AppHeaderProps) {
             onClick={() => setSearchOpen(true)}
           >
             <span className="flex items-center px-3 text-muted">Pesquisar</span>
-            <span className="flex items-center rounded-l-lg border-l border-border/40 px-2.5">
+            <span className="flex items-center rounded-l-lg  px-2.5">
               <SearchIcon />
             </span>
           </Button>
