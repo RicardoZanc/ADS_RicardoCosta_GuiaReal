@@ -1,5 +1,10 @@
 import { prisma } from "../../lib/prisma";
 import {
+  calculateReputationDeltaFromVoteTransition,
+  shouldApplyReputationFromVote,
+} from "../users/users.domainRules";
+import { usersService } from "../users/users.service";
+import {
   ensureOpinionExists,
   ensureThreadExists,
 } from "./opinions.domainRules";
@@ -136,6 +141,26 @@ async function applyVoteOperation(
   return operation.voteType;
 }
 
+async function applyReputationForVoteChange(
+  tx: TransactionClient,
+  voterUserId: string,
+  contentOwnerUserId: string,
+  previousVote: 1 | -1 | null,
+  nextVote: 1 | -1 | null
+): Promise<void> {
+  const delta = calculateReputationDeltaFromVoteTransition(
+    previousVote,
+    nextVote
+  );
+
+  if (
+    delta !== 0 &&
+    shouldApplyReputationFromVote(voterUserId, contentOwnerUserId)
+  ) {
+    await usersService.applyReputationDelta(contentOwnerUserId, delta, tx);
+  }
+}
+
 const reactToOpinion = async (
   opinionId: string,
   userId: string,
@@ -144,11 +169,18 @@ const reactToOpinion = async (
   await ensureOpinionExists(opinionId);
 
   return prisma.$transaction(async (tx) => {
-    const existingVote = await tx.reaction_votes.findFirst({
-      where: { user_id: userId, opinion_id: opinionId },
-      select: { id: true, vote_type: true },
-    });
+    const [existingVote, opinion] = await Promise.all([
+      tx.reaction_votes.findFirst({
+        where: { user_id: userId, opinion_id: opinionId },
+        select: { id: true, vote_type: true },
+      }),
+      tx.opinions.findUnique({
+        where: { id: opinionId },
+        select: { user_id: true },
+      }),
+    ]);
 
+    const previousVote = toUserVote(existingVote?.vote_type);
     const operation = resolveVoteOperation(existingVote?.vote_type, action);
     const userVote = await applyVoteOperation(
       tx,
@@ -156,6 +188,14 @@ const reactToOpinion = async (
       existingVote?.id,
       operation,
       { opinionId }
+    );
+
+    await applyReputationForVoteChange(
+      tx,
+      userId,
+      opinion!.user_id,
+      previousVote,
+      userVote
     );
 
     const cachedUpvotes = await recalcOpinionCachedUpvotes(tx, opinionId);
@@ -172,11 +212,18 @@ const reactToThread = async (
   await ensureThreadExists(threadId);
 
   return prisma.$transaction(async (tx) => {
-    const existingVote = await tx.reaction_votes.findFirst({
-      where: { user_id: userId, interaction_id: threadId },
-      select: { id: true, vote_type: true },
-    });
+    const [existingVote, thread] = await Promise.all([
+      tx.reaction_votes.findFirst({
+        where: { user_id: userId, interaction_id: threadId },
+        select: { id: true, vote_type: true },
+      }),
+      tx.discussion_threads.findUnique({
+        where: { id: threadId },
+        select: { user_id: true },
+      }),
+    ]);
 
+    const previousVote = toUserVote(existingVote?.vote_type);
     const operation = resolveVoteOperation(existingVote?.vote_type, action);
     const userVote = await applyVoteOperation(
       tx,
@@ -184,6 +231,14 @@ const reactToThread = async (
       existingVote?.id,
       operation,
       { threadId }
+    );
+
+    await applyReputationForVoteChange(
+      tx,
+      userId,
+      thread!.user_id,
+      previousVote,
+      userVote
     );
 
     const cachedUpvotes = await recalcThreadCachedUpvotes(tx, threadId);
