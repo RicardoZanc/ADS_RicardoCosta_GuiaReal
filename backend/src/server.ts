@@ -11,6 +11,7 @@ import {
 } from "./lib/redis";
 import { logger } from "./utils/logger";
 import { authenticateJwt } from "./middlewares/auth.middleware";
+import { toolRoutes } from "./routes/toolRoutes";
 
 const PORT = process.env.PORT || 3000;
 
@@ -34,6 +35,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 app.use('/api', apiRoutes);
+app.use('/tool', toolRoutes)
 
 app.get('/api/', authenticateJwt, (req, res) => {
   const message = `Hello ${req.user?.username}`;
