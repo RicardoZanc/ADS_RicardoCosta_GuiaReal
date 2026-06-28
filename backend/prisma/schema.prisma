@@ -57,8 +57,8 @@ model opinions {
   node_id            String?              @db.Uuid
   title              String?              @db.VarChar(255)
   content            String
-  is_eligible_for_ai Boolean?             @default(false)
   cached_upvotes     Int?                 @default(0)
+  status             queue_status?        @default(PENDING)
   created_at         DateTime?            @default(now()) @db.Timestamptz(6)
   discussion_threads discussion_threads[]
   nodes              nodes?               @relation(fields: [node_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -161,9 +161,7 @@ enum opinion_sentiment {
 
 enum queue_status {
   PENDING
-  READY
   PROCESSED
-  IGNORED
 }
 
 enum report_status {

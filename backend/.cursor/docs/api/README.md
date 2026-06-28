@@ -28,6 +28,16 @@ Documentação de referência para clientes (humanos e LLM) da API REST do GuiaR
 | Products | `/api/products` | [products.md](products.md) |
 | Opinions | `/api/opinions` | [opinions.md](opinions.md) |
 | Feed | `/api/feed` | [feed.md](feed.md) |
+| Technical Facts (Tools) | `/tool/technical-facts` | [technical_facts.md](technical_facts.md) |
+
+---
+
+## Tools (n8n / automações)
+
+| Item | Valor |
+|------|-------|
+| Base URL | `http://localhost:3000/tool` (dev) |
+| Autenticação | Header `X-Tool-Api-Key` (`TOOL_API_KEY` no `.env`) |
 
 ---
 

@@ -27,7 +27,6 @@ const createOnProduct = async (
       user_id: userId,
       title: input.title,
       content: input.content,
-      is_eligible_for_ai: true,
     },
     select: {
       id: true,
@@ -36,7 +35,7 @@ const createOnProduct = async (
       node_id: true,
       title: true,
       content: true,
-      is_eligible_for_ai: true,
+      status: true,
       created_at: true,
     },
   });
@@ -64,7 +63,6 @@ const createOnNode = async (
       user_id: userId,
       title: input.title,
       content: input.content,
-      is_eligible_for_ai: true,
     },
     select: {
       id: true,
@@ -73,7 +71,7 @@ const createOnNode = async (
       node_id: true,
       title: true,
       content: true,
-      is_eligible_for_ai: true,
+      status: true,
       created_at: true,
     },
   });

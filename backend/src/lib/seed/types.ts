@@ -81,5 +81,5 @@ export type SeedContext = {
   users: SeedUsers;
   products: SeedProducts;
   community: SeedCommunity;
-  technicalFacts: SeedTechnicalFacts;
+  // technicalFacts: SeedTechnicalFacts;
 };

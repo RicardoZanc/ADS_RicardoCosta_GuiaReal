@@ -16,14 +16,14 @@ export async function main(): Promise<SeedContext> {
   const users = await seedUsers();
   const products = await seedProducts(nodes);
   const community = await seedCommunity({ nodes, users, products });
-  const technicalFacts = await seedTechnicalFacts({ nodes, community });
+  // const technicalFacts = await seedTechnicalFacts({ nodes, community });
 
   const context: SeedContext = {
     nodes,
     users,
     products,
     community,
-    technicalFacts,
+    // technicalFacts,
   };
 
   console.log("Seeding finalizado com sucesso!");

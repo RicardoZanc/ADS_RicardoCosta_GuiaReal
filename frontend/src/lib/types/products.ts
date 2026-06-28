@@ -115,7 +115,7 @@ export interface CreateOpinionResponse {
   node_id: string | null;
   title: string | null;
   content: string;
-  is_eligible_for_ai: boolean;
+  status: string | null;
   created_at: string;
 }
 

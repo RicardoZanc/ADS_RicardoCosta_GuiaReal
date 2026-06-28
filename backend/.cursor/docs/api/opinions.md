@@ -50,7 +50,7 @@ Cria opinião vinculada a um produto.
   "node_id": null,
   "title": "Ótima guitarra",
   "content": "Excelente para shred.",
-  "is_eligible_for_ai": true,
+  "status": "PENDING",
   "created_at": "2026-01-01T00:00:00.000Z"
 }
 ```
