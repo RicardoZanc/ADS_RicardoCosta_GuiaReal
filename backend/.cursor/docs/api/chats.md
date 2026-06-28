@@ -55,6 +55,106 @@ Cria um chat sem título e persiste a primeira mensagem do usuário. Dispara web
 
 ---
 
+### `GET /chats`
+
+Lista os chats do usuário autenticado, ordenados do mais recente ao mais antigo.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | JWT Bearer |
+| Sucesso | `200 OK` |
+
+#### Resposta
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "user_id": "uuid",
+      "title": "Melhor arroz integral",
+      "created_at": "2026-06-28T03:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /chats/:id`
+
+Retorna um chat e todas as mensagens ordenadas por `created_at` ascendente.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | JWT Bearer |
+| Sucesso | `200 OK` |
+
+#### Resposta
+
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "title": "Melhor arroz integral",
+  "created_at": "2026-06-28T03:00:00.000Z",
+  "messages": [
+    {
+      "id": "uuid",
+      "chat_id": "uuid",
+      "sender": "USER",
+      "content": "Qual o melhor arroz integral?",
+      "mentioned_evidences": null,
+      "mentioned_technical_facts": null,
+      "created_at": "2026-06-28T03:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### `POST /chats/:id/messages`
+
+Persiste uma nova mensagem do usuário em um chat existente e dispara webhook assíncrono para o n8n.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | JWT Bearer |
+| Sucesso | `201 Created` |
+
+#### Body
+
+```json
+{
+  "content": "E quanto ao preço?"
+}
+```
+
+| Campo | Tipo | Regras |
+|-------|------|--------|
+| `content` | string | obrigatório, 1–4000 caracteres |
+
+#### Resposta
+
+```json
+{
+  "message": {
+    "id": "uuid",
+    "chat_id": "uuid",
+    "sender": "USER",
+    "content": "E quanto ao preço?",
+    "mentioned_evidences": null,
+    "mentioned_technical_facts": null,
+    "created_at": "2026-06-28T03:01:00.000Z"
+  }
+}
+```
+
+O webhook n8n é enviado com `should_name_conversation: false`.
+
+---
+
 ## Socket.IO
 
 **URL:** mesma origem do backend (`http://localhost:3000`)
@@ -95,16 +195,19 @@ A mensagem do usuário é retornada no `POST /chats` — não é emitida via soc
 
 **Método:** `POST`
 
-**Payload enviado após criar chat:**
+**Payload enviado após criar chat ou nova mensagem:**
 
 ```json
 {
   "chat_id": "uuid",
   "user_id": "uuid",
-  "user_message": "texto da primeira mensagem",
+  "user_message": "texto da mensagem",
   "should_name_conversation": true
 }
 ```
+
+- `should_name_conversation: true` — apenas na primeira mensagem (`POST /chats`)
+- `should_name_conversation: false` — mensagens subsequentes (`POST /chats/:id/messages`)
 
 Falha no webhook não impede a criação do chat (log WARN no backend).
 
@@ -165,9 +268,10 @@ Quando `title` é string vazia, o backend **não atualiza** o título do chat e 
 
 ## Fluxo completo
 
-1. Frontend: `POST /api/chats` com primeira mensagem
-2. Frontend: conecta socket e emite `chat:join { chatId }`
-3. Backend: dispara webhook n8n com `should_name_conversation: true`
-4. n8n: agente gera resposta + título
-5. n8n: `POST /tool/chat/agent-response`
-6. Backend: persiste e emite `chat:title_updated` + `chat:assistant_message`
+1. Frontend: `GET /api/chats` para histórico na sidebar
+2. Frontend: `POST /api/chats` (nova conversa) ou `POST /api/chats/:id/messages` (follow-up)
+3. Frontend: conecta socket e emite `chat:join { chatId }`
+4. Backend: dispara webhook n8n (`should_name_conversation` conforme o endpoint)
+5. n8n: agente gera resposta (+ título na primeira mensagem)
+6. n8n: `POST /tool/chat/agent-response`
+7. Backend: persiste e emite `chat:title_updated` (se aplicável) + `chat:assistant_message`

@@ -31,6 +31,12 @@ export function AppHeader({ username }: AppHeaderProps) {
           >
             GuiaReal
           </Link>
+          <Link
+            href="/chat"
+            className="hidden font-mono text-small tracking-widest text-muted uppercase hover:text-accent sm:inline"
+          >
+            Assistente
+          </Link>
           <span className="hidden text-body text-muted sm:inline">
             @{username}
           </span>
