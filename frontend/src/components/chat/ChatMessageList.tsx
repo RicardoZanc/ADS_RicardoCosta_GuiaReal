@@ -2,23 +2,30 @@
 
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatTypingIndicator } from "@/components/chat/ChatTypingIndicator";
-import type { ChatMessage as ChatMessageType } from "@/lib/types/chats";
+import type {
+  AgentProgressStep,
+  ChatMessage as ChatMessageType,
+} from "@/lib/types/chats";
 import { useEffect, useRef } from "react";
 
 interface ChatMessageListProps {
   messages: ChatMessageType[];
   isAwaitingAssistant: boolean;
+  progressMessage?: string;
+  progressStep?: AgentProgressStep;
 }
 
 export function ChatMessageList({
   messages,
   isAwaitingAssistant,
+  progressMessage,
+  progressStep,
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isAwaitingAssistant]);
+  }, [messages, isAwaitingAssistant, progressMessage, progressStep]);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -26,7 +33,9 @@ export function ChatMessageList({
         {messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
-        {isAwaitingAssistant && <ChatTypingIndicator />}
+        {isAwaitingAssistant && (
+          <ChatTypingIndicator message={progressMessage} step={progressStep} />
+        )}
         <div ref={bottomRef} />
       </div>
     </div>

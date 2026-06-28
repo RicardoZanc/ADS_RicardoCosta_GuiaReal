@@ -4,7 +4,7 @@ Prompts prontos para colar nos workflows n8n que orquestram agentes de IA.
 
 ## Chat Agent
 
-Fluxo: `Webhook Trigger` → `AI Agent` → `HTTP Request` (`POST /tool/chat/agent-response`)
+Fluxo: `Webhook Trigger` → `AI Agent` (+ tools) → `HTTP Request` (`POST /tool/chat/agent-response`)
 
 | Arquivo | Uso no n8n |
 |---------|------------|
@@ -24,6 +24,17 @@ Fluxo: `Webhook Trigger` → `AI Agent` → `HTTP Request` (`POST /tool/chat/age
 }
 ```
 
+### Tools disponíveis para o agente
+
+| Tool | Método | Uso |
+|------|--------|-----|
+| Search Nodes | `GET /tool/nodes/search?q=...` | Descobrir nós da taxonomia por nome |
+| List Technical Facts | `GET /tool/technical-facts?node_id=...` | Consultar fatos consolidados e evidências |
+| Get Product Nodes (Chat) | `GET /tool/products/{product_id}/nodes` | Mapear nós quando souber o produto |
+| Report Progress | `POST /tool/chat/agent-progress` | Feedback efêmero de progresso por etapa do raciocínio |
+
+No n8n, configure cada rota como um nó **HTTP Request Tool** conectado ao AI Agent, com `toolDescription` espelhando a documentação da API.
+
 ### Callback esperado pelo backend
 
 `POST {TOOL_BASE_URL}/chat/agent-response`
@@ -34,13 +45,27 @@ Header: `X-Tool-Api-Key: {TOOL_API_KEY}`
 {
   "chat_id": "uuid",
   "title": "Título curto da conversa",
-  "assistant_message": "Resposta do assistente ao usuário"
+  "assistant_message": "Resposta do assistente ao usuário",
+  "mentioned_technical_facts": [
+    {
+      "id": "uuid",
+      "fact_label": "Ponte fixa mantém melhor afinação",
+      "evidence": [
+        { "source_type": "opinion", "source_id": "uuid" }
+      ]
+    }
+  ],
+  "mentioned_evidences": [
+    { "source_type": "opinion", "source_id": "uuid" }
+  ]
 }
 ```
 
 `title` vazio (`""`) indica que o título não deve ser alterado (usado quando `should_name_conversation: false`).
 
-Documentação completa: [backend/.cursor/docs/api/chats.md](../../backend/.cursor/docs/api/chats.md)
+Os campos `mentioned_technical_facts` e `mentioned_evidences` são opcionais — omita ou envie `null` quando a resposta não se apoiar em fatos técnicos.
+
+Documentação completa: [backend/.cursor/docs/api/chats.md](../../backend/.cursor/docs/api/chats.md), [nodes_tool.md](../../backend/.cursor/docs/api/nodes_tool.md), [technical_facts.md](../../backend/.cursor/docs/api/technical_facts.md)
 
 ## Technical Facts Agent
 

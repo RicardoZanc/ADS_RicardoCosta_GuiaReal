@@ -1,12 +1,23 @@
 export type ChatSender = "USER" | "ASSISTANT";
 
+export type EvidenceRef = {
+  source_type: "opinion" | "thread";
+  source_id: string;
+};
+
+export type MentionedTechnicalFact = {
+  id: string;
+  fact_label: string;
+  evidence: EvidenceRef[];
+};
+
 export interface ChatMessage {
   id: string;
   chat_id: string;
   sender: ChatSender;
   content: string;
-  mentioned_evidences: unknown | null;
-  mentioned_technical_facts: unknown | null;
+  mentioned_evidences: EvidenceRef[] | null;
+  mentioned_technical_facts: MentionedTechnicalFact[] | null;
   created_at: string;
 }
 
@@ -42,5 +53,19 @@ export interface ChatTitleUpdatedEvent {
 }
 
 export interface ChatErrorEvent {
+  message: string;
+}
+
+export type AgentProgressStep =
+  | "context"
+  | "collect"
+  | "query"
+  | "hypothesis"
+  | "validate"
+  | "respond";
+
+export interface ChatAgentProgressEvent {
+  chatId: string;
+  step: AgentProgressStep;
   message: string;
 }

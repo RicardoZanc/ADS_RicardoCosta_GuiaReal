@@ -20,6 +20,7 @@ export function ChatPageContent({ chatId }: ChatPageContentProps) {
     isLoadingChat,
     isSending,
     isAwaitingAssistant,
+    agentProgress,
     isSidebarCollapsed,
     toggleSidebarCollapse,
     sendMessage,
@@ -59,6 +60,8 @@ export function ChatPageContent({ chatId }: ChatPageContentProps) {
         <ChatMessageList
           messages={messages}
           isAwaitingAssistant={isAwaitingAssistant}
+          progressMessage={agentProgress?.message}
+          progressStep={agentProgress?.step}
         />
       ) : null}
 

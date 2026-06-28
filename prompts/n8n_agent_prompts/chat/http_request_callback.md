@@ -15,13 +15,31 @@ Nó após o AI Agent para persistir a resposta no backend e emitir eventos via S
 
 ## Body (JSON)
 
-Se o AI Agent retornar JSON parseado em `$json.output`:
+Se o AI Agent retornar JSON parseado em `$json.output`, repasse o objeto completo:
+
+```json
+={{ $json.output }}
+```
+
+Campos esperados:
+
+| Campo | Obrigatório |
+|-------|-------------|
+| `chat_id` | sim |
+| `title` | sim (string vazia quando não alterar título) |
+| `assistant_message` | sim |
+| `mentioned_technical_facts` | não — fatos técnicos usados com evidências |
+| `mentioned_evidences` | não — lista deduplicada de opiniões/threads citadas |
+
+Alternativa com mapeamento explícito:
 
 ```json
 {
   "chat_id": "={{ $json.output.chat_id }}",
   "title": "={{ $json.output.title }}",
-  "assistant_message": "={{ $json.output.assistant_message }}"
+  "assistant_message": "={{ $json.output.assistant_message }}",
+  "mentioned_technical_facts": "={{ $json.output.mentioned_technical_facts }}",
+  "mentioned_evidences": "={{ $json.output.mentioned_evidences }}"
 }
 ```
 
@@ -34,8 +52,6 @@ const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
 return [{ json: parsed }];
 ```
 
-Depois mapeie `$json.chat_id`, `$json.title` e `$json.assistant_message` no HTTP Request.
-
 ## Tratamento de erro
 
 - Se o parse JSON falhar, configure **Error Workflow** ou **Continue On Fail** com log
@@ -46,7 +62,7 @@ Depois mapeie `$json.chat_id`, `$json.title` e `$json.assistant_message` no HTTP
 
 ```
 Webhook Trigger
-  → AI Agent (system: system_prompt.md | user: user_prompt.n8n.md)
+  → AI Agent (system: system_prompt.md | user: user_prompt.n8n.md | tools: Search Nodes, List Technical Facts, Get Product Nodes)
   → [opcional] Code (parse JSON)
   → HTTP Request (este callback)
 ```

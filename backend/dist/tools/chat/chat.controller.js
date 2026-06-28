@@ -12,5 +12,14 @@ const chatToolController = {
         });
         res.status(200).json(result);
     },
+    agentProgress: async (req, res) => {
+        const body = req.body;
+        logger.debug("HTTP POST /tool/chat/agent-progress", {
+            chatId: body.chat_id,
+            step: body.step,
+        });
+        await chatsService.emitAgentProgress(body);
+        res.status(204).send();
+    },
 };
 export { chatToolController };

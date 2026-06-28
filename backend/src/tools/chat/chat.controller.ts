@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { chatsService } from "../../modules/chats/chats.service";
-import type { AgentResponseInput } from "../../modules/chats/chats.schema";
+import type {
+  AgentProgressInput,
+  AgentResponseInput,
+} from "../../modules/chats/chats.schema";
 import { logger } from "../../utils/logger";
 
 const chatToolController = {
@@ -18,6 +21,19 @@ const chatToolController = {
     });
 
     res.status(200).json(result);
+  },
+
+  agentProgress: async (req: Request, res: Response) => {
+    const body = req.body as AgentProgressInput;
+
+    logger.debug("HTTP POST /tool/chat/agent-progress", {
+      chatId: body.chat_id,
+      step: body.step,
+    });
+
+    await chatsService.emitAgentProgress(body);
+
+    res.status(204).send();
   },
 };
 

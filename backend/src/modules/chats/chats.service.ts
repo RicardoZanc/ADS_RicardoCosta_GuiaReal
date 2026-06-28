@@ -7,6 +7,7 @@ import {
   assertChatExists,
 } from "./chats.domainRules";
 import type {
+  AgentProgressInput,
   AgentResponseInput,
   CreateChatInput,
   SendMessageInput,
@@ -28,6 +29,61 @@ const messageSelect = {
   mentioned_technical_facts: true,
   created_at: true,
 } as const;
+
+type EvidenceRef = {
+  source_type: "opinion" | "thread";
+  source_id: string;
+};
+
+type MentionedTechnicalFact = {
+  id: string;
+  fact_label: string;
+  evidence: EvidenceRef[];
+};
+
+const evidenceKey = (item: EvidenceRef) =>
+  `${item.source_type}:${item.source_id}`;
+
+const dedupeEvidence = (items: EvidenceRef[]): EvidenceRef[] => {
+  const seen = new Set<string>();
+  const unique: EvidenceRef[] = [];
+
+  for (const item of items) {
+    const key = evidenceKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(item);
+  }
+
+  return unique;
+};
+
+const resolveMentionedEvidence = (
+  input: AgentResponseInput
+): {
+  mentioned_technical_facts: MentionedTechnicalFact[] | null;
+  mentioned_evidences: EvidenceRef[] | null;
+} => {
+  const facts = input.mentioned_technical_facts ?? null;
+
+  if (!facts || facts.length === 0) {
+    return {
+      mentioned_technical_facts: null,
+      mentioned_evidences: input.mentioned_evidences?.length
+        ? dedupeEvidence(input.mentioned_evidences)
+        : null,
+    };
+  }
+
+  const derivedEvidences = dedupeEvidence(
+    facts.flatMap((fact) => fact.evidence)
+  );
+
+  return {
+    mentioned_technical_facts: facts,
+    mentioned_evidences: derivedEvidences,
+  };
+};
 
 const createWithFirstMessage = async (
   userId: string,
@@ -80,6 +136,8 @@ const handleAgentResponse = async (input: AgentResponseInput) => {
   await assertChatExists(input.chat_id);
 
   const shouldUpdateTitle = input.title.length > 0;
+  const { mentioned_technical_facts, mentioned_evidences } =
+    resolveMentionedEvidence(input);
 
   const result = await prisma.$transaction(async (tx) => {
     const message = await tx.chat_messages.create({
@@ -87,6 +145,12 @@ const handleAgentResponse = async (input: AgentResponseInput) => {
         chat_id: input.chat_id,
         sender: "ASSISTANT",
         content: input.assistant_message,
+        mentioned_technical_facts:
+          mentioned_technical_facts === null
+            ? undefined
+            : mentioned_technical_facts,
+        mentioned_evidences:
+          mentioned_evidences === null ? undefined : mentioned_evidences,
       },
       select: messageSelect,
     });
@@ -196,9 +260,26 @@ const sendMessage = async (
   return { message };
 };
 
+const emitAgentProgress = async (input: AgentProgressInput) => {
+  await assertChatExists(input.chat_id);
+
+  const room = chatRoomId(input.chat_id);
+  getIo().to(room).emit("chat:agent_progress", {
+    chatId: input.chat_id,
+    step: input.step,
+    message: input.message,
+  });
+
+  logger.debug("Chat: progresso do agente emitido via socket", {
+    chatId: input.chat_id,
+    step: input.step,
+  });
+};
+
 export const chatsService = {
   createWithFirstMessage,
   handleAgentResponse,
+  emitAgentProgress,
   listByUser,
   getById,
   sendMessage,

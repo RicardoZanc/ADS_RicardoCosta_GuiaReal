@@ -15,7 +15,7 @@ import {
   sendChatMessage,
 } from "@/lib/chats";
 import { notifyApiError } from "@/lib/notifyApiError";
-import type { ChatMessage, ChatSummary } from "@/lib/types/chats";
+import type { ChatAgentProgressEvent, ChatMessage, ChatSummary } from "@/lib/types/chats";
 import { useAuthStore } from "@/store/authStore";
 import {
   getSidebarCollapsed,
@@ -33,6 +33,8 @@ export function useChatController(chatId?: string) {
   const [isLoadingChat, setIsLoadingChat] = useState(Boolean(chatId));
   const [isSending, setIsSending] = useState(false);
   const [isAwaitingAssistant, setIsAwaitingAssistant] = useState(false);
+  const [agentProgress, setAgentProgress] =
+    useState<ChatAgentProgressEvent | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const loadChats = useCallback(async () => {
@@ -76,6 +78,7 @@ export function useChatController(chatId?: string) {
       setTitle(null);
       setIsLoadingChat(false);
       setIsAwaitingAssistant(false);
+      setAgentProgress(null);
       return;
     }
 
@@ -98,6 +101,11 @@ export function useChatController(chatId?: string) {
           return [...prev, event.message];
         });
         setIsAwaitingAssistant(false);
+        setAgentProgress(null);
+      },
+      onAgentProgress: (event) => {
+        if (chatId && event.chatId !== chatId) return;
+        setAgentProgress(event);
       },
       onTitleUpdated: (event) => {
         setChats((prev) =>
@@ -113,6 +121,7 @@ export function useChatController(chatId?: string) {
       onError: (event) => {
         toast.error(event.message);
         setIsAwaitingAssistant(false);
+        setAgentProgress(null);
       },
     });
 
@@ -150,6 +159,7 @@ export function useChatController(chatId?: string) {
           ...prev.filter((item) => item.id !== chat.id),
         ]);
         setIsAwaitingAssistant(true);
+        setAgentProgress(null);
         router.push(`/chat/${chat.id}`);
         return;
       }
@@ -157,6 +167,7 @@ export function useChatController(chatId?: string) {
       const response = await sendChatMessage(chatId, content);
       setMessages((prev) => [...prev, response.message]);
       setIsAwaitingAssistant(true);
+      setAgentProgress(null);
     } catch (error) {
       if (notifyApiError(error)) return;
       throw error;
@@ -173,6 +184,7 @@ export function useChatController(chatId?: string) {
     isLoadingChat,
     isSending,
     isAwaitingAssistant,
+    agentProgress,
     isSidebarCollapsed,
     toggleSidebarCollapse,
     sendMessage,

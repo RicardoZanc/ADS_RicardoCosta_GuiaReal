@@ -182,8 +182,11 @@ Entra na sala `chat:{chatId}`. Requer que o chat pertença ao usuário autentica
 | Evento | Payload |
 |--------|---------|
 | `chat:assistant_message` | `{ chatId: string, message: ChatMessage }` |
+| `chat:agent_progress` | `{ chatId: string, step: string, message: string }` |
 | `chat:title_updated` | `{ chatId: string, title: string }` |
 | `chat:error` | `{ message: string }` |
+
+`chat:agent_progress` é efêmero (não persistido). Valores de `step`: `context`, `collect`, `query`, `hypothesis`, `validate`, `respond`. O frontend exibe apenas a última mensagem de progresso enquanto aguarda a resposta.
 
 A mensagem do usuário é retornada no `POST /chats` — não é emitida via socket na criação.
 
@@ -234,7 +237,21 @@ Persiste título e mensagem do assistente, emite eventos socket para a sala do c
 {
   "chat_id": "uuid",
   "title": "Melhor arroz integral",
-  "assistant_message": "Com base nas opiniões da comunidade..."
+  "assistant_message": "Com base nas opiniões da comunidade...",
+  "mentioned_technical_facts": [
+    {
+      "id": "uuid",
+      "fact_label": "Ponte fixa mantém melhor afinação",
+      "evidence": [
+        { "source_type": "opinion", "source_id": "uuid" },
+        { "source_type": "thread", "source_id": "uuid" }
+      ]
+    }
+  ],
+  "mentioned_evidences": [
+    { "source_type": "opinion", "source_id": "uuid" },
+    { "source_type": "thread", "source_id": "uuid" }
+  ]
 }
 ```
 
@@ -243,10 +260,45 @@ Persiste título e mensagem do assistente, emite eventos socket para a sala do c
 | `chat_id` | uuid | obrigatório |
 | `title` | string | máx. 255 caracteres; string vazia (`""`) quando o agente não deve alterar o título |
 | `assistant_message` | string | obrigatório, mínimo 1 caractere |
+| `mentioned_technical_facts` | array ou `null` | opcional; fatos técnicos usados na resposta, com `evidence[]` copiados da API |
+| `mentioned_evidences` | array ou `null` | opcional; união deduplicada de opiniões/threads citadas. Se `mentioned_technical_facts` for enviado, o backend deriva este campo automaticamente |
 
 Quando `title` é string vazia, o backend **não atualiza** o título do chat e **não emite** `chat:title_updated`. Apenas a mensagem do assistente é persistida e propagada via socket.
 
+---
+
+### `POST /chat/agent-progress`
+
+Emite feedback efêmero de progresso do raciocínio via socket (`chat:agent_progress`). Não persiste dados.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | `X-Tool-Api-Key` |
+| Sucesso | `204 No Content` |
+
+#### Body
+
+```json
+{
+  "chat_id": "uuid",
+  "step": "query",
+  "message": "Consultando fatos técnicos da comunidade…"
+}
+```
+
+| Campo | Tipo | Regras |
+|-------|------|--------|
+| `chat_id` | uuid | obrigatório |
+| `step` | enum | `context` · `collect` · `query` · `hypothesis` · `validate` · `respond` |
+| `message` | string | obrigatório, 1–500 caracteres, texto descritivo em pt-BR para o usuário |
+
 #### Resposta
+
+Sem body (`204 No Content`).
+
+---
+
+#### Resposta (`POST /chat/agent-response`)
 
 ```json
 {
@@ -257,8 +309,19 @@ Quando `title` é string vazia, o backend **não atualiza** o título do chat e 
     "chat_id": "uuid",
     "sender": "ASSISTANT",
     "content": "Com base nas opiniões da comunidade...",
-    "mentioned_evidences": null,
-    "mentioned_technical_facts": null,
+    "mentioned_evidences": [
+      { "source_type": "opinion", "source_id": "uuid" },
+      { "source_type": "thread", "source_id": "uuid" }
+    ],
+    "mentioned_technical_facts": [
+      {
+        "id": "uuid",
+        "fact_label": "Ponte fixa mantém melhor afinação",
+        "evidence": [
+          { "source_type": "opinion", "source_id": "uuid" }
+        ]
+      }
+    ],
     "created_at": "2026-06-28T03:00:05.000Z"
   }
 }
@@ -272,6 +335,6 @@ Quando `title` é string vazia, o backend **não atualiza** o título do chat e 
 2. Frontend: `POST /api/chats` (nova conversa) ou `POST /api/chats/:id/messages` (follow-up)
 3. Frontend: conecta socket e emite `chat:join { chatId }`
 4. Backend: dispara webhook n8n (`should_name_conversation` conforme o endpoint)
-5. n8n: agente gera resposta (+ título na primeira mensagem)
+5. n8n: agente consulta nós/fatos via tools, valida hipótese e gera resposta (+ título na primeira mensagem)
 6. n8n: `POST /tool/chat/agent-response`
 7. Backend: persiste e emite `chat:title_updated` (se aplicável) + `chat:assistant_message`

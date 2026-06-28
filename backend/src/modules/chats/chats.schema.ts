@@ -33,6 +33,17 @@ export const sendMessageSchema = z.object({
 
 export type SendMessageInput = z.infer<typeof sendMessageSchema>["body"];
 
+const evidenceRefSchema = z.object({
+  source_type: z.enum(["opinion", "thread"]),
+  source_id: z.uuid("ID de evidência inválido"),
+});
+
+const mentionedTechnicalFactSchema = z.object({
+  id: z.uuid("ID do fato técnico inválido"),
+  fact_label: z.string().trim().min(1),
+  evidence: z.array(evidenceRefSchema).min(1),
+});
+
 export const agentResponseSchema = z.object({
   body: z.object({
     chat_id: z.uuid("ID do chat inválido"),
@@ -44,7 +55,36 @@ export const agentResponseSchema = z.object({
       .string()
       .trim()
       .min(1, "A mensagem do assistente é obrigatória"),
+    mentioned_technical_facts: z
+      .array(mentionedTechnicalFactSchema)
+      .optional()
+      .nullable(),
+    mentioned_evidences: z.array(evidenceRefSchema).optional().nullable(),
   }),
 });
 
 export type AgentResponseInput = z.infer<typeof agentResponseSchema>["body"];
+
+export const agentProgressStepSchema = z.enum([
+  "context",
+  "collect",
+  "query",
+  "hypothesis",
+  "validate",
+  "respond",
+]);
+
+export const agentProgressSchema = z.object({
+  body: z.object({
+    chat_id: z.uuid("ID do chat inválido"),
+    step: agentProgressStepSchema,
+    message: z
+      .string()
+      .trim()
+      .min(1, "A mensagem de progresso é obrigatória")
+      .max(500, "A mensagem de progresso deve ter no máximo 500 caracteres"),
+  }),
+});
+
+export type AgentProgressInput = z.infer<typeof agentProgressSchema>["body"];
+export type AgentProgressStep = z.infer<typeof agentProgressStepSchema>;

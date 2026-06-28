@@ -2,6 +2,8 @@
 
 import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
+import { hasMessageSources } from "@/lib/chatEvidence";
+import { ChatMessageSources } from "@/components/chat/ChatMessageSources";
 import type { ChatMessage as ChatMessageType } from "@/lib/types/chats";
 
 interface ChatMessageProps {
@@ -10,6 +12,8 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.sender === "USER";
+  const facts = message.mentioned_technical_facts ?? [];
+  const showSources = !isUser && hasMessageSources(message);
 
   return (
     <div
@@ -26,9 +30,17 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {isUser ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
-          <div className="prose prose-invert prose-sm max-w-none [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_code]:rounded [&_code]:bg-muted/40 [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/30 [&_pre]:p-3">
-            <Markdown>{message.content}</Markdown>
-          </div>
+          <>
+            <div className="prose prose-invert prose-sm max-w-none [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_code]:rounded [&_code]:bg-muted/40 [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/30 [&_pre]:p-3">
+              <Markdown>{message.content}</Markdown>
+            </div>
+            {showSources && (
+              <ChatMessageSources
+                facts={facts}
+                evidences={message.mentioned_evidences}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

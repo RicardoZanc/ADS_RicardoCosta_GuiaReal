@@ -1,6 +1,7 @@
 import { io, type Socket } from "socket.io-client";
 import type {
   ChatAssistantMessageEvent,
+  ChatAgentProgressEvent,
   ChatErrorEvent,
   ChatTitleUpdatedEvent,
 } from "@/lib/types/chats";
@@ -49,6 +50,7 @@ export function disconnectChatSocket(): void {
 
 export type ChatSocketHandlers = {
   onAssistantMessage?: (event: ChatAssistantMessageEvent) => void;
+  onAgentProgress?: (event: ChatAgentProgressEvent) => void;
   onTitleUpdated?: (event: ChatTitleUpdatedEvent) => void;
   onError?: (event: ChatErrorEvent) => void;
 };
@@ -59,6 +61,9 @@ export function subscribeChatSocket(handlers: ChatSocketHandlers): () => void {
   const assistantHandler = (event: ChatAssistantMessageEvent) => {
     handlers.onAssistantMessage?.(event);
   };
+  const progressHandler = (event: ChatAgentProgressEvent) => {
+    handlers.onAgentProgress?.(event);
+  };
   const titleHandler = (event: ChatTitleUpdatedEvent) => {
     handlers.onTitleUpdated?.(event);
   };
@@ -67,11 +72,13 @@ export function subscribeChatSocket(handlers: ChatSocketHandlers): () => void {
   };
 
   socket.on("chat:assistant_message", assistantHandler);
+  socket.on("chat:agent_progress", progressHandler);
   socket.on("chat:title_updated", titleHandler);
   socket.on("chat:error", errorHandler);
 
   return () => {
     socket?.off("chat:assistant_message", assistantHandler);
+    socket?.off("chat:agent_progress", progressHandler);
     socket?.off("chat:title_updated", titleHandler);
     socket?.off("chat:error", errorHandler);
   };
