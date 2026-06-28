@@ -21,5 +21,31 @@ export const createOpinionThreadSchema = z.object({
     }),
     body: z.object({
         content: z.string().trim().min(1, "O conteúdo da resposta é obrigatório"),
+        parent_interaction_id: z
+            .uuid("ID da interação pai inválido")
+            .optional()
+            .nullable(),
+    }),
+});
+export const reactionActionSchema = z.enum([
+    "like",
+    "dislike",
+    "remove_like",
+    "remove_dislike",
+]);
+export const reactToOpinionSchema = z.object({
+    params: z.object({
+        opinion_id: z.uuid("ID da opinião inválido"),
+    }),
+    body: z.object({
+        action: reactionActionSchema,
+    }),
+});
+export const reactToThreadSchema = z.object({
+    params: z.object({
+        thread_id: z.uuid("ID da interação inválido"),
+    }),
+    body: z.object({
+        action: reactionActionSchema,
     }),
 });

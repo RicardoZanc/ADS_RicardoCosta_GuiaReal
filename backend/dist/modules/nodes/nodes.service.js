@@ -53,7 +53,7 @@ const getById = async (id) => {
         opinionCount,
     };
 };
-const listOpinions = async (nodeId, query) => {
+const listOpinions = async (nodeId, query, userId) => {
     logger.debug("Opiniões de nó: consulta iniciada", {
         nodeId,
         page: query.page,
@@ -64,6 +64,7 @@ const listOpinions = async (nodeId, query) => {
         whereClause: Prisma.sql `o.node_id = ${nodeId}::uuid`,
         page: query.page,
         limit: query.limit,
+        userId,
     });
     logger.debug("Opiniões de nó: consulta concluída", {
         nodeId,

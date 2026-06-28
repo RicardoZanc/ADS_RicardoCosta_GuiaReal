@@ -1,0 +1,173 @@
+# API — Chats
+
+Endpoints de chat para usuários autenticados e integração com o agente n8n via webhook assíncrono.
+
+---
+
+## REST — Usuários
+
+**Base URL:** `http://localhost:3000/api`
+
+**Autenticação:** header `Authorization: Bearer <access_token>`
+
+### `POST /chats`
+
+Cria um chat sem título e persiste a primeira mensagem do usuário. Dispara webhook assíncrono para o n8n processar a resposta do agente.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | JWT Bearer |
+| Sucesso | `201 Created` |
+
+#### Body
+
+```json
+{
+  "content": "Qual o melhor arroz integral?"
+}
+```
+
+| Campo | Tipo | Regras |
+|-------|------|--------|
+| `content` | string | obrigatório, 1–4000 caracteres |
+
+#### Resposta
+
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "title": null,
+  "created_at": "2026-06-28T03:00:00.000Z",
+  "messages": [
+    {
+      "id": "uuid",
+      "chat_id": "uuid",
+      "sender": "USER",
+      "content": "Qual o melhor arroz integral?",
+      "mentioned_evidences": null,
+      "mentioned_technical_facts": null,
+      "created_at": "2026-06-28T03:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## Socket.IO
+
+**URL:** mesma origem do backend (`http://localhost:3000`)
+
+**Autenticação:** token JWT em `auth.token` no handshake
+
+```typescript
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:3000", {
+  auth: { token: accessToken },
+});
+```
+
+### Cliente → Servidor
+
+| Evento | Payload |
+|--------|---------|
+| `chat:join` | `{ chatId: string }` |
+
+Entra na sala `chat:{chatId}`. Requer que o chat pertença ao usuário autenticado.
+
+### Servidor → Cliente
+
+| Evento | Payload |
+|--------|---------|
+| `chat:assistant_message` | `{ chatId: string, message: ChatMessage }` |
+| `chat:title_updated` | `{ chatId: string, title: string }` |
+| `chat:error` | `{ message: string }` |
+
+A mensagem do usuário é retornada no `POST /chats` — não é emitida via socket na criação.
+
+---
+
+## Webhook n8n (backend → n8n)
+
+**Variável:** `N8N_CHAT_WEBHOOK_URL`
+
+**Método:** `POST`
+
+**Payload enviado após criar chat:**
+
+```json
+{
+  "chat_id": "uuid",
+  "user_id": "uuid",
+  "user_message": "texto da primeira mensagem",
+  "should_name_conversation": true
+}
+```
+
+Falha no webhook não impede a criação do chat (log WARN no backend).
+
+---
+
+## Tool — Callback do agente (n8n → backend)
+
+**Base URL:** `http://localhost:3000/tool`
+
+**Autenticação:** header `X-Tool-Api-Key` com valor de `TOOL_API_KEY`
+
+### `POST /chat/agent-response`
+
+Persiste título e mensagem do assistente, emite eventos socket para a sala do chat.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | `X-Tool-Api-Key` |
+| Sucesso | `200 OK` |
+
+#### Body
+
+```json
+{
+  "chat_id": "uuid",
+  "title": "Melhor arroz integral",
+  "assistant_message": "Com base nas opiniões da comunidade..."
+}
+```
+
+| Campo | Tipo | Regras |
+|-------|------|--------|
+| `chat_id` | uuid | obrigatório |
+| `title` | string | máx. 255 caracteres; string vazia (`""`) quando o agente não deve alterar o título |
+| `assistant_message` | string | obrigatório, mínimo 1 caractere |
+
+Quando `title` é string vazia, o backend **não atualiza** o título do chat e **não emite** `chat:title_updated`. Apenas a mensagem do assistente é persistida e propagada via socket.
+
+#### Resposta
+
+```json
+{
+  "chat_id": "uuid",
+  "title": "Melhor arroz integral",
+  "message": {
+    "id": "uuid",
+    "chat_id": "uuid",
+    "sender": "ASSISTANT",
+    "content": "Com base nas opiniões da comunidade...",
+    "mentioned_evidences": null,
+    "mentioned_technical_facts": null,
+    "created_at": "2026-06-28T03:00:05.000Z"
+  }
+}
+```
+
+---
+
+## Fluxo completo
+
+1. Frontend: `POST /api/chats` com primeira mensagem
+2. Frontend: conecta socket e emite `chat:join { chatId }`
+3. Backend: dispara webhook n8n com `should_name_conversation: true`
+4. n8n: agente gera resposta + título
+5. n8n: `POST /tool/chat/agent-response`
+6. Backend: persiste e emite `chat:title_updated` + `chat:assistant_message`

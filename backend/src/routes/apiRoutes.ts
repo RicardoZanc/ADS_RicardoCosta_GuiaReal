@@ -4,6 +4,7 @@ import { nodesRoutes } from "../modules/nodes/nodes.routes";
 import { opinionsRoutes } from "../modules/opinions/opinions.routes";
 import { productsRoutes } from "../modules/products/products.routes";
 import { feedRoutes } from "../modules/feed/feed.routes";
+import { chatsRoutes } from "../modules/chats/chats.routes";
 
 const apiRoutes = Router();
 
@@ -12,5 +13,6 @@ apiRoutes.use('/nodes', nodesRoutes);
 apiRoutes.use('/opinions', opinionsRoutes);
 apiRoutes.use('/products', productsRoutes);
 apiRoutes.use('/feed', feedRoutes);
+apiRoutes.use('/chats', chatsRoutes);
 
 export { apiRoutes };

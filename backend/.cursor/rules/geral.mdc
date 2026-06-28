@@ -5,6 +5,12 @@ alwaysApply: false
 
 # Backend Rules
 
+## Separação IA e Front
+
+- Todas as features que serão usadas como tool, serão feitas requisições pelo agente do n8n ficam em `src/tool/`
+- Todas as features que serão usadas pro frontend ou por humanos ficam em `src/modules`
+
+
 ## Stack
 
 - TypeScript

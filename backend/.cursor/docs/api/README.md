@@ -28,6 +28,7 @@ Documentação de referência para clientes (humanos e LLM) da API REST do GuiaR
 | Products | `/api/products` | [products.md](products.md) |
 | Opinions | `/api/opinions` | [opinions.md](opinions.md) |
 | Feed | `/api/feed` | [feed.md](feed.md) |
+| Chats | `/api/chats` | [chats.md](chats.md) |
 | Technical Facts (Tools) | `/tool/technical-facts` | [technical_facts.md](technical_facts.md) |
 
 ---

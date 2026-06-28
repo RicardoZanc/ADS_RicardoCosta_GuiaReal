@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { logger } from "../../utils/logger";
-import { ensureNodeExists, ensureOpinionExists, ensureProductExists, } from "./opinions.domainRules";
+import { ensureNodeExists, ensureOpinionExists, ensureProductExists, ensureThreadBelongsToOpinion, } from "./opinions.domainRules";
 const createOnProduct = async (productId, userId, input) => {
     logger.debug("Opinião em produto: payload recebido", { productId, userId });
     await ensureProductExists(productId);
@@ -10,7 +10,6 @@ const createOnProduct = async (productId, userId, input) => {
             user_id: userId,
             title: input.title,
             content: input.content,
-            is_eligible_for_ai: true,
         },
         select: {
             id: true,
@@ -19,7 +18,7 @@ const createOnProduct = async (productId, userId, input) => {
             node_id: true,
             title: true,
             content: true,
-            is_eligible_for_ai: true,
+            status: true,
             created_at: true,
         },
     });
@@ -38,7 +37,6 @@ const createOnNode = async (nodeId, userId, input) => {
             user_id: userId,
             title: input.title,
             content: input.content,
-            is_eligible_for_ai: true,
         },
         select: {
             id: true,
@@ -47,7 +45,7 @@ const createOnNode = async (nodeId, userId, input) => {
             node_id: true,
             title: true,
             content: true,
-            is_eligible_for_ai: true,
+            status: true,
             created_at: true,
         },
     });
@@ -60,12 +58,16 @@ const createOnNode = async (nodeId, userId, input) => {
 const createThread = async (opinionId, userId, input) => {
     logger.debug("Thread de opinião: payload recebido", { opinionId, userId });
     await ensureOpinionExists(opinionId);
+    const parentInteractionId = input.parent_interaction_id ?? null;
+    if (parentInteractionId) {
+        await ensureThreadBelongsToOpinion(parentInteractionId, opinionId);
+    }
     const thread = await prisma.discussion_threads.create({
         data: {
             opinion_id: opinionId,
             user_id: userId,
             content: input.content,
-            parent_interaction_id: null,
+            parent_interaction_id: parentInteractionId,
         },
         select: {
             id: true,

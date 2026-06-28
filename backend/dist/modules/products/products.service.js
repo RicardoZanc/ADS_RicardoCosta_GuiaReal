@@ -81,7 +81,7 @@ const getById = async (id) => {
         discussionTabs,
     };
 };
-const listOpinions = async (productId, query) => {
+const listOpinions = async (productId, query, userId) => {
     logger.debug("Opiniões de produto: consulta iniciada", {
         productId,
         scope: query.scope,
@@ -100,6 +100,7 @@ const listOpinions = async (productId, query) => {
         whereClause,
         page: query.page,
         limit: query.limit,
+        userId,
     });
     logger.debug("Opiniões de produto: consulta concluída", {
         productId,

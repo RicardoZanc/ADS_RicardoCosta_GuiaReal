@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma";
-import { NotFoundError } from "../../lib/errors/BaseError";
+import { BadRequestError, NotFoundError } from "../../lib/errors/BaseError";
 export async function ensureProductExists(productId) {
     const product = await prisma.products.findUnique({
         where: { id: productId },
@@ -25,5 +25,26 @@ export async function ensureOpinionExists(opinionId) {
     });
     if (!opinion) {
         throw new NotFoundError("Opinião não encontrada");
+    }
+}
+export async function ensureThreadBelongsToOpinion(parentInteractionId, opinionId) {
+    const parentThread = await prisma.discussion_threads.findUnique({
+        where: { id: parentInteractionId },
+        select: { id: true, opinion_id: true },
+    });
+    if (!parentThread) {
+        throw new BadRequestError("Interação pai não encontrada");
+    }
+    if (parentThread.opinion_id !== opinionId) {
+        throw new BadRequestError("A interação pai não pertence a esta opinião");
+    }
+}
+export async function ensureThreadExists(threadId) {
+    const thread = await prisma.discussion_threads.findUnique({
+        where: { id: threadId },
+        select: { id: true },
+    });
+    if (!thread) {
+        throw new NotFoundError("Interação não encontrada");
     }
 }

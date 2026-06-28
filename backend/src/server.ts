@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { createServer } from "http";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -12,6 +13,7 @@ import {
 import { logger } from "./utils/logger";
 import { authenticateJwt } from "./middlewares/auth.middleware";
 import { toolRoutes } from "./routes/toolRoutes";
+import { initSocket } from "./lib/socket";
 
 const PORT = process.env.PORT || 3000;
 
@@ -55,7 +57,10 @@ async function start() {
 
   registerRefreshTokenRedisShutdown();
 
-  app.listen(PORT, () => {
+  const httpServer = createServer(app);
+  initSocket(httpServer);
+
+  httpServer.listen(PORT, () => {
     const runningMsg = "Serving runnning on port " + PORT;
     console.log(chalk.bgGreen.blackBright(` ${runningMsg} `));
   });

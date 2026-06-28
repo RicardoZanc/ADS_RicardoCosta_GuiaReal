@@ -1,0 +1,289 @@
+{
+  "name": "GuiaReal",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{$env.TOOL_BASE_URL}}/technical-facts/pending-interactions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        288,
+        352
+      ],
+      "id": "88a1fdd1-ca5c-4730-9d3f-681b33b864d6",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "J0BuhnovgG8dMMHF",
+          "name": "Custom Auth account"
+        },
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        96,
+        352
+      ],
+      "id": "5f4ac006-4a0e-4ae1-8843-80a06e28d571",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Vocẽ é o agente que cria fatos técnicos para o guia real, verifique os dados da interação da comunidade a seguir e utilize a tool para criar os dados técnicos obtidos das interações\n\n {{ JSON.stringify($json.data) }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        560,
+        416
+      ],
+      "id": "184d0845-be6a-4836-89fc-627447005a90",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        704
+      ],
+      "id": "6fcee1ed-94e9-4e7d-952c-e7642ef79ed9",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Xsje5BTZDZhDYAG0",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Cria um fato técnico consolidado, vincula evidências e marca threads como `PROCESSED`.\n\n| Item | Valor |\n|------|-------|\n| Autenticação | `X-Tool-Api-Key` |\n| Sucesso | `201 Created` |\n\n### Body\n\n| Campo | Tipo | Obrigatório |\n|-------|------|-------------|\n| `node_id` | uuid | sim |\n| `fact_label` | string | sim |\n| `fact_description` | string | não |\n| `consensus_score` | number | não |\n| `status` | `HYPOTHESIS` · `VERIFIED` · `DISPUTED` | não |\n| `evidence_thread_ids` | uuid[] (min 1) | sim |\n\n### Resposta\n\n```json\n{\n  \"id\": \"uuid\",\n  \"node_id\": \"uuid\",\n  \"fact_label\": \"Ponte fixa mantém melhor afinação\",\n  \"fact_description\": null,\n  \"consensus_score\": 0,\n  \"status\": \"HYPOTHESIS\",\n  \"last_updated\": \"2026-01-01T00:00:00.000Z\",\n  \"evidence_thread_ids\": [\"uuid\"]\n}\n```\n\n### Erros\n\n| Status | `message` típico |\n|--------|------------------|\n| `400` | Threads de evidência devem estar PENDING |\n| `404` | Nó ou thread não encontrada |\n| `422` | Payload inválido |\n\n---",
+        "method": "POST",
+        "url": "={{$env.TOOL_BASE_URL}}/technical-facts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $fromAI('body') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        656,
+        704
+      ],
+      "id": "155cddb0-f13a-4dbf-8c69-f010dbd0663c",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "J0BuhnovgG8dMMHF",
+          "name": "Custom Auth account"
+        },
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "message_agent",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        64,
+        1008
+      ],
+      "id": "16617551-92a7-4827-93d0-577ea455deb5",
+      "name": "Webhook",
+      "webhookId": "a265cbdd-ece8-4bd7-b298-6175ee1b33d3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n   \"system_prompt\":\n  \"Você é o assistente de chat do GuiaReal — uma rede social onde produtos e suas características são discutidos por pessoas diretamente impactadas por esses temas.\n  \n  ## Seu papel\n\nAjudar usuários a tomar decisões de compra e uso com base na sabedoria coletiva da comunidade. Você traduz opiniões, dicas e trade-offs da comunidade em recomendações claras e honestas.\n\n## Princípios de resposta\n\n1. **Evidencie trade-offs** — não apenas diga o que comprar; explique o que se ganha e o que se perde em cada caminho.\n2. **Seja honesto sobre incertezas** — se não houver dados suficientes da comunidade, diga isso claramente em vez de inventar.\n3. **Tom conversacional** — responda como um especialista acessível, não como um manual técnico.\n4. **Foco no usuário** — responda diretamente à pergunta ou mensagem recebida; evite introduções genéricas longas.\n5. **Idioma** — responda sempre em português brasileiro (pt-BR).\n\n## Título da conversa\n\nQuando `should_name_conversation` for `true`, você deve gerar um título curto que resume o assunto da conversa.\n\nRegras do título:\n- Máximo de 255 caracteres\n- Preferencialmente entre 3 e 8 palavras\n- Descritivo e específico (ex.: 'Melhor arroz integral', 'Monitor IPS vs VA')\n- Sem aspas, emojis ou pontuação final\n- Sem prefixos como 'Conversa sobre...' ou 'Chat:'\n\nQuando `should_name_conversation` for `false`, apenas mantenha o campo vazio.\n\n## Formato de saída\n\nResponda **exclusivamente** com um objeto JSON válido, sem markdown, sem blocos de código e sem texto antes ou depois:\n\n```json\n{\n  'chat_id': '<uuid recebido no payload>',\n  'title': '<título da conversa>',\n  'assistant_message': '<sua resposta completa ao usuário>'\n}\n```\n\nRegras do JSON:\n- `chat_id` deve ser copiado exatamente do payload recebido\n- `title` é obrigatório somente quando should_name_conversation é true\n- `assistant_message` é obrigatório (string não vazia com a resposta ao usuário)\n- Não inclua campos extras\n- Não escape quebras de linha desnecessariamente; use `\\n` apenas se necessário dentro da string JSON\n\n## Restrições\"\n},\n\n{\n  \"user_prompt\": {\n    {{ JSON.stringify($json.body) }}\n  }\n}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        384,
+        1008
+      ],
+      "id": "24a27ad9-3e92-4f51-ab26-32291bd5a20c",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        1200
+      ],
+      "id": "265f3523-3e2b-4681-9e7e-58b972296655",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Xsje5BTZDZhDYAG0",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.TOOL_BASE_URL}}/chat/agent-response",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        736,
+        1008
+      ],
+      "id": "0853fb05-d8c6-4c6a-b67f-bbb0e54bea13",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c7ef002a-4281-4527-baf0-3e8d7260694b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3f0e6404932f2adf54def394a585cc0347d0e88edd1cee39b2589eeacc0c49ad"
+  },
+  "nodeGroups": [],
+  "id": "wCdSr1vW9iB0A9p2",
+  "tags": []
+}

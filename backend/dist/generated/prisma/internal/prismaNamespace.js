@@ -73,6 +73,8 @@ export const ModelName = {
     opinions: 'opinions',
     product_nodes: 'product_nodes',
     products: 'products',
+    chats: 'chats',
+    chat_messages: 'chat_messages',
     reaction_votes: 'reaction_votes',
     reports: 'reports',
     technical_facts: 'technical_facts',
@@ -116,7 +118,8 @@ export const OpinionsScalarFieldEnum = {
     node_id: 'node_id',
     title: 'title',
     content: 'content',
-    is_eligible_for_ai: 'is_eligible_for_ai',
+    cached_upvotes: 'cached_upvotes',
+    status: 'status',
     created_at: 'created_at'
 };
 export const Product_nodesScalarFieldEnum = {
@@ -131,10 +134,26 @@ export const ProductsScalarFieldEnum = {
     image_url: 'image_url',
     created_at: 'created_at'
 };
+export const ChatsScalarFieldEnum = {
+    id: 'id',
+    user_id: 'user_id',
+    title: 'title',
+    created_at: 'created_at'
+};
+export const Chat_messagesScalarFieldEnum = {
+    id: 'id',
+    chat_id: 'chat_id',
+    sender: 'sender',
+    content: 'content',
+    mentioned_evidences: 'mentioned_evidences',
+    mentioned_technical_facts: 'mentioned_technical_facts',
+    created_at: 'created_at'
+};
 export const Reaction_votesScalarFieldEnum = {
     id: 'id',
     user_id: 'user_id',
     interaction_id: 'interaction_id',
+    opinion_id: 'opinion_id',
     vote_type: 'vote_type'
 };
 export const ReportsScalarFieldEnum = {
@@ -168,6 +187,10 @@ export const SortOrder = {
     asc: 'asc',
     desc: 'desc'
 };
+export const NullableJsonNullValueInput = {
+    DbNull: DbNull,
+    JsonNull: JsonNull
+};
 export const QueryMode = {
     default: 'default',
     insensitive: 'insensitive'
@@ -175,5 +198,10 @@ export const QueryMode = {
 export const NullsOrder = {
     first: 'first',
     last: 'last'
+};
+export const JsonNullValueFilter = {
+    DbNull: DbNull,
+    JsonNull: JsonNull,
+    AnyNull: AnyNull
 };
 export const defineExtension = runtime.Extensions.defineExtension;

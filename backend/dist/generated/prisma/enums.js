@@ -7,6 +7,10 @@
 *
 * 🟢 You can import this file directly.
 */
+export const chat_sender = {
+    USER: 'USER',
+    ASSISTANT: 'ASSISTANT'
+};
 export const fact_status = {
     HYPOTHESIS: 'HYPOTHESIS',
     VERIFIED: 'VERIFIED',
@@ -28,9 +32,7 @@ export const opinion_sentiment = {
 };
 export const queue_status = {
     PENDING: 'PENDING',
-    READY: 'READY',
-    PROCESSED: 'PROCESSED',
-    IGNORED: 'IGNORED'
+    PROCESSED: 'PROCESSED'
 };
 export const report_status = {
     PENDING: 'PENDING',

@@ -87,6 +87,33 @@ model products {
   product_nodes product_nodes[]
 }
 
+model chats {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String          @db.Uuid
+  title         String?         @db.VarChar(255)
+  created_at    DateTime?       @default(now()) @db.Timestamptz(6)
+
+  users         users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  chat_messages chat_messages[]
+
+  @@index([user_id])
+}
+
+model chat_messages {
+  id                        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chat_id                   String      @db.Uuid
+  sender                    chat_sender
+  content                   String      @db.Text
+  mentioned_evidences       Json?
+  mentioned_technical_facts Json?
+  created_at                DateTime?   @default(now()) @db.Timestamptz(6)
+
+  chats                     chats       @relation(fields: [chat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([chat_id])
+  @@index([chat_id, created_at])
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model reaction_votes {
   id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -131,10 +158,16 @@ model users {
   is_banned          Boolean?             @default(false)
   created_at         DateTime?            @default(now()) @db.Timestamptz(6)
   deleted_at         DateTime?            @db.Timestamptz(6)
+  chats              chats[]
   discussion_threads discussion_threads[]
   opinions           opinions[]
   reaction_votes     reaction_votes[]
   reports            reports[]
+}
+
+enum chat_sender {
+  USER
+  ASSISTANT
 }
 
 enum fact_status {

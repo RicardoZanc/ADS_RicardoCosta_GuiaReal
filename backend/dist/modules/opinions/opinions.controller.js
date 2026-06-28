@@ -1,4 +1,5 @@
 import { opinionsService } from "./opinions.service";
+import { opinionsReactionsService } from "./opinions.reactions.service";
 import { logger } from "../../utils/logger";
 const opinionsController = {
     createOnProduct: async (req, res) => {
@@ -42,6 +43,36 @@ const opinionsController = {
             opinionId,
         });
         res.status(201).json(thread);
+    },
+    reactToOpinion: async (req, res) => {
+        const opinionId = req.params.opinion_id;
+        const userId = req.user.id;
+        logger.info("HTTP PUT /api/opinions/:opinion_id/reaction - Iniciado", {
+            opinionId,
+            userId,
+            action: req.body.action,
+        });
+        const result = await opinionsReactionsService.reactToOpinion(opinionId, userId, req.body.action);
+        logger.info("HTTP PUT /api/opinions/:opinion_id/reaction - Concluído", {
+            opinionId,
+            cachedUpvotes: result.cached_upvotes,
+        });
+        res.status(200).json(result);
+    },
+    reactToThread: async (req, res) => {
+        const threadId = req.params.thread_id;
+        const userId = req.user.id;
+        logger.info("HTTP PUT /api/opinions/threads/:thread_id/reaction - Iniciado", {
+            threadId,
+            userId,
+            action: req.body.action,
+        });
+        const result = await opinionsReactionsService.reactToThread(threadId, userId, req.body.action);
+        logger.info("HTTP PUT /api/opinions/threads/:thread_id/reaction - Concluído", {
+            threadId,
+            cachedUpvotes: result.cached_upvotes,
+        });
+        res.status(200).json(result);
     },
 };
 export { opinionsController };

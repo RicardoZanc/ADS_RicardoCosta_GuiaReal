@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "chat_id": {
+      "type": "string",
+      "description": "UUID do chat, copiado exatamente do payload do webhook"
+    },
+    "title": {
+      "type": "string",
+      "description": "Título curto da conversa quando should_name_conversation for true; string vazia quando false",
+      "maxLength": 255
+    },
+    "assistant_message": {
+      "type": "string",
+      "description": "Resposta completa do assistente ao usuário em pt-BR",
+      "minLength": 1
+    }
+  },
+  "required": ["chat_id", "title", "assistant_message"],
+  "additionalProperties": false
+}
