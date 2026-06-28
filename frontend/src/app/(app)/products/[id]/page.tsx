@@ -13,8 +13,14 @@ import { useProductDetailController } from "./controller";
 
 function DetailSkeleton() {
   return (
-    <div className="space-y-8">
-      <div className="skeleton-shimmer h-64 rounded-2xl border border-border/15" />
+    <div className="flex flex-col gap-10 lg:gap-12">
+      <div className="grid gap-6 rounded-2xl border border-border/15 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:p-8">
+        <div className="order-2 space-y-6 lg:order-1">
+          <div className="skeleton-shimmer h-20 rounded-xl" />
+          <div className="skeleton-shimmer h-40 rounded-xl" />
+        </div>
+        <div className="skeleton-shimmer order-1 aspect-square rounded-2xl lg:order-2 lg:aspect-[4/5] lg:min-h-[22rem]" />
+      </div>
       <div className="skeleton-shimmer h-96 rounded-2xl border border-border/15" />
     </div>
   );
@@ -52,7 +58,7 @@ export default function ProductDetailPage() {
 
   if (isLoadingProduct) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <DetailSkeleton />
       </div>
     );
@@ -74,18 +80,20 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="mb-8">
         <Button asChild variant="ghost" size="sm">
           <Link href="/feed">← Voltar ao feed</Link>
         </Button>
       </div>
 
-      <div className="flex flex-col gap-10">
-        <ProductTaxonomyPanel product={product} />
+      <div className="flex flex-col gap-10 lg:gap-12">
+        <FadeIn>
+          <ProductTaxonomyPanel product={product} />
+        </FadeIn>
 
         <FadeIn>
-          <section className="space-y-6 border-t border-border/15 pt-10">
+          <section className="space-y-6">
             <SectionHeader
               eyebrow="Comentários"
               title="Discussão da comunidade"

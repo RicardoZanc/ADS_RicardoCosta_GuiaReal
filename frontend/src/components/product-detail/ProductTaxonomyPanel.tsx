@@ -47,6 +47,40 @@ function TagList({
   );
 }
 
+function ProductImage({
+  product,
+  imageInitials,
+}: {
+  product: ProductDetailResponse;
+  imageInitials: string;
+}) {
+  const frameClass =
+    "aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border/15 bg-muted/5 lg:aspect-[4/5] lg:min-h-[22rem]";
+
+  if (product.image_url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={product.image_url}
+        alt={product.name}
+        className={cn(frameClass, "h-full w-full object-contain")}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        frameClass,
+        "flex items-center justify-center text-h3 font-medium text-muted"
+      )}
+      aria-hidden
+    >
+      {imageInitials}
+    </div>
+  );
+}
+
 export function ProductTaxonomyPanel({ product }: ProductTaxonomyPanelProps) {
   const { taxonomy } = product;
   const imageInitials =
@@ -54,42 +88,34 @@ export function ProductTaxonomyPanel({ product }: ProductTaxonomyPanelProps) {
     product.name.slice(0, 2).toUpperCase();
 
   return (
-    <section className="rounded-2xl border border-border/15 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
-      <div className="flex gap-4">
-        {product.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.image_url}
-            alt={product.name}
-            className="size-20 shrink-0 rounded-lg border border-border/15 object-cover"
-          />
-        ) : (
-          <div
-            className={cn(
-              "flex size-20 shrink-0 items-center justify-center rounded-lg",
-              "border border-border/15 bg-muted/10 text-small font-medium text-muted"
+    <section className="rounded-2xl border border-border/15 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-start lg:gap-10">
+        <div className="order-2 flex min-w-0 flex-col lg:order-1">
+          <div>
+            <h1 className="text-product-name font-bold text-foreground">
+              {product.name}
+            </h1>
+            <p className="mt-1 text-small text-muted">Produto</p>
+            {product.brand_name && (
+              <p className="mt-2 text-body text-muted lg:text-h4">
+                {product.brand_name}
+              </p>
             )}
-            aria-hidden
-          >
-            {imageInitials}
           </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <Eyebrow size="sm">Produto</Eyebrow>
-          <h1 className="text-product-name mt-2">{product.name}</h1>
-          {product.brand_name && (
-            <p className="mt-1 text-body text-muted">{product.brand_name}</p>
-          )}
-        </div>
-      </div>
 
-      <div className="mt-6 space-y-4 border-t border-border/15 pt-6">
-        <TaxonomyRow label="Tipo" value={taxonomy.tipo?.name} />
-        <TaxonomyRow label="Categoria" value={taxonomy.categoria?.name} />
-        <TaxonomyRow label="Marca" value={taxonomy.marca?.name} />
-        <TagList label="Tecnologias" items={taxonomy.tecnologias} />
-        <TagList label="Composição" items={taxonomy.composicoes} />
-        <TagList label="Atributos" items={taxonomy.atributos} />
+          <div className="mt-8 space-y-4 border-t border-border/15 pt-8 lg:mt-10 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-4 lg:pt-10">
+            <TaxonomyRow label="Tipo" value={taxonomy.tipo?.name} />
+            <TaxonomyRow label="Categoria" value={taxonomy.categoria?.name} />
+            <TaxonomyRow label="Marca" value={taxonomy.marca?.name} />
+            <TagList label="Tecnologias" items={taxonomy.tecnologias} />
+            <TagList label="Composição" items={taxonomy.composicoes} />
+            <TagList label="Atributos" items={taxonomy.atributos} />
+          </div>
+        </div>
+
+        <div className="order-1 lg:order-2">
+          <ProductImage product={product} imageInitials={imageInitials} />
+        </div>
       </div>
     </section>
   );

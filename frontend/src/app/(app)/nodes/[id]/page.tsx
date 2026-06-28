@@ -12,8 +12,8 @@ import { useNodeDetailController } from "./controller";
 
 function DetailSkeleton() {
   return (
-    <div className="space-y-8">
-      <div className="skeleton-shimmer h-64 rounded-2xl border border-border/15" />
+    <div className="flex flex-col gap-10 lg:gap-12">
+      <div className="skeleton-shimmer h-64 rounded-2xl border border-border/15 lg:h-48" />
       <div className="skeleton-shimmer h-96 rounded-2xl border border-border/15" />
     </div>
   );
@@ -50,7 +50,7 @@ export default function NodeDetailPage() {
 
   if (isLoadingNode) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <DetailSkeleton />
       </div>
     );
@@ -87,18 +87,20 @@ export default function NodeDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="mb-8">
         <Button asChild variant="ghost" size="sm">
           <Link href="/feed">← Voltar ao feed</Link>
         </Button>
       </div>
 
-      <div className="flex flex-col gap-10">
-        <NodeContextPanel node={node} />
+      <div className="flex flex-col gap-10 lg:gap-12">
+        <FadeIn>
+          <NodeContextPanel node={node} />
+        </FadeIn>
 
         <FadeIn>
-          <section className="space-y-6 border-t border-border/15 pt-10">
+          <section className="space-y-6">
             <SectionHeader
               eyebrow="Comentários"
               title="Discussão da comunidade"
