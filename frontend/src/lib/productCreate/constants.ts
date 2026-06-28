@@ -5,12 +5,13 @@ export type WizardStep =
   | "categoria"
   | "marca"
   | "modelo"
+  | "imagem"
   | "tecnologia"
   | "composicao"
   | "atributo"
   | "revisao";
 
-export type StepKind = "node-single" | "node-multi" | "model" | "review";
+export type StepKind = "node-single" | "node-multi" | "model" | "image" | "review";
 
 export interface StepConfig {
   key: WizardStep;
@@ -60,6 +61,14 @@ export const WIZARD_STEPS: StepConfig[] = [
     helperText:
       "Nome comercial específico do produto (ex.: RG450DX).",
     kind: "model",
+  },
+  {
+    key: "imagem",
+    label: "Imagem",
+    title: "Adicione uma foto do produto",
+    helperText:
+      "Opcional. Formatos JPEG, PNG, WebP ou GIF. Tamanho máximo de 50 MB.",
+    kind: "image",
   },
   {
     key: "tecnologia",

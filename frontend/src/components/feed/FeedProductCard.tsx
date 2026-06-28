@@ -29,19 +29,31 @@ function getNodeTypeLabelForItem(item: FeedItem): string {
 }
 
 function ProductFeedCardContent({ item }: FeedProductCardProps) {
+  const imageInitials =
+    item.brand_name?.slice(0, 2).toUpperCase() ?? "GR";
+
   return (
     <Card className="transition-colors group-hover:border-accent/50">
       <CardHeader className="pb-3">
         <div className="flex gap-4">
-          <div
-            className={cn(
-              "flex size-16 shrink-0 items-center justify-center",
-              "border border-border/30 bg-muted/30 font-mono text-small text-muted"
-            )}
-            aria-hidden
-          >
-            {item.brand_name?.slice(0, 2).toUpperCase() ?? "GR"}
-          </div>
+          {item.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.image_url}
+              alt={item.name}
+              className="size-16 shrink-0 border border-border/30 object-cover"
+            />
+          ) : (
+            <div
+              className={cn(
+                "flex size-16 shrink-0 items-center justify-center",
+                "border border-border/30 bg-muted/30 font-mono text-small text-muted"
+              )}
+              aria-hidden
+            >
+              {imageInitials}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <CardTitle className="text-h4 group-hover:text-accent">
               {item.name}

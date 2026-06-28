@@ -3,6 +3,14 @@ import type { FeedNodeType, FeedPagination } from "@/lib/types/feed";
 export interface CreateProductPayload {
   name: string;
   nodeIds: string[];
+  image_url?: string;
+}
+
+export interface ProductImageUploadResponse {
+  path: string;
+  signedUrl: string;
+  token: string;
+  publicUrl: string;
 }
 
 export interface CreateProductResponse {

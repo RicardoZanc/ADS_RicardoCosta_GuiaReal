@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -19,13 +19,14 @@ import {
   productModelSchema,
   type ProductModelFormData,
 } from "@/lib/schemas/productCreate";
+import type { ReviewItem } from "@/components/product-create/ProductCreateReviewList";
+import { uploadProductImage } from "@/lib/uploads/productImage";
 import type {
   NodeRecord,
   NodesListResponse,
   SelectedNode,
 } from "@/lib/types/nodes";
 import type { CreateProductResponse } from "@/lib/types/products";
-import type { ReviewItem } from "@/components/product-create/ProductCreateReviewList";
 
 interface DuplicatePrompt {
   name: string;
@@ -45,8 +46,19 @@ export function useProductCreateController() {
   const [tecnologias, setTecnologias] = useState<SelectedNode[]>([]);
   const [composicoes, setComposicoes] = useState<SelectedNode[]>([]);
   const [atributos, setAtributos] = useState<SelectedNode[]>([]);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imagePublicUrl, setImagePublicUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicate, setDuplicate] = useState<DuplicatePrompt | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   const modelForm = useForm<ProductModelFormData>({
     resolver: zodResolver(productModelSchema),
@@ -221,6 +233,39 @@ export function useProductCreateController() {
     multi.set(multi.items.filter((item) => item.id !== id));
   }
 
+  function removeImage() {
+    setImagePublicUrl(null);
+    setImagePreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return null;
+    });
+  }
+
+  async function selectImage(file: File) {
+    const preview = URL.createObjectURL(file);
+    setImagePreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return preview;
+    });
+    setImagePublicUrl(null);
+    setIsUploadingImage(true);
+
+    try {
+      const publicUrl = await uploadProductImage(file);
+      setImagePublicUrl(publicUrl);
+    } catch (error) {
+      removeImage();
+      if (notifyApiError(error)) return;
+      throw error;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
   function computeCanProceed(): boolean {
     switch (stepConfig.kind) {
       case "node-single":
@@ -229,6 +274,8 @@ export function useProductCreateController() {
         return true;
       case "model":
         return modelName.trim().length >= 1;
+      case "image":
+        return true;
       case "review":
         return Boolean(tipo && categoria && marca && modelName.trim());
       default:
@@ -271,6 +318,7 @@ export function useProductCreateController() {
         categoria ||
         marca ||
         modelName.trim() ||
+        imagePublicUrl ||
         tecnologias.length ||
         composicoes.length ||
         atributos.length
@@ -302,7 +350,11 @@ export function useProductCreateController() {
     try {
       await apiClient<CreateProductResponse>("/products", {
         method: "POST",
-        body: JSON.stringify({ name: modelName.trim(), nodeIds }),
+        body: JSON.stringify({
+          name: modelName.trim(),
+          nodeIds,
+          ...(imagePublicUrl ? { image_url: imagePublicUrl } : {}),
+        }),
       });
 
       toast.success("Produto cadastrado com sucesso");
@@ -334,6 +386,13 @@ export function useProductCreateController() {
       values: modelName.trim() ? [modelName.trim()] : [],
     },
     {
+      step: "imagem",
+      label: "Imagem",
+      values: imagePublicUrl ? ["Imagem selecionada"] : [],
+      emptyHint: "Nenhuma (opcional)",
+      imagePreviewUrl,
+    },
+    {
       step: "tecnologia",
       label: "Tecnologia",
       values: tecnologias.map((node) => node.name),
@@ -362,6 +421,8 @@ export function useProductCreateController() {
     isReviewStep,
     canProceed,
     isSubmitting,
+    isUploadingImage,
+    imagePreviewUrl,
 
     currentSingleValue: getSingleValue(step),
     currentMultiItems: getMultiState(step)?.items ?? [],
@@ -388,6 +449,8 @@ export function useProductCreateController() {
     renameSelected,
     swapSelected,
     removeTag,
+    selectImage,
+    removeImage,
 
     goNext,
     goBack,

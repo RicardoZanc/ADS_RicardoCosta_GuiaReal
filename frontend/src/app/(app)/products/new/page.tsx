@@ -6,6 +6,7 @@ import { NodeSearchField } from "@/components/product-create/NodeSearchField";
 import { SelectedNodeCard } from "@/components/product-create/SelectedNodeCard";
 import { NodeTagList } from "@/components/product-create/NodeTagList";
 import { ProductCreateReviewList } from "@/components/product-create/ProductCreateReviewList";
+import { ProductImageField } from "@/components/product-create/ProductImageField";
 import { WizardNav } from "@/components/product-create/WizardNav";
 import { useProductCreateController } from "./controller";
 
@@ -18,6 +19,8 @@ export default function ProductCreatePage() {
     isReviewStep,
     canProceed,
     isSubmitting,
+    isUploadingImage,
+    imagePreviewUrl,
     currentSingleValue,
     currentMultiItems,
     modelRegister,
@@ -32,6 +35,8 @@ export default function ProductCreatePage() {
     renameSelected,
     swapSelected,
     removeTag,
+    selectImage,
+    removeImage,
     goNext,
     goBack,
     goToStep,
@@ -127,6 +132,16 @@ export default function ProductCreatePage() {
           </div>
         )}
 
+        {stepConfig.kind === "image" && (
+          <ProductImageField
+            previewUrl={imagePreviewUrl}
+            disabled={isSubmitting}
+            isUploading={isUploadingImage}
+            onSelect={selectImage}
+            onRemove={removeImage}
+          />
+        )}
+
         {stepConfig.kind === "review" && (
           <ProductCreateReviewList
             items={reviewItems}
@@ -168,7 +183,7 @@ export default function ProductCreatePage() {
         isFirstStep={isFirstStep}
         isReviewStep={isReviewStep}
         canProceed={canProceed}
-        isBusy={isSubmitting}
+        isBusy={isSubmitting || isUploadingImage}
         onBack={goBack}
         onNext={goNext}
         onSubmit={submit}

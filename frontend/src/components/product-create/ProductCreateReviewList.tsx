@@ -7,6 +7,7 @@ export interface ReviewItem {
   label: string;
   values: string[];
   emptyHint?: string;
+  imagePreviewUrl?: string | null;
 }
 
 interface ProductCreateReviewListProps {
@@ -36,7 +37,17 @@ export function ProductCreateReviewList({
                 {item.label}
               </span>
               <span className="min-w-0 flex-1 text-right text-body text-foreground">
-                {isEmpty ? (
+                {item.imagePreviewUrl ? (
+                  <span className="inline-flex items-center justify-end gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.imagePreviewUrl}
+                      alt=""
+                      className="size-10 border border-border/30 object-cover"
+                    />
+                    <span>{item.values[0] ?? "Imagem selecionada"}</span>
+                  </span>
+                ) : isEmpty ? (
                   <span className="text-muted">
                     {item.emptyHint ?? "Não informado"}
                   </span>

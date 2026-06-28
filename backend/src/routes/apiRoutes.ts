@@ -5,6 +5,7 @@ import { opinionsRoutes } from "../modules/opinions/opinions.routes";
 import { productsRoutes } from "../modules/products/products.routes";
 import { feedRoutes } from "../modules/feed/feed.routes";
 import { chatsRoutes } from "../modules/chats/chats.routes";
+import { uploadsRoutes } from "../modules/uploads/uploads.routes";
 
 const apiRoutes = Router();
 
@@ -14,5 +15,6 @@ apiRoutes.use('/opinions', opinionsRoutes);
 apiRoutes.use('/products', productsRoutes);
 apiRoutes.use('/feed', feedRoutes);
 apiRoutes.use('/chats', chatsRoutes);
+apiRoutes.use('/uploads', uploadsRoutes);
 
 export { apiRoutes };
