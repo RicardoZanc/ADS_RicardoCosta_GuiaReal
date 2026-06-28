@@ -2,25 +2,25 @@ import { Request, Response } from "express";
 import { technicalFactsService } from "./technical_facts.service";
 import type {
   CreateTechnicalFactInput,
-  ListPendingInteractionsQuery,
+  ListPendingQueueQuery,
+  MarkQueueItemProcessedParams,
 } from "./technical_facts.schema";
 import { logger } from "../../utils/logger";
 
 const technicalFactsController = {
-  listPendingInteractions: async (req: Request, res: Response) => {
-    const query = req.query as unknown as ListPendingInteractionsQuery;
+  listPendingQueue: async (req: Request, res: Response) => {
+    const query = req.query as unknown as ListPendingQueueQuery;
 
-    logger.info(
-      "HTTP GET /tool/technical-facts/pending-interactions - Iniciado",
-      { page: query.page, limit: query.limit }
-    );
+    logger.info("HTTP GET /tool/technical-facts/pending-queue - Iniciado", {
+      page: query.page,
+      limit: query.limit,
+    });
 
-    const result = await technicalFactsService.listPendingInteractions(query);
+    const result = await technicalFactsService.listPendingQueue(query);
 
-    logger.info(
-      "HTTP GET /tool/technical-facts/pending-interactions - Concluído",
-      { total: result.pagination.total }
-    );
+    logger.info("HTTP GET /tool/technical-facts/pending-queue - Concluído", {
+      total: result.pagination.total,
+    });
 
     res.status(200).json(result);
   },
@@ -30,7 +30,7 @@ const technicalFactsController = {
 
     logger.info("HTTP POST /tool/technical-facts - Iniciado", {
       nodeId: body.node_id,
-      evidenceCount: body.evidence_thread_ids.length,
+      evidenceCount: body.evidence.length,
     });
 
     const fact = await technicalFactsService.createFact(body);
@@ -42,20 +42,23 @@ const technicalFactsController = {
     res.status(201).json(fact);
   },
 
-  markInteractionProcessed: async (req: Request, res: Response) => {
-    const threadId = req.params.thread_id as string;
+  markQueueItemProcessed: async (req: Request, res: Response) => {
+    const { source_type: sourceType, source_id: sourceId } =
+      req.params as unknown as MarkQueueItemProcessedParams;
 
     logger.info(
-      "HTTP PATCH /tool/technical-facts/interactions/:thread_id/processed - Iniciado",
-      { threadId }
+      "HTTP PATCH /tool/technical-facts/queue/:source_type/:source_id/processed - Iniciado",
+      { sourceType, sourceId }
     );
 
-    const result =
-      await technicalFactsService.markInteractionProcessed(threadId);
+    const result = await technicalFactsService.markQueueItemProcessed(
+      sourceType,
+      sourceId
+    );
 
     logger.info(
-      "HTTP PATCH /tool/technical-facts/interactions/:thread_id/processed - Concluído",
-      { threadId }
+      "HTTP PATCH /tool/technical-facts/queue/:source_type/:source_id/processed - Concluído",
+      { sourceType, sourceId }
     );
 
     res.status(200).json(result);

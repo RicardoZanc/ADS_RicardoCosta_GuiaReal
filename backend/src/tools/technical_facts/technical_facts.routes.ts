@@ -2,9 +2,9 @@ import { Router } from "express";
 import { technicalFactsController } from "./technical_facts.controller";
 import {
   createTechnicalFactSchema,
-  listPendingInteractionsSchema,
+  listPendingQueueSchema,
   listTechnicalFactsByNodeSchema,
-  markInteractionProcessedSchema,
+  markQueueItemProcessedSchema,
 } from "./technical_facts.schema";
 import { validate } from "../../middlewares/validate.middleware";
 import { authenticateToolApiKey } from "../../middlewares/toolAuth.middleware";
@@ -14,9 +14,9 @@ const technicalFactsRoutes = Router();
 technicalFactsRoutes.use(authenticateToolApiKey);
 
 technicalFactsRoutes.get(
-  "/pending-interactions",
-  validate(listPendingInteractionsSchema),
-  technicalFactsController.listPendingInteractions
+  "/pending-queue",
+  validate(listPendingQueueSchema),
+  technicalFactsController.listPendingQueue
 );
 
 technicalFactsRoutes.post(
@@ -26,9 +26,9 @@ technicalFactsRoutes.post(
 );
 
 technicalFactsRoutes.patch(
-  "/interactions/:thread_id/processed",
-  validate(markInteractionProcessedSchema),
-  technicalFactsController.markInteractionProcessed
+  "/queue/:source_type/:source_id/processed",
+  validate(markQueueItemProcessedSchema),
+  technicalFactsController.markQueueItemProcessed
 );
 
 technicalFactsRoutes.get(

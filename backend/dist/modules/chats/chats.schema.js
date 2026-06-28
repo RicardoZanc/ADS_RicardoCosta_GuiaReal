@@ -1,11 +1,26 @@
 import { z } from "zod";
+const messageContentSchema = z
+    .string()
+    .trim()
+    .min(1, "O conteúdo da mensagem é obrigatório")
+    .max(4000, "A mensagem deve ter no máximo 4000 caracteres");
 export const createChatSchema = z.object({
     body: z.object({
-        content: z
-            .string()
-            .trim()
-            .min(1, "O conteúdo da mensagem é obrigatório")
-            .max(4000, "A mensagem deve ter no máximo 4000 caracteres"),
+        content: messageContentSchema,
+    }),
+});
+export const listChatsSchema = z.object({});
+export const getChatSchema = z.object({
+    params: z.object({
+        id: z.uuid("ID do chat inválido"),
+    }),
+});
+export const sendMessageSchema = z.object({
+    params: z.object({
+        id: z.uuid("ID do chat inválido"),
+    }),
+    body: z.object({
+        content: messageContentSchema,
     }),
 });
 export const agentResponseSchema = z.object({

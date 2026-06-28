@@ -12,6 +12,7 @@ export async function seedTechnicalFacts({ nodes, community, }) {
                     create: [
                         { interaction_id: community.threads.floydThread.id },
                         { interaction_id: community.threads.processedThread.id },
+                        { opinion_id: community.opinions.floydNodeOpinion.id },
                     ],
                 },
             },

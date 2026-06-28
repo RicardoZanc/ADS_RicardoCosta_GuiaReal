@@ -41,3 +41,31 @@ Header: `X-Tool-Api-Key: {TOOL_API_KEY}`
 `title` vazio (`""`) indica que o título não deve ser alterado (usado quando `should_name_conversation: false`).
 
 Documentação completa: [backend/.cursor/docs/api/chats.md](../../backend/.cursor/docs/api/chats.md)
+
+## Technical Facts Agent
+
+Fluxo: `HTTP Request` (pending-queue) → `AI Agent` → tools HTTP
+
+| Arquivo | Uso no n8n |
+|---------|------------|
+| [create_technical_facts.md](create_technical_facts.md) | **System Message** do nó AI Agent |
+
+### Entrada do agente
+
+`GET {TOOL_BASE_URL}/technical-facts/pending-queue`
+
+Header: `X-Tool-Api-Key: {TOOL_API_KEY}`
+
+O payload `data[]` contém itens unificados com `source_type` (`opinion` | `thread`), `source_id`, `title`, `content`, `node_id`, `product_id`, `evidence_weight`, `cached_upvotes` e `author`.
+
+### Tools disponíveis para o agente
+
+| Tool | Método | Uso |
+|------|--------|-----|
+| Listar nós do produto | `GET /tool/products/{product_id}/nodes` | Quando `node_id` for nulo e houver `product_id` |
+| Descartar item da fila | `PATCH /tool/technical-facts/queue/{source_type}/{source_id}/processed` | Conteúdo social ou sem substância técnica |
+| Criar fato técnico | `POST /tool/technical-facts` | Conclusão técnica consolidada (`evidence[]`) |
+
+No n8n, configure cada rota como um nó **HTTP Request Tool** conectado ao AI Agent, com `toolDescription` espelhando a documentação da API.
+
+Documentação completa: [backend/.cursor/docs/api/technical_facts.md](../../backend/.cursor/docs/api/technical_facts.md), [products_tool.md](../../backend/.cursor/docs/api/products_tool.md)

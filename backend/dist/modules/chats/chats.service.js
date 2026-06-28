@@ -2,7 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { logger } from "../../utils/logger";
 import { dispatchN8nChatWebhook } from "../../lib/n8nChatWebhook";
 import { chatRoomId, getIo } from "../../lib/socket";
-import { assertChatExists } from "./chats.domainRules";
+import { assertChatBelongsToUser, assertChatExists, } from "./chats.domainRules";
 const chatSelect = {
     id: true,
     user_id: true,
@@ -100,7 +100,59 @@ const handleAgentResponse = async (input) => {
         message: result.message,
     };
 };
+const listByUser = async (userId) => {
+    const chats = await prisma.chats.findMany({
+        where: { user_id: userId },
+        select: chatSelect,
+        orderBy: { created_at: "desc" },
+    });
+    return { data: chats };
+};
+const getById = async (userId, chatId) => {
+    await assertChatBelongsToUser(chatId, userId);
+    const chat = await prisma.chats.findUniqueOrThrow({
+        where: { id: chatId },
+        select: {
+            ...chatSelect,
+            chat_messages: {
+                select: messageSelect,
+                orderBy: { created_at: "asc" },
+            },
+        },
+    });
+    const { chat_messages, ...chatData } = chat;
+    return {
+        ...chatData,
+        messages: chat_messages,
+    };
+};
+const sendMessage = async (userId, chatId, input) => {
+    await assertChatBelongsToUser(chatId, userId);
+    const message = await prisma.chat_messages.create({
+        data: {
+            chat_id: chatId,
+            sender: "USER",
+            content: input.content,
+        },
+        select: messageSelect,
+    });
+    dispatchN8nChatWebhook({
+        chat_id: chatId,
+        user_id: userId,
+        user_message: input.content,
+        should_name_conversation: false,
+    });
+    logger.debug("Chat: mensagem do usuário persistida", {
+        chatId,
+        userId,
+        messageId: message.id,
+    });
+    return { message };
+};
 export const chatsService = {
     createWithFirstMessage,
     handleAgentResponse,
+    listByUser,
+    getById,
+    sendMessage,
 };

@@ -100,8 +100,10 @@ export const Discussion_threadsScalarFieldEnum = {
     created_at: 'created_at'
 };
 export const Fact_evidenceScalarFieldEnum = {
+    id: 'id',
     fact_id: 'fact_id',
-    interaction_id: 'interaction_id'
+    interaction_id: 'interaction_id',
+    opinion_id: 'opinion_id'
 };
 export const NodesScalarFieldEnum = {
     id: 'id',

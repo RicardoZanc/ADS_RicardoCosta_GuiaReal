@@ -1,14 +1,22 @@
+import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 import { BadRequestError, NotFoundError } from "../../lib/errors/BaseError";
 import { ensureNodeExists } from "../../modules/opinions/opinions.domainRules";
-import { calculateEvidenceWeight } from "./technical_facts.domainRules";
+import {
+  calculateEvidenceWeight,
+  evidenceRefKey,
+  type EvidenceSourceType,
+} from "./technical_facts.domainRules";
 import type {
   CreateTechnicalFactInput,
-  ListPendingInteractionsQuery,
+  EvidenceRef,
+  ListPendingQueueQuery,
 } from "./technical_facts.schema";
 
-type PendingInteractionItem = {
-  thread_id: string;
+type PendingQueueItem = {
+  source_type: EvidenceSourceType;
+  source_id: string;
+  title: string | null;
   content: string;
   opinion_id: string | null;
   node_id: string | null;
@@ -21,59 +29,103 @@ type PendingInteractionItem = {
   };
 };
 
-const listPendingInteractions = async (query: ListPendingInteractionsQuery) => {
+type PendingQueueRow = {
+  source_type: EvidenceSourceType;
+  source_id: string;
+  title: string | null;
+  content: string;
+  opinion_id: string | null;
+  node_id: string | null;
+  product_id: string | null;
+  cached_upvotes: number | null;
+  status: "PENDING" | "PROCESSED" | null;
+  reputation_score: number | null;
+  is_banned: boolean | null;
+};
+
+const mapPendingRow = (row: PendingQueueRow): PendingQueueItem => ({
+  source_type: row.source_type,
+  source_id: row.source_id,
+  title: row.title,
+  content: row.content,
+  opinion_id: row.opinion_id,
+  node_id: row.node_id,
+  product_id: row.product_id,
+  cached_upvotes: row.cached_upvotes,
+  evidence_weight: calculateEvidenceWeight({
+    cached_upvotes: row.cached_upvotes,
+    status: row.status,
+    user: {
+      reputation_score: row.reputation_score,
+      is_banned: row.is_banned,
+    },
+  }),
+  author: {
+    reputation_score: row.reputation_score,
+    is_banned: row.is_banned,
+  },
+});
+
+const listPendingQueue = async (query: ListPendingQueueQuery) => {
   const { page, limit } = query;
   const skip = (page - 1) * limit;
 
-  const [pendingThreads, total] = await Promise.all([
-    prisma.discussion_threads.findMany({
-      where: { status: "PENDING" },
-      include: {
-        users: {
-          select: {
-            reputation_score: true,
-            is_banned: true,
-          },
-        },
-        opinions: {
-          select: {
-            node_id: true,
-            product_id: true,
-          },
-        },
-      },
-      orderBy: { created_at: "asc" },
-      skip,
-      take: limit,
-    }),
-    prisma.discussion_threads.count({
-      where: { status: "PENDING" },
-    }),
+  const [rows, countResult] = await Promise.all([
+    prisma.$queryRaw<PendingQueueRow[]>(Prisma.sql`
+      SELECT * FROM (
+        SELECT
+          'opinion'::text AS source_type,
+          o.id AS source_id,
+          o.title,
+          o.content,
+          o.id AS opinion_id,
+          o.node_id,
+          o.product_id,
+          o.cached_upvotes,
+          o.status,
+          u.reputation_score,
+          u.is_banned,
+          o.created_at
+        FROM opinions o
+        INNER JOIN users u ON u.id = o.user_id
+        WHERE o.status = 'PENDING'
+
+        UNION ALL
+
+        SELECT
+          'thread'::text AS source_type,
+          dt.id AS source_id,
+          NULL::varchar AS title,
+          dt.content,
+          dt.opinion_id,
+          COALESCE(parent_op.node_id, NULL) AS node_id,
+          COALESCE(parent_op.product_id, NULL) AS product_id,
+          dt.cached_upvotes,
+          dt.status,
+          u.reputation_score,
+          u.is_banned,
+          dt.created_at
+        FROM discussion_threads dt
+        INNER JOIN users u ON u.id = dt.user_id
+        LEFT JOIN opinions parent_op ON parent_op.id = dt.opinion_id
+        WHERE dt.status = 'PENDING'
+      ) AS pending_queue
+      ORDER BY created_at ASC
+      LIMIT ${limit} OFFSET ${skip}
+    `),
+    prisma.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+      SELECT COUNT(*)::bigint AS count FROM (
+        SELECT o.id FROM opinions o WHERE o.status = 'PENDING'
+        UNION ALL
+        SELECT dt.id FROM discussion_threads dt WHERE dt.status = 'PENDING'
+      ) AS pending_count
+    `),
   ]);
 
-  const data: PendingInteractionItem[] = pendingThreads.map((thread) => ({
-    thread_id: thread.id,
-    content: thread.content,
-    opinion_id: thread.opinion_id,
-    node_id: thread.opinions?.node_id ?? null,
-    product_id: thread.opinions?.product_id ?? null,
-    evidence_weight: calculateEvidenceWeight({
-      cached_upvotes: thread.cached_upvotes,
-      status: thread.status,
-      user: {
-        reputation_score: thread.users.reputation_score,
-        is_banned: thread.users.is_banned,
-      },
-    }),
-    cached_upvotes: thread.cached_upvotes,
-    author: {
-      reputation_score: thread.users.reputation_score,
-      is_banned: thread.users.is_banned,
-    },
-  }));
+  const total = Number(countResult[0]?.count ?? 0);
 
   return {
-    data,
+    data: rows.map(mapPendingRow),
     pagination: {
       page,
       limit,
@@ -83,30 +135,55 @@ const listPendingInteractions = async (query: ListPendingInteractionsQuery) => {
   };
 };
 
+const dedupeEvidence = (evidence: EvidenceRef[]): EvidenceRef[] => {
+  const seen = new Set<string>();
+  const unique: EvidenceRef[] = [];
+
+  for (const item of evidence) {
+    const key = evidenceRefKey(item.source_type, item.source_id);
+    if (seen.has(key)) {
+      throw new BadRequestError("evidence não pode conter fontes duplicadas");
+    }
+    seen.add(key);
+    unique.push(item);
+  }
+
+  return unique;
+};
+
 const createFact = async (input: CreateTechnicalFactInput) => {
   await ensureNodeExists(input.node_id);
 
-  const uniqueThreadIds = [...new Set(input.evidence_thread_ids)];
-  if (uniqueThreadIds.length !== input.evidence_thread_ids.length) {
-    throw new BadRequestError(
-      "evidence_thread_ids não pode conter valores duplicados"
-    );
+  const uniqueEvidence = dedupeEvidence(input.evidence);
+
+  const opinionIds = uniqueEvidence
+    .filter((item) => item.source_type === "opinion")
+    .map((item) => item.source_id);
+  const threadIds = uniqueEvidence
+    .filter((item) => item.source_type === "thread")
+    .map((item) => item.source_id);
+
+  const [opinions, threads] = await Promise.all([
+    opinionIds.length > 0
+      ? prisma.opinions.findMany({
+          where: { id: { in: opinionIds } },
+          select: { id: true },
+        })
+      : Promise.resolve([]),
+    threadIds.length > 0
+      ? prisma.discussion_threads.findMany({
+          where: { id: { in: threadIds } },
+          select: { id: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  if (opinions.length !== opinionIds.length) {
+    throw new NotFoundError("Uma ou mais opiniões de evidência não existem");
   }
 
-  const threads = await prisma.discussion_threads.findMany({
-    where: { id: { in: uniqueThreadIds } },
-    select: { id: true, status: true },
-  });
-
-  if (threads.length !== uniqueThreadIds.length) {
+  if (threads.length !== threadIds.length) {
     throw new NotFoundError("Uma ou mais threads de evidência não existem");
-  }
-
-  const nonPending = threads.filter((thread) => thread.status !== "PENDING");
-  if (nonPending.length > 0) {
-    throw new BadRequestError(
-      "Todas as threads de evidência devem estar com status PENDING"
-    );
   }
 
   return prisma.$transaction(async (tx) => {
@@ -130,44 +207,81 @@ const createFact = async (input: CreateTechnicalFactInput) => {
     });
 
     await tx.fact_evidence.createMany({
-      data: uniqueThreadIds.map((interactionId) => ({
+      data: uniqueEvidence.map((item) => ({
         fact_id: fact.id,
-        interaction_id: interactionId,
+        interaction_id: item.source_type === "thread" ? item.source_id : null,
+        opinion_id: item.source_type === "opinion" ? item.source_id : null,
       })),
     });
 
-    await tx.discussion_threads.updateMany({
-      where: { id: { in: uniqueThreadIds } },
-      data: { status: "PROCESSED" },
-    });
+    if (opinionIds.length > 0) {
+      await tx.opinions.updateMany({
+        where: { id: { in: opinionIds } },
+        data: { status: "PROCESSED" },
+      });
+    }
+
+    if (threadIds.length > 0) {
+      await tx.discussion_threads.updateMany({
+        where: { id: { in: threadIds } },
+        data: { status: "PROCESSED" },
+      });
+    }
 
     return {
       ...fact,
-      evidence_thread_ids: uniqueThreadIds,
+      evidence: uniqueEvidence,
     };
   });
 };
 
-const markInteractionProcessed = async (threadId: string) => {
+const markQueueItemProcessed = async (
+  sourceType: EvidenceSourceType,
+  sourceId: string
+) => {
+  if (sourceType === "opinion") {
+    const opinion = await prisma.opinions.findUnique({
+      where: { id: sourceId },
+      select: { id: true, status: true },
+    });
+
+    if (!opinion) {
+      throw new NotFoundError("Opinião não encontrada");
+    }
+
+    const updated = await prisma.opinions.update({
+      where: { id: sourceId },
+      data: { status: "PROCESSED" },
+      select: { id: true, status: true },
+    });
+
+    return {
+      source_type: "opinion" as const,
+      source_id: updated.id,
+      status: updated.status,
+    };
+  }
+
   const thread = await prisma.discussion_threads.findUnique({
-    where: { id: threadId },
+    where: { id: sourceId },
     select: { id: true, status: true },
   });
 
   if (!thread) {
-    throw new NotFoundError("Interação não encontrada");
+    throw new NotFoundError("Thread não encontrada");
   }
 
   const updated = await prisma.discussion_threads.update({
-    where: { id: threadId },
+    where: { id: sourceId },
     data: { status: "PROCESSED" },
-    select: {
-      id: true,
-      status: true,
-    },
+    select: { id: true, status: true },
   });
 
-  return updated;
+  return {
+    source_type: "thread" as const,
+    source_id: updated.id,
+    status: updated.status,
+  };
 };
 
 const listByNode = async (nodeId: string) => {
@@ -179,6 +293,7 @@ const listByNode = async (nodeId: string) => {
       fact_evidence: {
         select: {
           interaction_id: true,
+          opinion_id: true,
         },
       },
     },
@@ -194,16 +309,24 @@ const listByNode = async (nodeId: string) => {
       consensus_score: fact.consensus_score,
       status: fact.status,
       last_updated: fact.last_updated,
-      evidence_thread_ids: fact.fact_evidence.map(
-        (evidence) => evidence.interaction_id
+      evidence: fact.fact_evidence.map((item) =>
+        item.opinion_id
+          ? {
+              source_type: "opinion" as const,
+              source_id: item.opinion_id,
+            }
+          : {
+              source_type: "thread" as const,
+              source_id: item.interaction_id!,
+            }
       ),
     })),
   };
 };
 
 export const technicalFactsService = {
-  listPendingInteractions,
+  listPendingQueue,
   createFact,
-  markInteractionProcessed,
+  markQueueItemProcessed,
   listByNode,
 };

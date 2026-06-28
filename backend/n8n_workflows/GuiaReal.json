@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "url": "={{$env.TOOL_BASE_URL}}/technical-facts/pending-interactions",
+        "url": "={{$env.TOOL_BASE_URL}}/technical-facts/pending-queue",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "options": {}
@@ -41,7 +41,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Vocẽ é o agente que cria fatos técnicos para o guia real, verifique os dados da interação da comunidade a seguir e utilize a tool para criar os dados técnicos obtidos das interações\n\n {{ JSON.stringify($json.data) }}",
+        "text": "={\n  \"system_prompt\": \"Role: Engenheiro de Conhecimento e Especialista em Análise de Dados de Comunidade.\\nContexto: Você analisa mensagens de usuários sobre produtos para extrair fatos técnicos consolidados para o sistema GuiaReal.\\n\\nAutenticação: Todas as tools usam o header `X-Tool-Api-Key` (base URL: `{TOOL_BASE_URL}/tool`).\\n\\nInstruções de Execução:\\n\\n1. Agrupamento Temático:\\n   - Identifique itens que discutem o mesmo componente, tecnologia, material ou atributo técnico.\\n   - Itens da fila têm `source_type`: `opinion` (opinião raiz) ou `thread` (comentário/resposta).\\n   - Caso o `node_id` seja nulo e houver `product_id`, chame `GET /tool/products/{product_id}/nodes`.\\n   - Escolha o `node_id` da lista retornada que melhor corresponda ao tema.\\n\\n2. Resolução de Conflitos e Consenso (Cálculo Lógico):\\n   - Avalie o teor dos itens agrupados.\\n   - Some os `evidence_weight` e `cached_upvotes` para medir a relevância de cada argumento.\\n   - Determine o `status` do fato baseado nas seguintes regras de negócio:\\n     * VERIFIED: Há forte concordância entre usuários de alta reputação, ou argumentos técnicos sólidos sem contestação válida.\\n     * DISPUTED: Existem opiniões divididas com pesos equivalentes de evidência (ex: um grupo defende painel IPS e outro defende 144Hz para o mesmo cenário).\\n     * HYPOTHESIS: Declarações isoladas que fazem sentido técnico, mas possuem baixo peso amostral/votos para cravar como verdade absoluta.\\n\\n3. Tomada de Ação (Uso de Ferramentas):\\n   - Para dados puramente sociais, irrelevantes ou sem substância técnica: chame `PATCH /tool/technical-facts/queue/{source_type}/{source_id}/processed` (ex.: `opinion/uuid` ou `thread/uuid`). Marca o item como `PROCESSED` sem criar fato.\\n   - Para conclusões técnicas maduras ou em disputa: chame `POST /tool/technical-facts` com o body:\\n     * Obrigatório: `node_id` (uuid), `fact_label` (string), `evidence` (array min 1 de `{ source_type, source_id }`)\\n     * Opcional: `fact_description` (string), `consensus_score` (number), `status` (`HYPOTHESIS` | `VERIFIED` | `DISPUTED`)\\n\\nRegras de Saída (Output):\\n- O campo `fact_label` deve ser uma afirmação técnica direta, curta e objetiva (ex: \\\"Uso de óleo de máquina nos pivôs aumenta estabilidade da afinação\\\").\\n- O campo `consensus_score` deve refletir a taxa de concordância encontrada (de 0.00 a 1.00).\\n- Nunca invente UUIDs. Use estritamente os `source_id` fornecidos na entrada de dados.\",\n  \"user_prompt\": {{ JSON.stringify($json.data) }}\n}",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -80,7 +80,7 @@
     },
     {
       "parameters": {
-        "toolDescription": "Cria um fato técnico consolidado, vincula evidências e marca threads como `PROCESSED`.\n\n| Item | Valor |\n|------|-------|\n| Autenticação | `X-Tool-Api-Key` |\n| Sucesso | `201 Created` |\n\n### Body\n\n| Campo | Tipo | Obrigatório |\n|-------|------|-------------|\n| `node_id` | uuid | sim |\n| `fact_label` | string | sim |\n| `fact_description` | string | não |\n| `consensus_score` | number | não |\n| `status` | `HYPOTHESIS` · `VERIFIED` · `DISPUTED` | não |\n| `evidence_thread_ids` | uuid[] (min 1) | sim |\n\n### Resposta\n\n```json\n{\n  \"id\": \"uuid\",\n  \"node_id\": \"uuid\",\n  \"fact_label\": \"Ponte fixa mantém melhor afinação\",\n  \"fact_description\": null,\n  \"consensus_score\": 0,\n  \"status\": \"HYPOTHESIS\",\n  \"last_updated\": \"2026-01-01T00:00:00.000Z\",\n  \"evidence_thread_ids\": [\"uuid\"]\n}\n```\n\n### Erros\n\n| Status | `message` típico |\n|--------|------------------|\n| `400` | Threads de evidência devem estar PENDING |\n| `404` | Nó ou thread não encontrada |\n| `422` | Payload inválido |\n\n---",
+        "toolDescription": "Cria um fato tecnico consolidado, vincula evidencias (opinioes e/ou threads) e marca fontes como PROCESSED.\n\nBody obrigatorio: node_id, fact_label, evidence (array de { source_type: opinion|thread, source_id: uuid }, min 1).\nOpcional: fact_description, consensus_score, status (HYPOTHESIS|VERIFIED|DISPUTED).\n\nSucesso: 201 Created.",
         "method": "POST",
         "url": "={{$env.TOOL_BASE_URL}}/technical-facts",
         "authentication": "genericCredentialType",
@@ -97,7 +97,7 @@
         704
       ],
       "id": "155cddb0-f13a-4dbf-8c69-f010dbd0663c",
-      "name": "HTTP Request",
+      "name": "Create Technical Fact",
       "credentials": {
         "httpCustomAuth": {
           "id": "J0BuhnovgG8dMMHF",
@@ -111,17 +111,154 @@
     },
     {
       "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "toolDescription": "Lista os nos vinculados a um produto para mapeamento tematico quando node_id da interacao e nulo.\n\nParametro: product_id (uuid) - ID do produto.\n\nResposta: { product_id, product_name, nodes: [{ id, name, type }] }\n\nTipos: CATEGORIA, MARCA, TECNOLOGIA, COMPOSICAO, ATRIBUTO.",
+        "url": "={{ $env.TOOL_BASE_URL }}/products/{{ $fromAI('product_id') }}/nodes",
         "options": {}
       },
-      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
-      "typeVersion": 1.4,
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
       "position": [
-        160,
-        560
+        848,
+        704
       ],
-      "id": "181d4380-7a9f-4ff9-893b-5f5975a88b7c",
-      "name": "When chat message received",
-      "webhookId": "4b860eb9-a39d-4f73-98e1-ab5c24884047"
+      "id": "b7b7964f-4652-4492-94b8-90bb9af9ff35",
+      "name": "Get Product Nodes",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "J0BuhnovgG8dMMHF",
+          "name": "Custom Auth account"
+        },
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "PATCH",
+        "toolDescription": "Marca um item da fila como PROCESSED sem criar fato (descarte).\n\nParametros: source_type (opinion ou thread), source_id (uuid).\n\nSem body. Sucesso: 200 com { source_type, source_id, status: PROCESSED }.",
+        "url": "={{ $env.TOOL_BASE_URL }}/technical-facts/queue/{{ $fromAI('source_type') }}/{{ $fromAI('source_id') }}/processed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        1040,
+        704
+      ],
+      "id": "b7c26413-94d8-44ab-8913-ed0640cc9a04",
+      "name": "Discard Interaction",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "J0BuhnovgG8dMMHF",
+          "name": "Custom Auth account"
+        },
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "message_agent",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        64,
+        1008
+      ],
+      "id": "16617551-92a7-4827-93d0-577ea455deb5",
+      "name": "Webhook",
+      "webhookId": "a265cbdd-ece8-4bd7-b298-6175ee1b33d3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n   \"system_prompt\":\n  \"Você é o assistente de chat do GuiaReal — uma rede social onde produtos e suas características são discutidos por pessoas diretamente impactadas por esses temas.\n  \n  ## Seu papel\n\nAjudar usuários a tomar decisões de compra e uso com base na sabedoria coletiva da comunidade. Você traduz opiniões, dicas e trade-offs da comunidade em recomendações claras e honestas.\n\n## Princípios de resposta\n\n1. **Evidencie trade-offs** — não apenas diga o que comprar; explique o que se ganha e o que se perde em cada caminho.\n2. **Seja honesto sobre incertezas** — se não houver dados suficientes da comunidade, diga isso claramente em vez de inventar.\n3. **Tom conversacional** — responda como um especialista acessível, não como um manual técnico.\n4. **Foco no usuário** — responda diretamente à pergunta ou mensagem recebida; evite introduções genéricas longas.\n5. **Idioma** — responda sempre em português brasileiro (pt-BR).\n\n## Título da conversa\n\nQuando `should_name_conversation` for `true`, você deve gerar um título curto que resume o assunto da conversa.\n\nRegras do título:\n- Máximo de 255 caracteres\n- Preferencialmente entre 3 e 8 palavras\n- Descritivo e específico (ex.: 'Melhor arroz integral', 'Monitor IPS vs VA')\n- Sem aspas, emojis ou pontuação final\n- Sem prefixos como 'Conversa sobre...' ou 'Chat:'\n\nQuando `should_name_conversation` for `false`, apenas mantenha o campo vazio.\n\n## Formato de saída\n\nResponda **exclusivamente** com um objeto JSON válido, sem markdown, sem blocos de código e sem texto antes ou depois:\n\n```json\n{\n  'chat_id': '<uuid recebido no payload>',\n  'title': '<título da conversa>',\n  'assistant_message': '<sua resposta completa ao usuário>'\n}\n```\n\nRegras do JSON:\n- `chat_id` deve ser copiado exatamente do payload recebido\n- `title` é obrigatório somente quando should_name_conversation é true\n- `assistant_message` é obrigatório (string não vazia com a resposta ao usuário)\n- Não inclua campos extras\n- Não escape quebras de linha desnecessariamente; use `\\n` apenas se necessário dentro da string JSON\n\n## Restrições\"\n},\n\n{\n  \"user_prompt\": {\n    {{ JSON.stringify($json.body) }}\n  }\n}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        384,
+        1008
+      ],
+      "id": "24a27ad9-3e92-4f51-ab26-32291bd5a20c",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        1200
+      ],
+      "id": "265f3523-3e2b-4681-9e7e-58b972296655",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Xsje5BTZDZhDYAG0",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.TOOL_BASE_URL}}/chat/agent-response",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        736,
+        1008
+      ],
+      "id": "0853fb05-d8c6-4c6a-b67f-bbb0e54bea13",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        544,
+        1216
+      ],
+      "id": "0dd962c7-dd8c-4c8b-be2b-8e1806b3df02",
+      "name": "HTTP Request3"
     }
   ],
   "pinData": {},
@@ -159,7 +296,7 @@
         ]
       ]
     },
-    "HTTP Request": {
+    "Create Technical Fact": {
       "ai_tool": [
         [
           {
@@ -170,12 +307,67 @@
         ]
       ]
     },
-    "When chat message received": {
-      "main": [
+    "Get Product Nodes": {
+      "ai_tool": [
         [
           {
             "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discard Interaction": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
             "index": 0
           }
         ]
@@ -186,14 +378,15 @@
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
-    "availableInMCP": false
+    "availableInMCP": true
   },
-  "versionId": "21cab61f-df62-417a-b934-7acefaeed639",
+  "versionId": "1fd46b96-72df-4555-b158-50073e5f6955",
   "meta": {
     "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
     "instanceId": "3f0e6404932f2adf54def394a585cc0347d0e88edd1cee39b2589eeacc0c49ad"
   },
-  "nodeGroups": [],
   "id": "wCdSr1vW9iB0A9p2",
   "tags": []
 }

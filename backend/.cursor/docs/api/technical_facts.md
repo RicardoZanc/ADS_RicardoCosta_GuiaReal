@@ -8,9 +8,9 @@ Endpoints internos para o pipeline de consolidação de fatos técnicos via n8n/
 
 ---
 
-## `GET /technical-facts/pending-interactions`
+## `GET /technical-facts/pending-queue`
 
-Lista threads de discussão com `status: PENDING` e peso de evidência calculado.
+Lista itens pendentes da fila unificada: **opiniões** e **threads** com `status: PENDING`, ordenados por `created_at`.
 
 | Item | Valor |
 |------|-------|
@@ -30,15 +30,32 @@ Lista threads de discussão com `status: PENDING` e peso de evidência calculado
 {
   "data": [
     {
-      "thread_id": "uuid",
-      "content": "Ponte fixa mantém melhor afinação.",
+      "source_type": "opinion",
+      "source_id": "uuid",
+      "title": "Excelente para Shred",
+      "content": "O braço é extremamente confortável...",
       "opinion_id": "uuid",
-      "node_id": "uuid",
-      "product_id": null,
+      "node_id": null,
+      "product_id": "uuid",
       "evidence_weight": 12.5,
       "cached_upvotes": 5,
       "author": {
         "reputation_score": 10,
+        "is_banned": false
+      }
+    },
+    {
+      "source_type": "thread",
+      "source_id": "uuid",
+      "title": null,
+      "content": "Vale a pena lubrificar os carrinhos...",
+      "opinion_id": "uuid",
+      "node_id": null,
+      "product_id": "uuid",
+      "evidence_weight": 8.0,
+      "cached_upvotes": 3,
+      "author": {
+        "reputation_score": 5,
         "is_banned": false
       }
     }
@@ -46,7 +63,7 @@ Lista threads de discussão com `status: PENDING` e peso de evidência calculado
   "pagination": {
     "page": 1,
     "limit": 20,
-    "total": 1,
+    "total": 2,
     "totalPages": 1
   }
 }
@@ -56,7 +73,9 @@ Lista threads de discussão com `status: PENDING` e peso de evidência calculado
 
 ## `POST /technical-facts`
 
-Cria um fato técnico consolidado, vincula evidências e marca threads como `PROCESSED`.
+Cria um fato técnico consolidado, vincula evidências (opiniões e/ou threads) e marca as fontes como `PROCESSED`.
+
+Evidências podem estar `PENDING` ou `PROCESSED` e a mesma fonte pode vincular-se a vários fatos.
 
 | Item | Valor |
 |------|-------|
@@ -72,7 +91,9 @@ Cria um fato técnico consolidado, vincula evidências e marca threads como `PRO
 | `fact_description` | string | não |
 | `consensus_score` | number | não |
 | `status` | `HYPOTHESIS` · `VERIFIED` · `DISPUTED` | não |
-| `evidence_thread_ids` | uuid[] (min 1) | sim |
+| `evidence` | `{ source_type, source_id }[]` (min 1) | sim |
+
+`source_type`: `opinion` ou `thread`.
 
 ### Resposta
 
@@ -85,7 +106,10 @@ Cria um fato técnico consolidado, vincula evidências e marca threads como `PRO
   "consensus_score": 0,
   "status": "HYPOTHESIS",
   "last_updated": "2026-01-01T00:00:00.000Z",
-  "evidence_thread_ids": ["uuid"]
+  "evidence": [
+    { "source_type": "opinion", "source_id": "uuid" },
+    { "source_type": "thread", "source_id": "uuid" }
+  ]
 }
 ```
 
@@ -93,26 +117,34 @@ Cria um fato técnico consolidado, vincula evidências e marca threads como `PRO
 
 | Status | `message` típico |
 |--------|------------------|
-| `400` | Threads de evidência devem estar PENDING |
-| `404` | Nó ou thread não encontrada |
+| `400` | evidence não pode conter fontes duplicadas |
+| `404` | Nó, opinião ou thread não encontrada |
 | `422` | Payload inválido |
 
 ---
 
-## `PATCH /technical-facts/interactions/:thread_id/processed`
+## `PATCH /technical-facts/queue/:source_type/:source_id/processed`
 
-Marca uma thread como `PROCESSED` sem criar fato (descarte pelo pipeline).
+Marca um item da fila como `PROCESSED` sem criar fato (descarte pelo pipeline).
 
 | Item | Valor |
 |------|-------|
 | Autenticação | `X-Tool-Api-Key` |
 | Sucesso | `200 OK` |
 
+### Path
+
+| Parâmetro | Tipo | Valores |
+|-----------|------|---------|
+| `source_type` | enum | `opinion` · `thread` |
+| `source_id` | uuid | ID da opinião ou thread |
+
 ### Resposta
 
 ```json
 {
-  "id": "uuid",
+  "source_type": "thread",
+  "source_id": "uuid",
   "status": "PROCESSED"
 }
 ```
@@ -147,7 +179,10 @@ Lista fatos consolidados de um nó (consulta RAG).
       "consensus_score": 0.85,
       "status": "VERIFIED",
       "last_updated": "2026-01-01T00:00:00.000Z",
-      "evidence_thread_ids": ["uuid"]
+      "evidence": [
+        { "source_type": "thread", "source_id": "uuid" },
+        { "source_type": "opinion", "source_id": "uuid" }
+      ]
     }
   ]
 }
