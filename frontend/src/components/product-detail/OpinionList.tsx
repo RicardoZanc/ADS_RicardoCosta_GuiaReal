@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import type { CreateReplyFormData } from "@/lib/schemas/productDetail";
 import type { OpinionListItem, ReplyTarget } from "@/lib/types/products";
+import { UserLink } from "@/components/profile/UserLink";
 import { ReplyComposer } from "./ReplyComposer";
 import { ThreadReplyNode } from "./ThreadReplyNode";
 import { VoteControls } from "./VoteControls";
@@ -99,7 +100,8 @@ export function OpinionList({
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <p className="font-mono text-small text-muted">
-                  @{opinion.author.username} · {formatDate(opinion.created_at)}
+                  <UserLink username={opinion.author.username} /> ·{" "}
+                  {formatDate(opinion.created_at)}
                 </p>
                 <VoteControls
                   cachedUpvotes={opinion.cached_upvotes}

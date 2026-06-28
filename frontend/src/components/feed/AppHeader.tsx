@@ -6,6 +6,7 @@ import { useState } from "react";
 import { SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchModal } from "@/components/feed/SearchModal";
+import { UserLink } from "@/components/profile/UserLink";
 import { logout } from "@/lib/auth";
 
 interface AppHeaderProps {
@@ -37,9 +38,7 @@ export function AppHeader({ username }: AppHeaderProps) {
           >
             Assistente
           </Link>
-          <span className="hidden text-body text-muted sm:inline">
-            @{username}
-          </span>
+          <UserLink username={username} className="hidden sm:inline" />
         </div>
         <div className="flex items-center gap-3 sm:gap-4">
           <Button

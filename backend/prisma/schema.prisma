@@ -160,6 +160,7 @@ model users {
   username           String               @unique @db.VarChar(50)
   hashpassword       String
   reputation_score   Int?                 @default(0)
+  avatar_url         String?
   is_banned          Boolean?             @default(false)
   created_at         DateTime?            @default(now()) @db.Timestamptz(6)
   deleted_at         DateTime?            @db.Timestamptz(6)

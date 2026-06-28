@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -125,15 +127,33 @@ function NodeFeedCardContent({ item }: FeedProductCardProps) {
 }
 
 export function FeedProductCard({ item }: FeedProductCardProps) {
+  const router = useRouter();
   const href = getItemHref(item);
 
+  function handleCardClick() {
+    router.push(href);
+  }
+
+  function handleCardKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      router.push(href);
+    }
+  }
+
   return (
-    <Link href={href} className="group block">
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      className="group block cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    >
       {item.kind === "product" ? (
         <ProductFeedCardContent item={item} />
       ) : (
         <NodeFeedCardContent item={item} />
       )}
-    </Link>
+    </div>
   );
 }

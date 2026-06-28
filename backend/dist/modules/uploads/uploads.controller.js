@@ -15,5 +15,19 @@ const uploadsController = {
         });
         res.status(200).json(result);
     },
+    createProfileImageUpload: async (req, res) => {
+        const userId = req.user.id;
+        const { contentType } = req.body;
+        logger.info("HTTP POST /api/uploads/profile-image - Iniciado", {
+            userId,
+            contentType,
+        });
+        const result = await uploadsService.createProfileImageUpload(userId, contentType);
+        logger.info("HTTP POST /api/uploads/profile-image - Concluído", {
+            userId,
+            path: result.path,
+        });
+        res.status(200).json(result);
+    },
 };
 export { uploadsController };

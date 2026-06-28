@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import type { CreateReplyFormData } from "@/lib/schemas/productDetail";
 import type { OpinionReply, ReplyTarget } from "@/lib/types/products";
+import { UserLink } from "@/components/profile/UserLink";
 import { cn } from "@/lib/utils";
 import { ReplyComposer } from "./ReplyComposer";
 import { VoteControls } from "./VoteControls";
@@ -103,7 +104,8 @@ export function ThreadReplyNode({
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <p className="font-mono text-small text-muted">
-              @{reply.author.username} · {formatDate(reply.created_at)}
+              <UserLink username={reply.author.username} /> ·{" "}
+              {formatDate(reply.created_at)}
             </p>
             <VoteControls
               cachedUpvotes={reply.cached_upvotes}

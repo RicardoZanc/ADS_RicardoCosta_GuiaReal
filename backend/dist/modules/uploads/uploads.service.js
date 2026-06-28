@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestError } from "../../lib/errors/BaseError";
-import { buildProductImagePublicUrl, getProductsBucketName, getSupabaseAdmin, } from "../../lib/supabase";
+import { buildProfileImagePublicUrl, buildProductImagePublicUrl, getProfilesBucketName, getProductsBucketName, getSupabaseAdmin, } from "../../lib/supabase";
 const CONTENT_TYPE_EXTENSION = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -11,9 +11,8 @@ function buildObjectPath(userId, contentType) {
     const extension = CONTENT_TYPE_EXTENSION[contentType];
     return `${userId}/${randomUUID()}.${extension}`;
 }
-const createProductImageUpload = async (userId, contentType) => {
+async function createSignedUpload(userId, contentType, bucket, buildPublicUrl) {
     const path = buildObjectPath(userId, contentType);
-    const bucket = getProductsBucketName();
     const { data, error } = await getSupabaseAdmin().storage
         .from(bucket)
         .createSignedUploadUrl(path);
@@ -24,9 +23,16 @@ const createProductImageUpload = async (userId, contentType) => {
         path: data.path,
         signedUrl: data.signedUrl,
         token: data.token,
-        publicUrl: buildProductImagePublicUrl(data.path),
+        publicUrl: buildPublicUrl(data.path),
     };
+}
+const createProductImageUpload = async (userId, contentType) => {
+    return createSignedUpload(userId, contentType, getProductsBucketName(), buildProductImagePublicUrl);
+};
+const createProfileImageUpload = async (userId, contentType) => {
+    return createSignedUpload(userId, contentType, getProfilesBucketName(), buildProfileImagePublicUrl);
 };
 export const uploadsService = {
     createProductImageUpload,
+    createProfileImageUpload,
 };

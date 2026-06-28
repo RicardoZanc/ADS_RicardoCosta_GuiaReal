@@ -1,4 +1,5 @@
 import type { FeedDiscussionPreview } from "@/lib/types/feed";
+import { UserLink } from "@/components/profile/UserLink";
 
 const PREVIEW_MAX_LENGTH = 120;
 
@@ -27,8 +28,8 @@ export function DiscussionPreviewList({ previews }: DiscussionPreviewListProps) 
           <p className="text-body text-foreground">
             &ldquo;{truncateContent(preview.content)}&rdquo;
           </p>
-          <p className="mt-1 font-mono text-small text-muted">
-            @{preview.author.username}
+          <p className="mt-1">
+            <UserLink username={preview.author.username} nested />
           </p>
         </li>
       ))}

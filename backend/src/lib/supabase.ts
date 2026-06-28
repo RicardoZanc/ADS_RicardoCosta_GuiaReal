@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const PRODUCTS_BUCKET = "products";
+const PROFILES_BUCKET = "profiles";
 
 function requireSupabaseUrl(): string {
   const url = process.env.SUPABASE_URL?.trim();
@@ -42,9 +43,18 @@ export function getProductsBucketName(): string {
   return PRODUCTS_BUCKET;
 }
 
+export function getProfilesBucketName(): string {
+  return PROFILES_BUCKET;
+}
+
 export function buildProductImagePublicUrl(path: string): string {
   const baseUrl = requireSupabaseUrl();
   return `${baseUrl}/storage/v1/object/public/${PRODUCTS_BUCKET}/${path}`;
+}
+
+export function buildProfileImagePublicUrl(path: string): string {
+  const baseUrl = requireSupabaseUrl();
+  return `${baseUrl}/storage/v1/object/public/${PROFILES_BUCKET}/${path}`;
 }
 
 export function getProductImagePublicUrlPrefix(): string | null {
@@ -57,8 +67,27 @@ export function getProductImagePublicUrlPrefix(): string | null {
   return `${baseUrl}/storage/v1/object/public/${PRODUCTS_BUCKET}/`;
 }
 
+export function getProfileImagePublicUrlPrefix(): string | null {
+  const url = process.env.SUPABASE_URL?.trim();
+  if (!url) {
+    return null;
+  }
+
+  const baseUrl = url.replace(/\/$/, "");
+  return `${baseUrl}/storage/v1/object/public/${PROFILES_BUCKET}/`;
+}
+
 export function isAllowedProductImageUrl(imageUrl: string): boolean {
   const prefix = getProductImagePublicUrlPrefix();
+  if (!prefix) {
+    return false;
+  }
+
+  return imageUrl.startsWith(prefix);
+}
+
+export function isAllowedProfileImageUrl(imageUrl: string): boolean {
+  const prefix = getProfileImagePublicUrlPrefix();
   if (!prefix) {
     return false;
   }

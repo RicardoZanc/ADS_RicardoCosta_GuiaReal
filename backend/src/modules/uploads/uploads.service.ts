@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestError } from "../../lib/errors/BaseError";
 import {
+  buildProfileImagePublicUrl,
   buildProductImagePublicUrl,
+  getProfilesBucketName,
   getProductsBucketName,
   getSupabaseAdmin,
 } from "../../lib/supabase";
@@ -19,12 +21,13 @@ function buildObjectPath(userId: string, contentType: ProductImageContentType) {
   return `${userId}/${randomUUID()}.${extension}`;
 }
 
-const createProductImageUpload = async (
+async function createSignedUpload(
   userId: string,
-  contentType: ProductImageContentType
-) => {
+  contentType: ProductImageContentType,
+  bucket: string,
+  buildPublicUrl: (path: string) => string
+) {
   const path = buildObjectPath(userId, contentType);
-  const bucket = getProductsBucketName();
 
   const { data, error } = await getSupabaseAdmin().storage
     .from(bucket)
@@ -40,10 +43,35 @@ const createProductImageUpload = async (
     path: data.path,
     signedUrl: data.signedUrl,
     token: data.token,
-    publicUrl: buildProductImagePublicUrl(data.path),
+    publicUrl: buildPublicUrl(data.path),
   };
+}
+
+const createProductImageUpload = async (
+  userId: string,
+  contentType: ProductImageContentType
+) => {
+  return createSignedUpload(
+    userId,
+    contentType,
+    getProductsBucketName(),
+    buildProductImagePublicUrl
+  );
+};
+
+const createProfileImageUpload = async (
+  userId: string,
+  contentType: ProductImageContentType
+) => {
+  return createSignedUpload(
+    userId,
+    contentType,
+    getProfilesBucketName(),
+    buildProfileImagePublicUrl
+  );
 };
 
 export const uploadsService = {
   createProductImageUpload,
+  createProfileImageUpload,
 };

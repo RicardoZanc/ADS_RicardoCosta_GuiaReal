@@ -18,6 +18,14 @@ export const createProductImageUploadSchema = z.object({
   }),
 });
 
+export const createProfileImageUploadSchema = z.object({
+  body: z.object({
+    contentType: z.enum(ALLOWED_PRODUCT_IMAGE_CONTENT_TYPES, {
+      message: "Tipo de imagem não suportado",
+    }),
+  }),
+});
+
 export type CreateProductImageUploadInput = z.infer<
   typeof createProductImageUploadSchema
 >["body"];

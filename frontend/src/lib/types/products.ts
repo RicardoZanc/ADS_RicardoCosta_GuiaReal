@@ -1,4 +1,5 @@
 import type { FeedNodeType, FeedPagination } from "@/lib/types/feed";
+import type { ImageUploadResponse } from "@/lib/types/uploads";
 
 export interface CreateProductPayload {
   name: string;
@@ -6,12 +7,7 @@ export interface CreateProductPayload {
   image_url?: string;
 }
 
-export interface ProductImageUploadResponse {
-  path: string;
-  signedUrl: string;
-  token: string;
-  publicUrl: string;
-}
+export type ProductImageUploadResponse = ImageUploadResponse;
 
 export interface CreateProductResponse {
   id: string;

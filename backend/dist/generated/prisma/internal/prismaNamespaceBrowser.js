@@ -153,6 +153,7 @@ export const UsersScalarFieldEnum = {
     username: 'username',
     hashpassword: 'hashpassword',
     reputation_score: 'reputation_score',
+    avatar_url: 'avatar_url',
     is_banned: 'is_banned',
     created_at: 'created_at',
     deleted_at: 'deleted_at'
