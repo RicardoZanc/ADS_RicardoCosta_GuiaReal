@@ -1,5 +1,6 @@
 import type { ProductDetailResponse } from "@/lib/types/products";
-import { getNodeTypeLabel } from "@/lib/nodeLabels";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { Tag } from "@/components/ui/tag";
 import { cn } from "@/lib/utils";
 
 interface ProductTaxonomyPanelProps {
@@ -17,9 +18,7 @@ function TaxonomyRow({
 
   return (
     <div className="space-y-1">
-      <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-        {label}
-      </p>
+      <Eyebrow size="sm">{label}</Eyebrow>
       <p className="text-body text-foreground">{value}</p>
     </div>
   );
@@ -36,16 +35,11 @@ function TagList({
 
   return (
     <div className="space-y-2">
-      <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-        {label}
-      </p>
+      <Eyebrow size="sm">{label}</Eyebrow>
       <ul className="flex flex-wrap gap-2">
         {items.map((item) => (
-          <li
-            key={item.id}
-            className="border border-border/30 px-2 py-0.5 font-mono text-small text-muted"
-          >
-            {item.name}
+          <li key={item.id}>
+            <Tag>{item.name}</Tag>
           </li>
         ))}
       </ul>
@@ -60,20 +54,20 @@ export function ProductTaxonomyPanel({ product }: ProductTaxonomyPanelProps) {
     product.name.slice(0, 2).toUpperCase();
 
   return (
-    <section className="space-y-6">
+    <section className="rounded-2xl border border-border/15 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
       <div className="flex gap-4">
         {product.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.image_url}
             alt={product.name}
-            className="size-20 shrink-0 border border-border/30 object-cover"
+            className="size-20 shrink-0 rounded-lg border border-border/15 object-cover"
           />
         ) : (
           <div
             className={cn(
-              "flex size-20 shrink-0 items-center justify-center",
-              "border border-border/30 bg-muted/30 font-mono text-small text-muted"
+              "flex size-20 shrink-0 items-center justify-center rounded-lg",
+              "border border-border/15 bg-muted/10 text-small font-medium text-muted"
             )}
             aria-hidden
           >
@@ -81,25 +75,18 @@ export function ProductTaxonomyPanel({ product }: ProductTaxonomyPanelProps) {
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-            Produto
-          </p>
-          <h1 className="mt-1 font-sans text-h2 font-bold text-foreground">
-            {product.name}
-          </h1>
+          <Eyebrow size="sm">Produto</Eyebrow>
+          <h1 className="text-product-name mt-2">{product.name}</h1>
           {product.brand_name && (
             <p className="mt-1 text-body text-muted">{product.brand_name}</p>
           )}
         </div>
       </div>
 
-      <div className="space-y-4 border-t border-border/30 pt-6">
+      <div className="mt-6 space-y-4 border-t border-border/15 pt-6">
         <TaxonomyRow label="Tipo" value={taxonomy.tipo?.name} />
         <TaxonomyRow label="Categoria" value={taxonomy.categoria?.name} />
-        <TaxonomyRow
-          label={getNodeTypeLabel("MARCA")}
-          value={taxonomy.marca?.name}
-        />
+        <TaxonomyRow label="Marca" value={taxonomy.marca?.name} />
         <TagList label="Tecnologias" items={taxonomy.tecnologias} />
         <TagList label="Composição" items={taxonomy.composicoes} />
         <TagList label="Atributos" items={taxonomy.atributos} />

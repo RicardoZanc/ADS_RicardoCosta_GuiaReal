@@ -56,7 +56,7 @@ export function ChatSidebar({
         {!isCollapsed && (
           <Link
             href="/feed"
-            className="font-mono text-small tracking-widest text-muted uppercase hover:text-accent"
+            className="text-small font-medium text-muted transition-colors hover:text-accent"
           >
             ← Feed
           </Link>
@@ -91,7 +91,7 @@ export function ChatSidebar({
 
       <nav className="flex-1 overflow-y-auto p-2">
         {!isCollapsed && (
-          <p className="mb-2 px-2 font-mono text-small tracking-widest text-muted uppercase">
+          <p className="mb-2 px-2 text-small font-medium text-muted">
             Conversas
           </p>
         )}
@@ -101,7 +101,7 @@ export function ChatSidebar({
             {Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="h-9 animate-pulse rounded-lg bg-sidebar-accent/60"
+                className="skeleton-shimmer h-9 rounded-lg"
               />
             ))}
           </div>
@@ -129,7 +129,7 @@ export function ChatSidebar({
                   )}
                 >
                   {isCollapsed ? (
-                    <span className="font-mono text-small">
+                    <span className="text-small font-medium">
                       {label.charAt(0).toUpperCase()}
                     </span>
                   ) : (

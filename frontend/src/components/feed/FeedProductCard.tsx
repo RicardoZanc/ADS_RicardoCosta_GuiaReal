@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -8,7 +9,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tag } from "@/components/ui/tag";
 import { DiscussionPreviewList } from "@/components/feed/DiscussionPreviewList";
+import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import type { FeedItem } from "@/lib/types/feed";
 import { getNodeTypeLabel, NODE_TYPE_LABELS } from "@/lib/nodeLabels";
 import { cn } from "@/lib/utils";
@@ -35,7 +38,7 @@ function ProductFeedCardContent({ item }: FeedProductCardProps) {
     item.brand_name?.slice(0, 2).toUpperCase() ?? "GR";
 
   return (
-    <Card className="transition-colors group-hover:border-accent/50">
+    <Card className="h-full border-border/15 group-hover:border-accent/30 group-hover:shadow-lg">
       <CardHeader className="pb-3">
         <div className="flex gap-4">
           {item.image_url ? (
@@ -43,13 +46,13 @@ function ProductFeedCardContent({ item }: FeedProductCardProps) {
             <img
               src={item.image_url}
               alt={item.name}
-              className="size-16 shrink-0 border border-border/30 object-cover"
+              className="size-16 shrink-0 rounded-lg border border-border/15 object-cover transition-transform duration-200 group-hover:scale-[1.03]"
             />
           ) : (
             <div
               className={cn(
-                "flex size-16 shrink-0 items-center justify-center",
-                "border border-border/30 bg-muted/30 font-mono text-small text-muted"
+                "flex size-16 shrink-0 items-center justify-center rounded-lg",
+                "border border-border/15 bg-muted/10 text-small font-medium text-muted"
               )}
               aria-hidden
             >
@@ -57,11 +60,11 @@ function ProductFeedCardContent({ item }: FeedProductCardProps) {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-h4 group-hover:text-accent">
+            <CardTitle className="text-product-name transition-colors group-hover:text-accent">
               {item.name}
             </CardTitle>
             {item.brand_name && (
-              <CardDescription className="mt-1">
+              <CardDescription className="mt-0.5 text-small">
                 {item.brand_name}
               </CardDescription>
             )}
@@ -70,21 +73,18 @@ function ProductFeedCardContent({ item }: FeedProductCardProps) {
         {item.nodes.length > 0 && (
           <ul className="mt-3 flex flex-wrap gap-2">
             {item.nodes.map((node) => (
-              <li
-                key={node.id}
-                className="border border-border/30 px-2 py-0.5 font-mono text-small text-muted"
-              >
-                <span className="text-accent/80">
+              <li key={node.id}>
+                <Tag variant="accent">
                   {NODE_TYPE_LABELS[node.type] ?? node.type}
-                </span>
-                {": "}
-                {node.name}
+                  {": "}
+                  {node.name}
+                </Tag>
               </li>
             ))}
           </ul>
         )}
       </CardHeader>
-      <CardContent className="border-t border-border/30 pt-4">
+      <CardContent className="border-t border-border/15 pt-4">
         <DiscussionPreviewList previews={item.discussionPreviews} />
       </CardContent>
     </Card>
@@ -95,31 +95,27 @@ function NodeFeedCardContent({ item }: FeedProductCardProps) {
   const typeLabel = getNodeTypeLabelForItem(item);
 
   return (
-    <Card className="transition-colors group-hover:border-accent/50">
+    <Card className="h-full border-border/15 group-hover:border-accent/30 group-hover:shadow-lg">
       <CardHeader className="pb-3">
         <div className="flex gap-4">
           <div
             className={cn(
-              "flex size-16 shrink-0 items-center justify-center",
-              "border border-border/30 bg-muted/30 font-mono text-small text-muted"
+              "flex size-16 shrink-0 items-center justify-center rounded-lg",
+              "border border-border/15 bg-muted/10 text-small font-medium text-muted"
             )}
             aria-hidden
           >
             {item.name.slice(0, 2).toUpperCase()}
           </div>
           <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-            <CardTitle className="text-h4 group-hover:text-accent">
+            <CardTitle className="text-product-name transition-colors group-hover:text-accent">
               {item.name}
             </CardTitle>
-            {typeLabel && (
-              <span className="shrink-0 border border-border/30 px-2 py-0.5 font-mono text-small text-muted">
-                {typeLabel}
-              </span>
-            )}
+            {typeLabel && <Tag>{typeLabel}</Tag>}
           </div>
         </div>
       </CardHeader>
-      <CardContent className="border-t border-border/30 pt-4">
+      <CardContent className="border-t border-border/15 pt-4">
         <DiscussionPreviewList previews={item.discussionPreviews} />
       </CardContent>
     </Card>
@@ -128,6 +124,7 @@ function NodeFeedCardContent({ item }: FeedProductCardProps) {
 
 export function FeedProductCard({ item }: FeedProductCardProps) {
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
   const href = getItemHref(item);
 
   function handleCardClick() {
@@ -142,18 +139,20 @@ export function FeedProductCard({ item }: FeedProductCardProps) {
   }
 
   return (
-    <div
+    <motion.div
       role="link"
       tabIndex={0}
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
-      className="group block cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      whileHover={prefersReducedMotion ? undefined : { y: -2, scale: 1.005 }}
+      transition={{ duration: 0.2 }}
+      className="group block cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
     >
       {item.kind === "product" ? (
         <ProductFeedCardContent item={item} />
       ) : (
         <NodeFeedCardContent item={item} />
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRegisterController } from "./controller";
 import { Button } from "@/components/ui/button";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import {
   Card,
   CardContent,
@@ -20,10 +21,8 @@ export default function RegisterPage() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <p className="font-mono text-small font-medium tracking-wide text-accent">
-          GuiaReal
-        </p>
-        <CardTitle>Criar conta</CardTitle>
+        <Eyebrow className="mx-auto">GuiaReal</Eyebrow>
+        <CardTitle className="text-h4 font-semibold">Criar conta</CardTitle>
         <CardDescription>
           Junte-se à comunidade e tome decisões com mais contexto.
         </CardDescription>

@@ -1,11 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { FadeIn } from "@/components/motion/FadeIn";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionHeader } from "@/components/ui/section-header";
 import { NodeContextPanel } from "@/components/node-detail/NodeContextPanel";
 import { OpinionComposer } from "@/components/product-detail/OpinionComposer";
 import { OpinionList } from "@/components/product-detail/OpinionList";
 import { useNodeDetailController } from "./controller";
+
+function DetailSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="skeleton-shimmer h-64 rounded-2xl border border-border/15" />
+      <div className="skeleton-shimmer h-96 rounded-2xl border border-border/15" />
+    </div>
+  );
+}
 
 export default function NodeDetailPage() {
   const {
@@ -39,10 +51,7 @@ export default function NodeDetailPage() {
   if (isLoadingNode) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-        <div className="space-y-8">
-          <div className="h-64 animate-pulse rounded-xl border border-border/30 bg-muted/20" />
-          <div className="h-96 animate-pulse rounded-xl border border-border/30 bg-muted/20" />
-        </div>
+        <DetailSkeleton />
       </div>
     );
   }
@@ -50,15 +59,11 @@ export default function NodeDetailPage() {
   if (notAvailable) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-        <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-          Nó
-        </p>
-        <h1 className="mt-2 font-sans text-h2 font-bold text-foreground">
-          Nó não disponível
-        </h1>
-        <p className="mt-4 text-body text-muted">
-          Este nó não está disponível para visualização.
-        </p>
+        <PageHeader
+          eyebrow="Nó"
+          title="Nó não disponível"
+          description="Este nó não está disponível para visualização."
+        />
         <Button asChild variant="outline" className="mt-8">
           <Link href="/feed">Voltar ao feed</Link>
         </Button>
@@ -69,15 +74,11 @@ export default function NodeDetailPage() {
   if (notFound || !node) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-        <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-          Nó
-        </p>
-        <h1 className="mt-2 font-sans text-h2 font-bold text-foreground">
-          Nó não encontrado
-        </h1>
-        <p className="mt-4 text-body text-muted">
-          O nó que você procura não existe ou foi removido.
-        </p>
+        <PageHeader
+          eyebrow="Nó"
+          title="Nó não encontrado"
+          description="O nó que você procura não existe ou foi removido."
+        />
         <Button asChild variant="outline" className="mt-8">
           <Link href="/feed">Voltar ao feed</Link>
         </Button>
@@ -96,66 +97,64 @@ export default function NodeDetailPage() {
       <div className="flex flex-col gap-10">
         <NodeContextPanel node={node} />
 
-        <section className="space-y-6 border-t border-border/30 pt-10">
-          <div className="space-y-2">
-            <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-              Comentários
-            </p>
-            <h2 className="font-sans text-h3 font-bold text-foreground">
-              Discussão da comunidade
-            </h2>
-          </div>
+        <FadeIn>
+          <section className="space-y-6 border-t border-border/15 pt-10">
+            <SectionHeader
+              eyebrow="Comentários"
+              title="Discussão da comunidade"
+            />
 
-          <OpinionComposer
-            register={opinionRegister}
-            errors={opinionErrors}
-            isSubmitting={isSubmittingOpinion}
-            onSubmit={onSubmitOpinion}
-          />
+            <OpinionComposer
+              register={opinionRegister}
+              errors={opinionErrors}
+              isSubmitting={isSubmittingOpinion}
+              onSubmit={onSubmitOpinion}
+            />
 
-          {isLoadingOpinions ? (
-            <div className="space-y-4">
-              {[0, 1].map((key) => (
-                <div
-                  key={key}
-                  className="h-32 animate-pulse border border-border/30 bg-muted/20"
-                  aria-hidden
+            {isLoadingOpinions ? (
+              <div className="space-y-4">
+                {[0, 1].map((key) => (
+                  <div
+                    key={key}
+                    className="skeleton-shimmer h-32 rounded-xl border border-border/15"
+                    aria-hidden
+                  />
+                ))}
+              </div>
+            ) : (
+              <>
+                <OpinionList
+                  opinions={opinions}
+                  replyTarget={replyTarget}
+                  isSubmittingReply={isSubmittingReply}
+                  votingTargetId={votingTargetId}
+                  replyRegister={replyRegister}
+                  replyErrors={replyErrors}
+                  onStartReply={startReply}
+                  onCancelReply={cancelReply}
+                  onSubmitReply={onSubmitReply}
+                  onVoteOpinion={onVoteOpinion}
+                  onDislikeOpinion={onDislikeOpinion}
+                  onVoteThread={onVoteThread}
+                  onDislikeThread={onDislikeThread}
                 />
-              ))}
-            </div>
-          ) : (
-            <>
-              <OpinionList
-                opinions={opinions}
-                replyTarget={replyTarget}
-                isSubmittingReply={isSubmittingReply}
-                votingTargetId={votingTargetId}
-                replyRegister={replyRegister}
-                replyErrors={replyErrors}
-                onStartReply={startReply}
-                onCancelReply={cancelReply}
-                onSubmitReply={onSubmitReply}
-                onVoteOpinion={onVoteOpinion}
-                onDislikeOpinion={onDislikeOpinion}
-                onVoteThread={onVoteThread}
-                onDislikeThread={onDislikeThread}
-              />
 
-              {hasMoreOpinions && (
-                <div className="flex justify-center pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    loading={isLoadingMoreOpinions}
-                    onClick={loadMoreOpinions}
-                  >
-                    Carregar mais
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </section>
+                {hasMoreOpinions && (
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      loading={isLoadingMoreOpinions}
+                      onClick={loadMoreOpinions}
+                    >
+                      Carregar mais
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        </FadeIn>
       </div>
     </div>
   );

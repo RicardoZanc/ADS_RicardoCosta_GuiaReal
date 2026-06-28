@@ -1,4 +1,6 @@
 import type { NodeDetailResponse } from "@/lib/types/nodes";
+import { Eyebrow } from "@/components/ui/eyebrow";
+import { Tag } from "@/components/ui/tag";
 import { getNodeTypeLabel } from "@/lib/nodeLabels";
 import { cn } from "@/lib/utils";
 
@@ -17,9 +19,7 @@ function ContextRow({
 
   return (
     <div className="space-y-1">
-      <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-        {label}
-      </p>
+      <Eyebrow size="sm">{label}</Eyebrow>
       <p className="text-body text-foreground">{value}</p>
     </div>
   );
@@ -36,24 +36,20 @@ export function NodeContextPanel({ node }: NodeContextPanelProps) {
   const initials = node.name.slice(0, 2).toUpperCase();
 
   return (
-    <section className="space-y-6">
+    <section className="rounded-2xl border border-border/15 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
       <div className="flex gap-4">
         <div
           className={cn(
-            "flex size-20 shrink-0 items-center justify-center",
-            "border border-border/30 bg-muted/30 font-mono text-small text-muted"
+            "flex size-20 shrink-0 items-center justify-center rounded-lg",
+            "border border-border/15 bg-muted/10 text-small font-medium text-muted"
           )}
           aria-hidden
         >
           {initials}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-            {typeLabel}
-          </p>
-          <h1 className="mt-1 font-sans text-h2 font-bold text-foreground">
-            {node.name}
-          </h1>
+          <Tag variant="accent">{typeLabel}</Tag>
+          <h1 className="text-product-name mt-2">{node.name}</h1>
           <p className="mt-1 text-body text-muted">
             {formatOpinionCount(node.opinionCount)}
           </p>
@@ -61,7 +57,7 @@ export function NodeContextPanel({ node }: NodeContextPanelProps) {
       </div>
 
       {node.type === "CATEGORIA" && node.context.parentTipo && (
-        <div className="space-y-4 border-t border-border/30 pt-6">
+        <div className="mt-6 space-y-4 border-t border-border/15 pt-6">
           <ContextRow label="Tipo" value={node.context.parentTipo.name} />
         </div>
       )}

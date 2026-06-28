@@ -2,8 +2,15 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { UserProfileView } from "@/components/profile/UserProfileView";
 import { useUserProfileController } from "./controller";
+
+function ProfileSkeleton() {
+  return (
+    <div className="skeleton-shimmer h-96 rounded-2xl border border-border/15" />
+  );
+}
 
 export default function UserProfilePage() {
   const {
@@ -25,7 +32,7 @@ export default function UserProfilePage() {
   if (isLoadingProfile) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-        <div className="h-96 animate-pulse rounded-xl border border-border/30 bg-muted/20" />
+        <ProfileSkeleton />
       </div>
     );
   }
@@ -33,15 +40,11 @@ export default function UserProfilePage() {
   if (notFound || !profile) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-          Perfil
-        </p>
-        <h1 className="mt-2 font-sans text-h2 font-bold text-foreground">
-          Usuário não encontrado
-        </h1>
-        <p className="mt-4 text-body text-muted">
-          O perfil que você procura não existe ou foi removido.
-        </p>
+        <PageHeader
+          eyebrow="Perfil"
+          title="Usuário não encontrado"
+          description="O perfil que você procura não existe ou foi removido."
+        />
         <Button asChild variant="outline" className="mt-8">
           <Link href="/feed">Voltar ao feed</Link>
         </Button>
@@ -57,14 +60,11 @@ export default function UserProfilePage() {
         </Button>
       </div>
 
-      <header className="mb-8 space-y-2 lg:mb-10">
-        <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-          Perfil
-        </p>
-        <h1 className="font-sans text-h2 font-bold tracking-tight text-foreground">
-          @{profile.username}
-        </h1>
-      </header>
+      <PageHeader
+        eyebrow="Perfil"
+        title={`@${profile.username}`}
+        className="lg:mb-10"
+      />
 
       <UserProfileView
         profile={profile}
@@ -90,7 +90,7 @@ export default function UserProfilePage() {
       )}
 
       {isLoadingInteractions && (
-        <div className="mt-8 h-24 animate-pulse rounded-xl border border-border/30 bg-muted/20 lg:mt-10" />
+        <div className="skeleton-shimmer mt-8 h-24 rounded-xl border border-border/15 lg:mt-10" />
       )}
     </div>
   );

@@ -8,8 +8,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!isReady) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-background">
-        <p className="font-mono text-small text-muted">Carregando…</p>
+      <div className="flex min-h-dvh items-center justify-center">
+        <div className="skeleton-shimmer h-8 w-32 rounded-lg" aria-hidden />
       </div>
     );
   }
@@ -19,9 +19,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
+    <div className="flex min-h-dvh flex-col">
       <AppHeader username={user.username} />
-      <main className="flex-1 flex flex-col">{children}</main>
+      <main className="flex flex-1 flex-col">{children}</main>
     </div>
   );
 }

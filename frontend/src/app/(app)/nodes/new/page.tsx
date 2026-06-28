@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { SectionHeader } from "@/components/ui/section-header";
 import { Input } from "@/components/ui/input";
 import { NodeSearchField } from "@/components/product-create/NodeSearchField";
 import { SelectedNodeCard } from "@/components/product-create/SelectedNodeCard";
@@ -85,15 +86,11 @@ export default function NodeCreatePage() {
   return (
     <div className="mx-auto flex-1 flex flex-col justify-center w-full max-w-2xl px-4 py-8 sm:px-6">
       <div className="mb-8 flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-            Tópico
-          </p>
-          <h1 className="font-sans text-h3 font-bold tracking-tight text-foreground">
-            {typeConfig.title}
-          </h1>
-          <p className="max-w-2xl text-body text-muted">{typeConfig.helperText}</p>
-        </div>
+        <SectionHeader
+          eyebrow="Tópico"
+          title={typeConfig.title}
+          description={typeConfig.helperText}
+        />
         <Button type="button" variant="ghost" size="sm" onClick={cancel}>
           Cancelar
         </Button>
@@ -102,7 +99,7 @@ export default function NodeCreatePage() {
       <div className="mb-6">
         <label
           htmlFor="node-type"
-          className="mb-3 block font-mono text-small text-muted"
+          className="mb-3 block text-small font-medium text-muted"
         >
           Tipo de tópico
         </label>
@@ -114,7 +111,7 @@ export default function NodeCreatePage() {
             selectType(event.target.value as NodeType)
           }
           className={cn(
-            "flex h-11 w-full rounded-lg border border-border/40 bg-card px-3 py-2 text-body text-foreground transition-colors",
+            "flex h-11 w-full rounded-lg border border-border/15 bg-card px-3 py-2 text-body text-foreground transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:border-accent",
             "disabled:cursor-not-allowed disabled:opacity-50"
           )}
@@ -195,9 +192,9 @@ export default function NodeCreatePage() {
         )}
 
         {duplicate && (
-          <div className="rounded-lg border border-border/40 bg-muted/30 p-4">
-            <p className="text-body text-foreground">
-              Já existe um nó com o nome &ldquo;{duplicate.name}&rdquo;. Deseja
+          <div className="rounded-xl border border-border/15 bg-muted/5 p-4">
+            <p className="text-comment text-foreground">
+              Já existe um nó com o nome &quot;{duplicate.name}&quot;. Deseja
               usar o existente?
             </p>
             <div className="mt-3 flex gap-2">

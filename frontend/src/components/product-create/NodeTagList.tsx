@@ -20,7 +20,7 @@ export function NodeTagList({ nodes, disabled = false, onRemove }: NodeTagListPr
       {nodes.map((node) => (
         <li
           key={node.id}
-          className="flex items-center gap-2 rounded-full border border-border/40 bg-card px-3 py-1 text-small text-foreground"
+          className="flex items-center gap-2 rounded-full border border-border/15 bg-accent/5 px-3 py-1 text-small text-foreground"
         >
           <span className="max-w-[16rem] truncate">{node.name}</span>
           <button

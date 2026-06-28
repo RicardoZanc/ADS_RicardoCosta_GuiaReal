@@ -14,7 +14,7 @@ interface UserLinkProps {
 }
 
 const linkClassName =
-  "font-mono text-small text-muted transition-colors hover:text-accent";
+  "text-small text-muted transition-colors hover:text-accent";
 
 export function UserLink({
   username,

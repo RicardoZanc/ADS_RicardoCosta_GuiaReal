@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import type { CreateReplyFormData } from "@/lib/schemas/productDetail";
 import type { OpinionListItem, ReplyTarget } from "@/lib/types/products";
+import { StaggerItem, StaggerList } from "@/components/motion/StaggerList";
+import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { UserLink } from "@/components/profile/UserLink";
 import { ReplyComposer } from "./ReplyComposer";
 import { ThreadReplyNode } from "./ThreadReplyNode";
@@ -49,6 +52,116 @@ interface OpinionListProps {
   onDislikeThread: (threadId: string) => void;
 }
 
+function OpinionCard({
+  opinion,
+  replyTarget,
+  isSubmittingReply,
+  votingTargetId,
+  collapsedIds,
+  replyRegister,
+  replyErrors,
+  onStartReply,
+  onCancelReply,
+  onSubmitReply,
+  onToggleCollapse,
+  onVoteOpinion,
+  onDislikeOpinion,
+  onVoteThread,
+  onDislikeThread,
+}: {
+  opinion: OpinionListItem;
+  replyTarget: ReplyTarget;
+  isSubmittingReply: boolean;
+  votingTargetId: string | null;
+  collapsedIds: Set<string>;
+  replyRegister: UseFormRegister<CreateReplyFormData>;
+  replyErrors: FieldErrors<CreateReplyFormData>;
+  onStartReply: (opinionId: string, parentInteractionId?: string) => void;
+  onCancelReply: () => void;
+  onSubmitReply: () => void;
+  onToggleCollapse: (id: string) => void;
+  onVoteOpinion: (opinionId: string) => void;
+  onDislikeOpinion: (opinionId: string) => void;
+  onVoteThread: (threadId: string) => void;
+  onDislikeThread: (threadId: string) => void;
+}) {
+  const prefersReducedMotion = useReducedMotion();
+  const isRootReplyActive = isReplyTarget(replyTarget, opinion.id);
+  const isVoting = votingTargetId === opinion.id;
+
+  return (
+    <motion.div
+      whileHover={prefersReducedMotion ? undefined : { x: 2 }}
+      className="min-w-0 overflow-x-hidden rounded-xl border border-border/15 bg-card/50 p-4 transition-colors hover:border-accent/20 hover:bg-card hover:shadow-[var(--shadow-card)]"
+    >
+      <article>
+        <p className="text-comment whitespace-pre-wrap text-foreground/90">
+          {opinion.content}
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <p className="text-small text-muted">
+            <UserLink username={opinion.author.username} /> ·{" "}
+            {formatDate(opinion.created_at)}
+          </p>
+          <VoteControls
+            cachedUpvotes={opinion.cached_upvotes}
+            userVote={opinion.user_vote}
+            disabled={isVoting}
+            onLike={() => onVoteOpinion(opinion.id)}
+            onDislike={() => onDislikeOpinion(opinion.id)}
+          />
+        </div>
+      </article>
+
+      {isRootReplyActive ? (
+        <ReplyComposer
+          register={replyRegister}
+          errors={replyErrors}
+          isSubmitting={isSubmittingReply}
+          onSubmit={onSubmitReply}
+          onCancel={onCancelReply}
+        />
+      ) : (
+        <div className="mt-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onStartReply(opinion.id)}
+          >
+            Responder
+          </Button>
+        </div>
+      )}
+
+      {opinion.replies.length > 0 && (
+        <ul className="mt-4 min-w-0 space-y-3 overflow-x-hidden border-t border-border/15 pt-4">
+          {opinion.replies.map((reply) => (
+            <ThreadReplyNode
+              key={reply.id}
+              reply={reply}
+              opinionId={opinion.id}
+              depth={1}
+              replyTarget={replyTarget}
+              isSubmittingReply={isSubmittingReply}
+              votingTargetId={votingTargetId}
+              collapsedIds={collapsedIds}
+              replyRegister={replyRegister}
+              replyErrors={replyErrors}
+              onStartReply={onStartReply}
+              onCancelReply={onCancelReply}
+              onSubmitReply={onSubmitReply}
+              onToggleCollapse={onToggleCollapse}
+              onVoteThread={onVoteThread}
+              onDislikeThread={onDislikeThread}
+            />
+          ))}
+        </ul>
+      )}
+    </motion.div>
+  );
+}
+
 export function OpinionList({
   opinions,
   replyTarget,
@@ -80,87 +193,35 @@ export function OpinionList({
 
   if (opinions.length === 0) {
     return (
-      <p className="text-body text-muted italic">
+      <p className="text-comment text-muted">
         Nenhuma discussão ainda. Seja o primeiro a comentar.
       </p>
     );
   }
 
   return (
-    <ul className="space-y-6">
-      {opinions.map((opinion) => {
-        const isRootReplyActive = isReplyTarget(replyTarget, opinion.id);
-        const isVoting = votingTargetId === opinion.id;
-
-        return (
-          <li key={opinion.id} className="min-w-0 overflow-x-hidden border border-border/30 p-4">
-            <article>
-              <p className="text-body text-foreground whitespace-pre-wrap">
-                {opinion.content}
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <p className="font-mono text-small text-muted">
-                  <UserLink username={opinion.author.username} /> ·{" "}
-                  {formatDate(opinion.created_at)}
-                </p>
-                <VoteControls
-                  cachedUpvotes={opinion.cached_upvotes}
-                  userVote={opinion.user_vote}
-                  disabled={isVoting}
-                  onLike={() => onVoteOpinion(opinion.id)}
-                  onDislike={() => onDislikeOpinion(opinion.id)}
-                />
-              </div>
-            </article>
-
-            {isRootReplyActive ? (
-              <ReplyComposer
-                register={replyRegister}
-                errors={replyErrors}
-                isSubmitting={isSubmittingReply}
-                onSubmit={onSubmitReply}
-                onCancel={onCancelReply}
-              />
-            ) : (
-              <div className="mt-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onStartReply(opinion.id)}
-                >
-                  Responder
-                </Button>
-              </div>
-            )}
-
-            {opinion.replies.length > 0 && (
-              <ul className="mt-4 min-w-0 space-y-3 overflow-x-hidden border-t border-border/20 pt-4">
-                {opinion.replies.map((reply) => (
-                  <ThreadReplyNode
-                    key={reply.id}
-                    reply={reply}
-                    opinionId={opinion.id}
-                    depth={1}
-                    replyTarget={replyTarget}
-                    isSubmittingReply={isSubmittingReply}
-                    votingTargetId={votingTargetId}
-                    collapsedIds={collapsedIds}
-                    replyRegister={replyRegister}
-                    replyErrors={replyErrors}
-                    onStartReply={onStartReply}
-                    onCancelReply={onCancelReply}
-                    onSubmitReply={onSubmitReply}
-                    onToggleCollapse={onToggleCollapse}
-                    onVoteThread={onVoteThread}
-                    onDislikeThread={onDislikeThread}
-                  />
-                ))}
-              </ul>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <StaggerList className="space-y-4">
+      {opinions.map((opinion) => (
+        <StaggerItem key={opinion.id}>
+          <OpinionCard
+            opinion={opinion}
+            replyTarget={replyTarget}
+            isSubmittingReply={isSubmittingReply}
+            votingTargetId={votingTargetId}
+            collapsedIds={collapsedIds}
+            replyRegister={replyRegister}
+            replyErrors={replyErrors}
+            onStartReply={onStartReply}
+            onCancelReply={onCancelReply}
+            onSubmitReply={onSubmitReply}
+            onToggleCollapse={onToggleCollapse}
+            onVoteOpinion={onVoteOpinion}
+            onDislikeOpinion={onDislikeOpinion}
+            onVoteThread={onVoteThread}
+            onDislikeThread={onDislikeThread}
+          />
+        </StaggerItem>
+      ))}
+    </StaggerList>
   );
 }

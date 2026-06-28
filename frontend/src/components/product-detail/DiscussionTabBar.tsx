@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "motion/react";
 import type { ProductDiscussionTab } from "@/lib/types/products";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +21,7 @@ export function DiscussionTabBar({
 
   return (
     <div
-      className="flex flex-wrap gap-2 border-b border-border/30 pb-3"
+      className="flex flex-wrap gap-2 border-b border-border/15 pb-3"
       role="tablist"
       aria-label="Abas de discussão"
     >
@@ -38,15 +41,22 @@ export function DiscussionTabBar({
             disabled={disabled}
             onClick={() => onSelectTab(index)}
             className={cn(
-              "border px-3 py-1.5 font-mono text-small transition-colors",
+              "relative rounded-full px-3 py-1.5 text-small font-medium transition-colors",
               "disabled:cursor-not-allowed disabled:opacity-50",
               isActive
-                ? "border-accent bg-accent/10 text-foreground"
-                : "border-border/30 text-muted hover:border-accent/40 hover:text-foreground"
+                ? "text-accent"
+                : "text-muted hover:text-foreground"
             )}
           >
             {tab.label}
-            <span className="ml-2 text-muted">({tab.opinionCount})</span>
+            <span className="ml-1.5 text-muted">({tab.opinionCount})</span>
+            {isActive && (
+              <motion.span
+                layoutId="discussion-tab-indicator"
+                className="absolute inset-0 -z-10 rounded-full bg-accent/10"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
           </button>
         );
       })}

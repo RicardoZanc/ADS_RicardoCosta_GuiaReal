@@ -99,11 +99,11 @@ export function ThreadReplyNode({
         )}
 
         <article className="min-w-0 flex-1 break-words">
-          <p className="text-body text-foreground whitespace-pre-wrap">
+          <p className="text-comment whitespace-pre-wrap text-foreground/90">
             {reply.content}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
-            <p className="font-mono text-small text-muted">
+            <p className="text-small text-muted">
               <UserLink username={reply.author.username} /> ·{" "}
               {formatDate(reply.created_at)}
             </p>

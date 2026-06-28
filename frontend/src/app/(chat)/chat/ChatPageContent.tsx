@@ -5,6 +5,7 @@ import { ChatEmptyState } from "@/components/chat/ChatEmptyState";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { ChatShell } from "@/components/chat/ChatShell";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useChatController } from "@/app/(chat)/chat/controller";
 
 interface ChatPageContentProps {
@@ -42,17 +43,16 @@ export function ChatPageContent({ chatId }: ChatPageContentProps) {
         />
       }
     >
-      {chatId && title && (
-        <header className="border-b border-border/30 px-4 py-3">
-          <h2 className="mx-auto max-w-3xl truncate font-sans text-body font-semibold text-foreground">
-            {title}
-          </h2>
-        </header>
-      )}
+      <header className="flex items-center justify-between gap-3 border-b border-border/15 bg-background/80 px-4 py-3 backdrop-blur-md">
+        <h2 className="min-w-0 flex-1 truncate text-body font-semibold text-foreground">
+          {title ?? "Assistente"}
+        </h2>
+        <ThemeToggle />
+      </header>
 
       {isLoadingChat && chatId ? (
         <div className="flex flex-1 items-center justify-center">
-          <p className="font-mono text-small text-muted">Carregando conversa…</p>
+          <div className="skeleton-shimmer h-8 w-48 rounded-lg" />
         </div>
       ) : showEmptyState ? (
         <ChatEmptyState />

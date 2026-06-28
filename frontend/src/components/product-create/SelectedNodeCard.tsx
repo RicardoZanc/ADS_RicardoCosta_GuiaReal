@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tag } from "@/components/ui/tag";
 import type { SelectedNode } from "@/lib/types/nodes";
 
 interface SelectedNodeCardProps {
@@ -37,7 +38,7 @@ export function SelectedNodeCard({
   }
 
   return (
-    <div className="rounded-lg border border-border/40 bg-card p-4">
+    <div className="rounded-xl border border-border/15 bg-card p-4 shadow-[var(--shadow-card)]">
       {isEditing ? (
         <div className="flex flex-col gap-3">
           <Input
@@ -79,7 +80,7 @@ export function SelectedNodeCard({
             <p className="truncate text-body font-medium text-foreground">
               {node.name}
             </p>
-            <p className="font-mono text-small text-muted">{node.type}</p>
+            <Tag className="mt-1">{node.type}</Tag>
           </div>
           <div className="flex shrink-0 gap-2">
             <Button

@@ -1,8 +1,25 @@
 "use client";
 
 import { FeedProductCard } from "@/components/feed/FeedProductCard";
+import { StaggerItem, StaggerList } from "@/components/motion/StaggerList";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { useFeedController } from "./controller";
+
+function FeedSkeleton() {
+  return (
+    <div className="columns-1 gap-6 md:columns-2">
+      {[0, 1, 2].map((key) => (
+        <div key={key} className="mb-6 break-inside-avoid">
+          <div
+            className="skeleton-shimmer h-48 rounded-xl border border-border/15"
+            aria-hidden
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function FeedPage() {
   const { items, isLoading, isLoadingMore, hasMore, loadMore } =
@@ -10,46 +27,33 @@ export default function FeedPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-      <header className="mb-8 space-y-2">
-        <p className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-          Feed
-        </p>
-        <h1 className="font-sans text-h2 font-bold tracking-tight text-foreground">
-          O que a comunidade está discutindo
-        </h1>
-        <p className="max-w-2xl text-body text-muted">
-          Produtos e tópicos com debates recentes. Clique em um card para ver
-          mais detalhes e participar da conversa.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Feed"
+        title="O que a comunidade está discutindo"
+        description="Produtos e tópicos com debates recentes. Clique em um card para ver mais detalhes e participar da conversa."
+      />
 
       {isLoading ? (
-        <div className="columns-1 gap-6 md:columns-2">
-          {[0, 1, 2].map((key) => (
-            <div key={key} className="mb-6 break-inside-avoid">
-              <div
-                className="h-48 animate-pulse rounded-xl border border-border/30 bg-muted/20"
-                aria-hidden
-              />
-            </div>
-          ))}
-        </div>
+        <FeedSkeleton />
       ) : items.length === 0 ? (
         <p className="text-body text-muted">
           Nenhum item no feed no momento.
         </p>
       ) : (
         <>
-          <div className="columns-1 gap-6 md:columns-2">
+          <StaggerList
+            key={items.length}
+            className="columns-1 gap-6 md:columns-2"
+          >
             {items.map((item) => (
-              <div
+              <StaggerItem
                 key={`${item.kind}-${item.id}`}
                 className="mb-6 break-inside-avoid"
               >
                 <FeedProductCard item={item} />
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerList>
 
           {hasMore && (
             <div className="mt-8 flex justify-center">

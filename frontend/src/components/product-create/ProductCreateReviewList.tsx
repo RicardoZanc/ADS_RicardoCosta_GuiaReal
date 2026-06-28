@@ -1,5 +1,6 @@
 "use client";
 
+import { Eyebrow } from "@/components/ui/eyebrow";
 import type { WizardStep } from "@/lib/productCreate/constants";
 
 export interface ReviewItem {
@@ -22,7 +23,7 @@ export function ProductCreateReviewList({
   onNavigate,
 }: ProductCreateReviewListProps) {
   return (
-    <ul className="divide-y divide-border/30 overflow-hidden rounded-lg border border-border/40">
+    <ul className="divide-y divide-border/15 overflow-hidden rounded-xl border border-border/15 shadow-[var(--shadow-card)]">
       {items.map((item) => {
         const isEmpty = item.values.length === 0;
         return (
@@ -31,11 +32,9 @@ export function ProductCreateReviewList({
               type="button"
               disabled={disabled}
               onClick={() => onNavigate(item.step)}
-              className="flex w-full items-start justify-between gap-4 bg-card px-4 py-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
+              className="flex w-full items-start justify-between gap-4 bg-card px-4 py-3 text-left transition-colors hover:bg-muted/10 disabled:opacity-50"
             >
-              <span className="shrink-0 font-mono text-small uppercase tracking-wide text-muted">
-                {item.label}
-              </span>
+              <Eyebrow size="sm">{item.label}</Eyebrow>
               <span className="min-w-0 flex-1 text-right text-body text-foreground">
                 {item.imagePreviewUrl ? (
                   <span className="inline-flex items-center justify-end gap-3">
@@ -43,7 +42,7 @@ export function ProductCreateReviewList({
                     <img
                       src={item.imagePreviewUrl}
                       alt=""
-                      className="size-10 border border-border/30 object-cover"
+                      className="size-10 rounded-lg border border-border/15 object-cover"
                     />
                     <span>{item.values[0] ?? "Imagem selecionada"}</span>
                   </span>

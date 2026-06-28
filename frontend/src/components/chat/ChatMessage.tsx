@@ -21,10 +21,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
     >
       <div
         className={cn(
-          "max-w-[85%] rounded-2xl px-4 py-3 text-body leading-relaxed",
+          "max-w-[85%] rounded-2xl px-4 py-3 text-comment shadow-[var(--shadow-card)]",
           isUser
-            ? "bg-accent/15 text-foreground ring-1 ring-accent/25"
-            : "bg-card text-foreground ring-1 ring-border/40"
+            ? "bg-accent/15 text-foreground ring-1 ring-accent/20"
+            : "bg-card text-foreground ring-1 ring-border/15"
         )}
       >
         {isUser ? (

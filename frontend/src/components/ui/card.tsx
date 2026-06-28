@@ -7,7 +7,7 @@ function Card({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/30 bg-card shadow-lg",
+        "rounded-xl border border-border/15 bg-card shadow-[var(--shadow-card)] transition-[box-shadow,border-color] duration-200 hover:border-accent/20 hover:shadow-lg",
         className
       )}
       {...props}
@@ -31,7 +31,7 @@ function CardTitle({
   return (
     <h2
       className={cn(
-        "text-h3 font-semibold tracking-tight text-foreground",
+        "font-sans text-body font-medium leading-snug text-foreground",
         className
       )}
       {...props}
@@ -62,7 +62,7 @@ function CardFooter({
   return (
     <div
       className={cn(
-        "flex items-center border-t border-border/30 px-6 py-4",
+        "flex items-center border-t border-border/15 px-6 py-4",
         className
       )}
       {...props}

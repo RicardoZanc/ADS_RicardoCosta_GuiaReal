@@ -44,7 +44,7 @@ export function ChatComposer({
   }
 
   return (
-    <div className="border-t border-border/30 bg-background px-4 py-4">
+    <div className="border-t border-border/15 bg-background/80 px-4 py-4 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-3xl items-end gap-2">
         <Textarea
           ref={textareaRef}

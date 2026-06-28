@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "motion/react";
 import type { UserInteraction } from "@/lib/types/users";
+import { StaggerItem, StaggerList } from "@/components/motion/StaggerList";
+import { useReducedMotion } from "@/components/motion/useReducedMotion";
 
 const PREVIEW_MAX_LENGTH = 120;
 
@@ -18,6 +23,26 @@ interface UserInteractionListProps {
   interactions: UserInteraction[];
 }
 
+function InteractionRow({ interaction }: { interaction: UserInteraction }) {
+  const prefersReducedMotion = useReducedMotion();
+
+  return (
+    <motion.div whileHover={prefersReducedMotion ? undefined : { x: 4 }}>
+      <Link
+        href={getInteractionHref(interaction)}
+        className="block rounded-xl border border-border/15 bg-card/50 px-4 py-4 transition-colors hover:border-accent/20 hover:bg-card hover:shadow-[var(--shadow-card)] lg:px-5 lg:py-5"
+      >
+        <p className="text-product-name text-foreground transition-colors hover:text-accent">
+          {interaction.context.name}
+        </p>
+        <p className="text-comment mt-2 text-muted lg:mt-1.5">
+          {truncateContent(interaction.content)}
+        </p>
+      </Link>
+    </motion.div>
+  );
+}
+
 export function UserInteractionList({ interactions }: UserInteractionListProps) {
   if (interactions.length === 0) {
     return (
@@ -28,33 +53,12 @@ export function UserInteractionList({ interactions }: UserInteractionListProps) 
   }
 
   return (
-    <div className="border border-border/30">
-      <div className="hidden border-b border-border/30 bg-muted/10 px-5 py-3 lg:grid lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:gap-8">
-        <span className="font-mono text-small font-medium tracking-wide text-muted uppercase">
-          Tópico
-        </span>
-        <span className="font-mono text-small font-medium tracking-wide text-muted uppercase">
-          Comentário
-        </span>
-      </div>
-
-      <ul className="divide-y divide-border/30">
-        {interactions.map((interaction) => (
-          <li key={`${interaction.kind}-${interaction.id}`}>
-            <Link
-              href={getInteractionHref(interaction)}
-              className="block px-4 py-4 transition-colors hover:bg-muted/10 lg:grid lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:items-start lg:gap-8 lg:px-5 lg:py-5"
-            >
-              <p className="font-sans text-h4 text-foreground hover:text-accent">
-                {interaction.context.name}
-              </p>
-              <p className="mt-2 text-body text-foreground lg:mt-0">
-                {truncateContent(interaction.content)}
-              </p>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <StaggerList className="flex flex-col gap-3">
+      {interactions.map((interaction) => (
+        <StaggerItem key={`${interaction.kind}-${interaction.id}`}>
+          <InteractionRow interaction={interaction} />
+        </StaggerItem>
+      ))}
+    </StaggerList>
   );
 }

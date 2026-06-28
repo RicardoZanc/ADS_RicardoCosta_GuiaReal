@@ -21,7 +21,7 @@ export function ReplyComposer({
 }: ReplyComposerProps) {
   return (
     <form
-      className={`mt-3 space-y-3 pl-3 ${THREAD_CONNECTOR_CLASS}`}
+      className={`mt-3 space-y-3 rounded-lg border border-border/15 bg-muted/5 p-3 pl-4 ${THREAD_CONNECTOR_CLASS}`}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();

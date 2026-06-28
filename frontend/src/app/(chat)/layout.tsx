@@ -11,8 +11,8 @@ export default function ChatLayout({
 
   if (!isReady) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-background">
-        <p className="font-mono text-small text-muted">Carregando…</p>
+      <div className="flex h-dvh items-center justify-center">
+        <div className="skeleton-shimmer h-8 w-32 rounded-lg" aria-hidden />
       </div>
     );
   }

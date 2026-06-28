@@ -27,7 +27,7 @@ export function UserAvatar({
         src={avatarUrl}
         alt={`Avatar de ${username}`}
         className={cn(
-          "shrink-0 border border-border/30 object-cover",
+          "shrink-0 rounded-2xl border border-border/15 object-cover",
           sizeClasses[size],
           className
         )}
@@ -38,8 +38,8 @@ export function UserAvatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center",
-        "border border-border/30 bg-muted/30 font-mono text-muted",
+        "flex shrink-0 items-center justify-center rounded-2xl",
+        "border border-border/15 bg-muted/10 text-muted",
         sizeClasses[size],
         className
       )}

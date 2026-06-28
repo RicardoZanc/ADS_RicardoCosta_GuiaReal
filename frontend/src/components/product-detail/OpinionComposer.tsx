@@ -1,4 +1,5 @@
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { CreateOpinionFormData } from "@/lib/schemas/productDetail";
@@ -18,16 +19,14 @@ export function OpinionComposer({
 }: OpinionComposerProps) {
   return (
     <form
-      className="space-y-3 border border-border/30 p-4"
+      className="space-y-3 rounded-xl border border-border/15 bg-card/50 p-4 shadow-[var(--shadow-card)]"
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();
       }}
     >
       <label className="block space-y-2">
-        <span className="font-mono text-small font-medium tracking-widest text-accent uppercase">
-          Nova opinião
-        </span>
+        <Eyebrow size="sm">Nova opinião</Eyebrow>
         <Textarea
           {...register("content")}
           error={Boolean(errors.content)}

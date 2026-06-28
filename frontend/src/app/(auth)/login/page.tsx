@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLoginController } from "./controller";
 import { Button } from "@/components/ui/button";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import {
   Card,
   CardContent,
@@ -20,10 +21,8 @@ export default function LoginPage() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <p className="font-mono text-small font-medium tracking-wide text-accent">
-          GuiaReal
-        </p>
-        <CardTitle>Entrar</CardTitle>
+        <Eyebrow className="mx-auto">GuiaReal</Eyebrow>
+        <CardTitle className="text-h4 font-semibold">Entrar</CardTitle>
         <CardDescription>
           Decisões de compra com IA e a sabedoria da comunidade.
         </CardDescription>

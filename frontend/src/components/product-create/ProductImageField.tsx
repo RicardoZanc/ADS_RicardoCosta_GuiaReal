@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { cn } from "@/lib/utils";
 
 interface ProductImageFieldProps {
@@ -49,8 +50,8 @@ export function ProductImageField({
         <div className="space-y-3">
           <div
             className={cn(
-              "relative mx-auto aspect-square w-full max-w-xs overflow-hidden",
-              "border border-border/40 bg-muted/20"
+              "relative mx-auto aspect-square w-full max-w-xs overflow-hidden rounded-lg",
+              "border border-border/15 bg-muted/10"
             )}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -60,10 +61,8 @@ export function ProductImageField({
               className="size-full object-cover"
             />
             {isUploading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/70">
-                <p className="font-mono text-small text-foreground">
-                  Enviando imagem...
-                </p>
+              <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+                <p className="text-small text-foreground">Enviando imagem...</p>
               </div>
             )}
           </div>
@@ -95,15 +94,13 @@ export function ProductImageField({
           disabled={isBusy}
           onClick={openFilePicker}
           className={cn(
-            "flex w-full flex-col items-center justify-center gap-3 rounded-lg",
-            "border border-dashed border-border/50 bg-muted/10 px-6 py-12",
-            "text-center transition-colors hover:border-accent/50 hover:bg-muted/20",
+            "flex w-full flex-col items-center justify-center gap-3 rounded-xl",
+            "border border-dashed border-border/20 bg-muted/5 px-6 py-12",
+            "text-center transition-colors hover:border-accent/30 hover:bg-muted/10",
             "disabled:cursor-not-allowed disabled:opacity-50"
           )}
         >
-          <span className="font-mono text-small uppercase tracking-wide text-accent">
-            Selecionar imagem
-          </span>
+          <Eyebrow>Selecionar imagem</Eyebrow>
           <span className="max-w-sm text-body text-muted">
             JPEG, PNG, WebP ou GIF até 50 MB. Este passo é opcional.
           </span>

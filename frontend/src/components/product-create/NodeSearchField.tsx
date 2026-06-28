@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { Input } from "@/components/ui/input";
+import { Tag } from "@/components/ui/tag";
 import type { NodeRecord } from "@/lib/types/nodes";
 
 interface NodeSearchFieldProps {
@@ -53,7 +54,7 @@ export function NodeSearchField({
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-50 mt-2 max-h-72 w-full overflow-auto rounded-lg border border-border/40 bg-card py-1 shadow-lg"
+          className="absolute z-50 mt-2 max-h-72 w-full overflow-auto rounded-lg border border-border/15 bg-card py-1 shadow-[var(--shadow-card)]"
         >
           {isLoading && (
             <li className="px-3 py-2 text-small text-muted">Buscando…</li>
@@ -66,12 +67,10 @@ export function NodeSearchField({
                   type="button"
                   disabled={disabled}
                   onClick={() => onSelect(node)}
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-body text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-body text-foreground transition-colors hover:bg-muted/10 disabled:opacity-50"
                 >
                   <span className="truncate">{node.name}</span>
-                  <span className="shrink-0 font-mono text-small text-muted">
-                    {node.type}
-                  </span>
+                  <Tag>{node.type}</Tag>
                 </button>
               </li>
             ))}
@@ -82,9 +81,9 @@ export function NodeSearchField({
                 type="button"
                 disabled={disabled}
                 onClick={() => onCreate(trimmed)}
-                className="flex w-full items-center gap-2 border-t border-border/30 px-3 py-2 text-left text-body text-accent transition-colors hover:bg-muted disabled:opacity-50"
+                className="flex w-full items-center gap-2 border-t border-border/15 px-3 py-2 text-left text-body text-accent transition-colors hover:bg-muted/10 disabled:opacity-50"
               >
-                Criar &ldquo;{trimmed}&rdquo;
+                Criar &quot;{trimmed}&quot;
               </button>
             </li>
           )}

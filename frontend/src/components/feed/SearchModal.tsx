@@ -10,8 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { StaggerList, StaggerListItem } from "@/components/motion/StaggerList";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tag } from "@/components/ui/tag";
 import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 import type { NodeRecord } from "@/lib/types/nodes";
 
@@ -83,37 +85,41 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               Digite para começar a buscar.
             </p>
           ) : isLoading ? (
-            <p className="px-4 py-6 text-center text-body text-muted">
-              Buscando…
-            </p>
+            <div className="space-y-2 px-2">
+              {[0, 1, 2].map((key) => (
+                <div
+                  key={key}
+                  className="skeleton-shimmer h-12 rounded-lg"
+                  aria-hidden
+                />
+              ))}
+            </div>
           ) : results.length === 0 ? (
             <p className="px-4 py-6 text-center text-body text-muted">
               Nenhum resultado encontrado.
             </p>
           ) : (
-            <ul className="divide-y divide-border/30">
+            <StaggerList key={results.length} className="space-y-1">
               {results.map((node) => (
-                <li key={node.id}>
+                <StaggerListItem key={node.id}>
                   <button
                     type="button"
                     onClick={() => handleSelect(node)}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-muted"
+                    className="flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-muted/10"
                   >
                     <span className="truncate text-body text-foreground">
                       {node.name}
                     </span>
-                    <span className="shrink-0 font-mono text-small text-muted">
-                      {node.type}
-                    </span>
+                    <Tag>{node.type}</Tag>
                   </button>
-                </li>
+                </StaggerListItem>
               ))}
-            </ul>
+            </StaggerList>
           )}
         </div>
 
         {hasSearched && !isLoading && (
-          <div className="flex items-center justify-between gap-4 border-t border-border/30 px-6 py-4">
+          <div className="flex items-center justify-between gap-4 border-t border-border/15 px-6 py-4">
             <p className="text-body text-muted">
               Não encontrou o que você procura?
             </p>

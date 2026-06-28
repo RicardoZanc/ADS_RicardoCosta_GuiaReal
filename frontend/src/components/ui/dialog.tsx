@@ -2,9 +2,12 @@
 
 import * as React from "react";
 import { Dialog as DialogPrimitive } from "radix-ui";
+import { motion } from "motion/react";
 import { XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { easeOut } from "@/lib/motion";
+import { useReducedMotion } from "@/components/motion/useReducedMotion";
 
 function Dialog({
   ...props
@@ -34,15 +37,20 @@ function DialogOverlay({
   className,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
-    <DialogPrimitive.Overlay
-      data-slot="dialog-overlay"
-      className={cn(
-        "fixed inset-0 z-50 bg-background/60 backdrop-blur-sm",
-        className
-      )}
-      {...props}
-    />
+    <DialogPrimitive.Overlay asChild data-slot="dialog-overlay" {...props}>
+      <motion.div
+        className={cn(
+          "fixed inset-0 z-50 bg-background/60 backdrop-blur-sm",
+          className
+        )}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={prefersReducedMotion ? { duration: 0.01 } : easeOut}
+      />
+    </DialogPrimitive.Overlay>
   );
 }
 
@@ -54,24 +62,37 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
 }) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <DialogPortal>
       <DialogOverlay />
-      <DialogPrimitive.Content
-        data-slot="dialog-content"
-        className={cn(
-          "fixed top-[12%] left-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 rounded-2xl border border-border/40 bg-card p-0 shadow-xl outline-none",
-          className
-        )}
-        {...props}
-      >
-        {children}
-        {showCloseButton && (
-          <DialogClose className="absolute top-4 right-4 rounded-lg p-1 text-muted transition-colors hover:bg-muted hover:text-foreground">
-            <XIcon className="size-4" />
-            <span className="sr-only">Fechar</span>
-          </DialogClose>
-        )}
+      <DialogPrimitive.Content asChild data-slot="dialog-content" {...props}>
+        <motion.div
+          className={cn(
+            "fixed top-[12%] left-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 rounded-2xl border border-border/20 bg-card p-0 shadow-[var(--shadow-card)] outline-none",
+            className
+          )}
+          initial={
+            prefersReducedMotion
+              ? { opacity: 0 }
+              : { opacity: 0, scale: 0.96, y: 8 }
+          }
+          animate={
+            prefersReducedMotion
+              ? { opacity: 1 }
+              : { opacity: 1, scale: 1, y: 0 }
+          }
+          transition={prefersReducedMotion ? { duration: 0.01 } : easeOut}
+        >
+          {children}
+          {showCloseButton && (
+            <DialogClose className="absolute top-4 right-4 rounded-lg p-1 text-muted transition-colors hover:bg-muted/20 hover:text-foreground">
+              <XIcon className="size-4" />
+              <span className="sr-only">Fechar</span>
+            </DialogClose>
+          )}
+        </motion.div>
       </DialogPrimitive.Content>
     </DialogPortal>
   );
