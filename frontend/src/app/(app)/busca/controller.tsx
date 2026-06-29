@@ -6,7 +6,6 @@ import { apiClient } from "@/lib/api";
 import { notifyApiError } from "@/lib/notifyApiError";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
-  fetchProductFacets,
   fetchProductSearch,
   PRODUCT_SEARCH_PAGE_LIMIT,
 } from "@/lib/search";
@@ -18,15 +17,20 @@ import type {
   SelectedNode,
 } from "@/lib/types/nodes";
 import type {
-  ProductFacetsResponse,
+  FacetType,
   ProductSearchItem,
+  SelectedFacetMeta,
 } from "@/lib/types/search";
 
-const EMPTY_FACETS: ProductFacetsResponse = {
-  tecnologias: [],
-  composicoes: [],
-  atributos: [],
-};
+const FACET_TYPES = new Set<FacetType>([
+  "TECNOLOGIA",
+  "COMPOSICAO",
+  "ATRIBUTO",
+]);
+
+function isFacetType(type: string): type is FacetType {
+  return FACET_TYPES.has(type as FacetType);
+}
 
 function toSelectedNode(node: NodeRecord | NodeDetailResponse): SelectedNode {
   return {
@@ -109,6 +113,32 @@ async function resolveCategoriaFromUrl(
   return { categoria, tipo };
 }
 
+async function resolveSelectedFacetMeta(
+  nodeIds: string[]
+): Promise<Map<string, SelectedFacetMeta>> {
+  if (nodeIds.length === 0) {
+    return new Map();
+  }
+
+  const results = await Promise.allSettled(
+    nodeIds.map((id) => apiClient<NodeDetailResponse>(`/nodes/${id}`))
+  );
+
+  const meta = new Map<string, SelectedFacetMeta>();
+
+  for (const result of results) {
+    if (result.status === "fulfilled" && isFacetType(result.value.type)) {
+      meta.set(result.value.id, {
+        id: result.value.id,
+        name: result.value.name,
+        type: result.value.type,
+      });
+    }
+  }
+
+  return meta;
+}
+
 export function useBuscaController() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -118,6 +148,9 @@ export function useBuscaController() {
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
     () => new Set(parseNodeIds(searchParams.get("node_ids")))
   );
+  const [selectedFacetMeta, setSelectedFacetMeta] = useState<
+    Map<string, SelectedFacetMeta>
+  >(new Map());
   const [productQuery, setProductQuery] = useState(
     () => searchParams.get("q") ?? ""
   );
@@ -125,11 +158,10 @@ export function useBuscaController() {
     const parsed = Number.parseInt(searchParams.get("page") ?? "1", 10);
     return Number.isNaN(parsed) || parsed < 1 ? 1 : parsed;
   });
-  const [facets, setFacets] = useState<ProductFacetsResponse>(EMPTY_FACETS);
+  const [facetResetKey, setFacetResetKey] = useState(0);
   const [products, setProducts] = useState<ProductSearchItem[]>([]);
   const [pagination, setPagination] = useState<FeedPagination | null>(null);
   const [isHydrating, setIsHydrating] = useState(true);
-  const [isLoadingFacets, setIsLoadingFacets] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   const debouncedQuery = useDebouncedValue(productQuery, 300);
@@ -163,6 +195,7 @@ export function useBuscaController() {
       try {
         const categoriaId = searchParams.get("categoria_id");
         const tipoId = searchParams.get("tipo_id");
+        const nodeIds = parseNodeIds(searchParams.get("node_ids"));
 
         if (categoriaId) {
           const resolved = await resolveCategoriaFromUrl(categoriaId);
@@ -175,6 +208,13 @@ export function useBuscaController() {
           if (active && resolvedTipo) {
             setTipo(resolvedTipo);
             setCategoria(null);
+          }
+        }
+
+        if (active && nodeIds.length > 0) {
+          const meta = await resolveSelectedFacetMeta(nodeIds);
+          if (active) {
+            setSelectedFacetMeta(meta);
           }
         }
       } catch (error) {
@@ -211,46 +251,7 @@ export function useBuscaController() {
     });
 
     router.replace(`/busca${nextQuery}`, { scroll: false });
-  }, [
-    tipo,
-    categoria,
-    selectedNodeIds,
-    debouncedQuery,
-    page,
-    router,
-  ]);
-
-  useEffect(() => {
-    if (!scopeParams) {
-      setFacets(EMPTY_FACETS);
-      return;
-    }
-
-    let active = true;
-    setIsLoadingFacets(true);
-
-    fetchProductFacets(scopeParams)
-      .then((response) => {
-        if (active) {
-          setFacets(response);
-        }
-      })
-      .catch((error) => {
-        if (active) {
-          notifyApiError(error);
-          setFacets(EMPTY_FACETS);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setIsLoadingFacets(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [scopeParams]);
+  }, [tipo, categoria, selectedNodeIds, debouncedQuery, page, router]);
 
   useEffect(() => {
     if (!scopeParams) {
@@ -293,48 +294,79 @@ export function useBuscaController() {
     };
   }, [scopeParams, selectedNodeIds, debouncedQuery, page]);
 
-  const handleSelectTipo = useCallback((node: NodeRecord) => {
-    setTipo(toSelectedNode(node));
-    setCategoria(null);
-    setSelectedNodeIds(new Set());
-    setPage(1);
+  const bumpFacetReset = useCallback(() => {
+    setFacetResetKey((current) => current + 1);
   }, []);
 
-  const handleSelectCategoria = useCallback((node: NodeRecord) => {
-    setCategoria(toSelectedNode(node));
-    setSelectedNodeIds(new Set());
-    setPage(1);
-  }, []);
+  const handleSelectTipo = useCallback(
+    (node: NodeRecord) => {
+      setTipo(toSelectedNode(node));
+      setCategoria(null);
+      setSelectedNodeIds(new Set());
+      setSelectedFacetMeta(new Map());
+      setPage(1);
+      bumpFacetReset();
+    },
+    [bumpFacetReset]
+  );
+
+  const handleSelectCategoria = useCallback(
+    (node: NodeRecord) => {
+      setCategoria(toSelectedNode(node));
+      setSelectedNodeIds(new Set());
+      setSelectedFacetMeta(new Map());
+      setPage(1);
+      bumpFacetReset();
+    },
+    [bumpFacetReset]
+  );
 
   const handleClearScope = useCallback(() => {
     setTipo(null);
     setCategoria(null);
     setSelectedNodeIds(new Set());
+    setSelectedFacetMeta(new Map());
     setProductQuery("");
     setPage(1);
-    setFacets(EMPTY_FACETS);
     setProducts([]);
     setPagination(null);
-  }, []);
+    bumpFacetReset();
+  }, [bumpFacetReset]);
 
-  const toggleFacet = useCallback((nodeId: string) => {
-    setSelectedNodeIds((current) => {
-      const next = new Set(current);
-      if (next.has(nodeId)) {
-        next.delete(nodeId);
-      } else {
-        next.add(nodeId);
-      }
-      return next;
-    });
-    setPage(1);
-  }, []);
+  const toggleFacet = useCallback(
+    (nodeId: string, meta?: SelectedFacetMeta) => {
+      setSelectedNodeIds((current) => {
+        const next = new Set(current);
+        if (next.has(nodeId)) {
+          next.delete(nodeId);
+        } else {
+          next.add(nodeId);
+        }
+        return next;
+      });
+
+      setSelectedFacetMeta((current) => {
+        const next = new Map(current);
+        if (next.has(nodeId)) {
+          next.delete(nodeId);
+        } else if (meta) {
+          next.set(nodeId, meta);
+        }
+        return next;
+      });
+
+      setPage(1);
+    },
+    []
+  );
 
   const clearFilters = useCallback(() => {
     setSelectedNodeIds(new Set());
+    setSelectedFacetMeta(new Map());
     setProductQuery("");
     setPage(1);
-  }, []);
+    bumpFacetReset();
+  }, [bumpFacetReset]);
 
   const goToPreviousPage = useCallback(() => {
     setPage((current) => Math.max(1, current - 1));
@@ -344,7 +376,8 @@ export function useBuscaController() {
     setPage((current) => current + 1);
   }, []);
 
-  const isLoading = isHydrating || isLoadingFacets || isLoadingProducts;
+  const hasActiveFilters =
+    selectedNodeIds.size > 0 || productQuery.trim().length > 0;
 
   const emptyProductsMessage =
     selectedNodeIds.size > 0 || debouncedQuery.trim()
@@ -354,15 +387,18 @@ export function useBuscaController() {
   return {
     tipo,
     categoria,
+    scopeParams,
     selectedNodeIds,
+    selectedFacetMeta,
+    facetResetKey,
     productQuery,
     setProductQuery,
-    facets,
     products,
     pagination,
     hasScope,
-    isLoading,
+    isLoading: isHydrating,
     isLoadingProducts,
+    hasActiveFilters,
     emptyProductsMessage,
     handleSelectTipo,
     handleSelectCategoria,

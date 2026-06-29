@@ -1,5 +1,7 @@
 import { apiClient } from "@/lib/api";
 import type {
+  FacetSearchParams,
+  FacetSearchResponse,
   ProductFacetsParams,
   ProductFacetsResponse,
   ProductSearchParams,
@@ -7,6 +9,7 @@ import type {
 } from "@/lib/types/search";
 
 export const PRODUCT_SEARCH_PAGE_LIMIT = 20;
+export const FACET_PAGE_LIMIT = 15;
 
 function buildScopeParams(
   params: ProductFacetsParams | ProductSearchParams
@@ -28,6 +31,25 @@ export function fetchProductFacets(
   return apiClient<ProductFacetsResponse>("/products/facets", {
     params: buildScopeParams(params),
   });
+}
+
+export function fetchFacetSearch(
+  params: FacetSearchParams
+): Promise<FacetSearchResponse> {
+  const query = buildScopeParams(params);
+  query.facet_type = params.facet_type;
+
+  if (params.q?.trim()) {
+    query.q = params.q.trim();
+  }
+
+  if (params.page) {
+    query.page = String(params.page);
+  }
+
+  query.limit = String(params.limit ?? FACET_PAGE_LIMIT);
+
+  return apiClient<FacetSearchResponse>("/products/facets", { params: query });
 }
 
 export function fetchProductSearch(

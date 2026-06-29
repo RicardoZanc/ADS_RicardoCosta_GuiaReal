@@ -11,12 +11,14 @@ const productsController = {
   getFacets: async (req: Request, res: Response) => {
     const query = req.query as unknown as ProductFacetsQuery;
     logger.info("HTTP GET /api/products/facets - Iniciado", query);
-    const facets = await productsService.getFacets(query);
+    const result = await productsService.getFacets(query);
     logger.info("HTTP GET /api/products/facets - Concluído", {
       tipoId: query.tipo_id,
       categoriaId: query.categoria_id,
+      facetType: query.facet_type,
+      paginated: Boolean(query.facet_type),
     });
-    res.status(200).json(facets);
+    res.status(200).json(result);
   },
   search: async (req: Request, res: Response) => {
     const query = req.query as unknown as ProductSearchQuery;

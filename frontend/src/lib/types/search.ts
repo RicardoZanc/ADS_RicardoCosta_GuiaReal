@@ -1,5 +1,7 @@
 import type { FeedPagination } from "@/lib/types/feed";
 
+export type FacetType = "TECNOLOGIA" | "COMPOSICAO" | "ATRIBUTO";
+
 export interface FacetNode {
   id: string;
   name: string;
@@ -10,6 +12,26 @@ export interface ProductFacetsResponse {
   tecnologias: FacetNode[];
   composicoes: FacetNode[];
   atributos: FacetNode[];
+}
+
+export interface FacetSearchParams {
+  tipo_id?: string;
+  categoria_id?: string;
+  facet_type: FacetType;
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface FacetSearchResponse {
+  data: FacetNode[];
+  pagination: FeedPagination;
+}
+
+export interface SelectedFacetMeta {
+  id: string;
+  name: string;
+  type: FacetType;
 }
 
 export interface ProductSearchNodeRef {

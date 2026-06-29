@@ -95,8 +95,15 @@ const nodeIdsQuerySchema = z.preprocess((value) => {
   return value;
 }, z.array(z.uuid("Cada node_id deve ser um UUID válido")));
 
+export const facetTypes = ["TECNOLOGIA", "COMPOSICAO", "ATRIBUTO"] as const;
+
 export const productFacetsSchema = z.object({
-  query: productSearchScopeSchema,
+  query: productSearchScopeSchema.extend({
+    facet_type: z.enum(facetTypes).optional(),
+    q: z.string().trim().min(1).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(50).default(15),
+  }),
 });
 
 export const productSearchSchema = z.object({
