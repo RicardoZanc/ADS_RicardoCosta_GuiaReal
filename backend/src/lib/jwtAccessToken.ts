@@ -50,6 +50,7 @@ export async function loadAuthenticatedUser(
       email: true,
       username: true,
       is_banned: true,
+      is_admin: true,
       deleted_at: true,
     },
   });
@@ -63,6 +64,7 @@ export async function loadAuthenticatedUser(
     id: user.id,
     email: user.email,
     username: user.username,
+    is_admin: user.is_admin,
   };
 }
 

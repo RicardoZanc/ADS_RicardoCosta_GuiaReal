@@ -2,9 +2,12 @@ import { Router } from "express";
 import { technicalFactsController } from "./technical_facts.controller";
 import {
   createTechnicalFactSchema,
+  listByEvidenceSchema,
   listPendingQueueSchema,
   listTechnicalFactsByNodeSchema,
   markQueueItemProcessedSchema,
+  removeEvidenceSchema,
+  updateTechnicalFactSchema,
 } from "./technical_facts.schema";
 import { validate } from "../../middlewares/validate.middleware";
 import { authenticateToolApiKey } from "../../middlewares/toolAuth.middleware";
@@ -29,6 +32,24 @@ technicalFactsRoutes.patch(
   "/queue/:source_type/:source_id/processed",
   validate(markQueueItemProcessedSchema),
   technicalFactsController.markQueueItemProcessed
+);
+
+technicalFactsRoutes.get(
+  "/by-evidence/:source_type/:source_id",
+  validate(listByEvidenceSchema),
+  technicalFactsController.listByEvidence
+);
+
+technicalFactsRoutes.patch(
+  "/:id",
+  validate(updateTechnicalFactSchema),
+  technicalFactsController.updateFact
+);
+
+technicalFactsRoutes.delete(
+  "/:fact_id/evidence/:source_type/:source_id",
+  validate(removeEvidenceSchema),
+  technicalFactsController.removeEvidence
 );
 
 technicalFactsRoutes.get(

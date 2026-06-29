@@ -69,6 +69,8 @@ Lista itens pendentes da fila unificada: **opiniões** e **threads** com `status
 }
 ```
 
+Itens com `is_hidden = true` são excluídos da fila.
+
 ---
 
 ## `POST /technical-facts`
@@ -185,5 +187,95 @@ Lista fatos consolidados de um nó (consulta RAG).
       ]
     }
   ]
+}
+```
+
+---
+
+## `GET /technical-facts/by-evidence/:source_type/:source_id`
+
+Lista fatos técnicos vinculados a uma opinião ou thread (usado na revisão após denúncia).
+
+| Item | Valor |
+|------|-------|
+| Autenticação | `X-Tool-Api-Key` |
+| Sucesso | `200 OK` |
+
+### Path
+
+| Parâmetro | Tipo | Valores |
+|-----------|------|---------|
+| `source_type` | enum | `opinion` · `thread` |
+| `source_id` | uuid | ID da fonte denunciada |
+
+### Resposta
+
+```json
+{
+  "reported_source": {
+    "source_type": "thread",
+    "source_id": "uuid",
+    "title": null,
+    "content": "Texto denunciado...",
+    "is_hidden": false,
+    "reports_locked": false,
+    "author": { "id": "uuid", "username": "user" }
+  },
+  "data": [
+    {
+      "id": "uuid",
+      "node_id": "uuid",
+      "fact_label": "Afirmação técnica",
+      "fact_description": null,
+      "consensus_score": 0.7,
+      "status": "VERIFIED",
+      "last_updated": "2026-01-01T00:00:00.000Z",
+      "evidence": [
+        { "source_type": "thread", "source_id": "uuid" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## `PATCH /technical-facts/:id`
+
+Atualiza um fato técnico existente (revisão pós-denúncia).
+
+| Item | Valor |
+|------|-------|
+| Autenticação | `X-Tool-Api-Key` |
+| Sucesso | `200 OK` |
+
+### Body (ao menos um campo)
+
+| Campo | Tipo |
+|-------|------|
+| `fact_label` | string |
+| `fact_description` | string |
+| `consensus_score` | number 0–1 |
+| `status` | `HYPOTHESIS` · `VERIFIED` · `DISPUTED` |
+
+---
+
+## `DELETE /technical-facts/:fact_id/evidence/:source_type/:source_id`
+
+Remove o vínculo de evidência entre um fato e uma opinião/thread.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | `X-Tool-Api-Key` |
+| Sucesso | `200 OK` |
+
+### Resposta
+
+```json
+{
+  "fact_id": "uuid",
+  "source_type": "thread",
+  "source_id": "uuid",
+  "removed": true
 }
 ```

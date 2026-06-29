@@ -8,6 +8,7 @@ const USER_FIXTURES = [
         password: "admin123",
         reputation_score: 100,
         is_banned: false,
+        is_admin: true,
     },
     {
         key: "mod",
@@ -45,6 +46,7 @@ export async function seedUsers() {
                 hashpassword,
                 reputation_score: fixture.reputation_score,
                 is_banned: fixture.is_banned,
+                is_admin: "is_admin" in fixture ? fixture.is_admin : false,
             },
             create: {
                 email: fixture.email,
@@ -52,6 +54,7 @@ export async function seedUsers() {
                 hashpassword,
                 reputation_score: fixture.reputation_score,
                 is_banned: fixture.is_banned,
+                is_admin: "is_admin" in fixture ? fixture.is_admin : false,
             },
         });
         result[fixture.key] = { id: user.id };

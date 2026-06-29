@@ -42,5 +42,33 @@ const technicalFactsController = {
         });
         res.status(200).json(result);
     },
+    listByEvidence: async (req, res) => {
+        const { source_type: sourceType, source_id: sourceId } = req.params;
+        logger.info("HTTP GET /tool/technical-facts/by-evidence/:source_type/:source_id - Iniciado", { sourceType, sourceId });
+        const result = await technicalFactsService.listByEvidence(sourceType, sourceId);
+        logger.info("HTTP GET /tool/technical-facts/by-evidence/:source_type/:source_id - Concluído", { sourceType, sourceId, count: result.data.length });
+        res.status(200).json(result);
+    },
+    updateFact: async (req, res) => {
+        const factId = req.params.id;
+        const body = req.body;
+        logger.info("HTTP PATCH /tool/technical-facts/:id - Iniciado", {
+            factId,
+        });
+        const fact = await technicalFactsService.updateFact(factId, body);
+        logger.info("HTTP PATCH /tool/technical-facts/:id - Concluído", {
+            factId: fact.id,
+        });
+        res.status(200).json(fact);
+    },
+    removeEvidence: async (req, res) => {
+        const factId = req.params.fact_id;
+        const sourceType = req.params.source_type;
+        const sourceId = req.params.source_id;
+        logger.info("HTTP DELETE /tool/technical-facts/:fact_id/evidence/:source_type/:source_id - Iniciado", { factId, sourceType, sourceId });
+        const result = await technicalFactsService.removeEvidence(factId, sourceType, sourceId);
+        logger.info("HTTP DELETE /tool/technical-facts/:fact_id/evidence/:source_type/:source_id - Concluído", { factId, sourceType, sourceId });
+        res.status(200).json(result);
+    },
 };
 export { technicalFactsController };

@@ -41,6 +41,7 @@ export type UserForLogin = {
   username: string;
   hashpassword: string;
   is_banned: boolean | null;
+  is_admin: boolean;
   deleted_at: Date | null;
 };
 
@@ -55,6 +56,7 @@ export const findUserForLoginByEmail = async (
       username: true,
       hashpassword: true,
       is_banned: true,
+      is_admin: true,
       deleted_at: true,
     },
   });

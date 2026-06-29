@@ -39,6 +39,7 @@ export const findUserForLoginByEmail = async (email) => {
             username: true,
             hashpassword: true,
             is_banned: true,
+            is_admin: true,
             deleted_at: true,
         },
     });

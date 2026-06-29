@@ -38,6 +38,7 @@ export async function loadAuthenticatedUser(userId) {
             email: true,
             username: true,
             is_banned: true,
+            is_admin: true,
             deleted_at: true,
         },
     });
@@ -49,6 +50,7 @@ export async function loadAuthenticatedUser(userId) {
         id: user.id,
         email: user.email,
         username: user.username,
+        is_admin: user.is_admin,
     };
 }
 export async function authenticateAccessToken(token) {

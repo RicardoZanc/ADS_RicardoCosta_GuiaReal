@@ -16,6 +16,8 @@ model discussion_threads {
   content                  String
   cached_upvotes           Int?                 @default(0)
   status                   queue_status?        @default(PENDING)
+  is_hidden                Boolean              @default(false)
+  reports_locked           Boolean              @default(false)
   created_at               DateTime?            @default(now()) @db.Timestamptz(6)
   opinions                 opinions?            @relation(fields: [opinion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   discussion_threads       discussion_threads?  @relation("discussion_threadsTodiscussion_threads", fields: [parent_interaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -64,6 +66,8 @@ model opinions {
   content            String
   cached_upvotes     Int?                 @default(0)
   status             queue_status?        @default(PENDING)
+  is_hidden          Boolean              @default(false)
+  reports_locked     Boolean              @default(false)
   created_at         DateTime?            @default(now()) @db.Timestamptz(6)
   discussion_threads discussion_threads[]
   nodes              nodes?               @relation(fields: [node_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -71,6 +75,7 @@ model opinions {
   users              users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   reaction_votes     reaction_votes[]
   fact_evidence      fact_evidence[]
+  reports            reports[]
 }
 
 model product_nodes {
@@ -136,11 +141,20 @@ model reports {
   id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   reporter_id           String              @db.Uuid
   target_interaction_id String?             @db.Uuid
+  target_opinion_id     String?             @db.Uuid
   reason                String              @db.VarChar(50)
   status                report_status?      @default(PENDING)
+  reviewer_id           String?             @db.Uuid
+  reviewed_at           DateTime?           @db.Timestamptz(6)
+  admin_notes           String?
   created_at            DateTime?           @default(now()) @db.Timestamp(6)
-  users                 users               @relation(fields: [reporter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                 users               @relation("reports_reporter", fields: [reporter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reviewer              users?              @relation("reports_reviewer", fields: [reviewer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   discussion_threads    discussion_threads? @relation(fields: [target_interaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  opinions              opinions?           @relation(fields: [target_opinion_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([reporter_id, target_interaction_id])
+  @@unique([reporter_id, target_opinion_id])
 }
 
 model technical_facts {
@@ -163,13 +177,15 @@ model users {
   reputation_score   Int?                 @default(0)
   avatar_url         String?
   is_banned          Boolean?             @default(false)
+  is_admin           Boolean              @default(false)
   created_at         DateTime?            @default(now()) @db.Timestamptz(6)
   deleted_at         DateTime?            @db.Timestamptz(6)
   chats              chats[]
   discussion_threads discussion_threads[]
   opinions           opinions[]
   reaction_votes     reaction_votes[]
-  reports            reports[]
+  reports_filed      reports[]            @relation("reports_reporter")
+  reports_reviewed   reports[]            @relation("reports_reviewer")
   user_interests     user_interests[]
 }
 

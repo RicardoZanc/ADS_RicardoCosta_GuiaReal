@@ -40,6 +40,42 @@ export const listTechnicalFactsByNodeSchema = z.object({
   }),
 });
 
+export const listByEvidenceSchema = z.object({
+  params: z.object({
+    source_type: evidenceSourceTypeSchema,
+    source_id: z.uuid("ID da fonte inválido"),
+  }),
+});
+
+export const updateTechnicalFactSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID do fato inválido"),
+  }),
+  body: z
+    .object({
+      fact_label: z.string().trim().min(1).optional(),
+      fact_description: z.string().trim().optional(),
+      consensus_score: z.number().min(0).max(1).optional(),
+      status: z.enum(["HYPOTHESIS", "VERIFIED", "DISPUTED"]).optional(),
+    })
+    .refine(
+      (body) =>
+        body.fact_label !== undefined ||
+        body.fact_description !== undefined ||
+        body.consensus_score !== undefined ||
+        body.status !== undefined,
+      { message: "Informe ao menos um campo para atualizar" }
+    ),
+});
+
+export const removeEvidenceSchema = z.object({
+  params: z.object({
+    fact_id: z.uuid("ID do fato inválido"),
+    source_type: evidenceSourceTypeSchema,
+    source_id: z.uuid("ID da fonte inválido"),
+  }),
+});
+
 export type EvidenceRef = z.infer<typeof evidenceRefSchema>;
 export type EvidenceSourceType = z.infer<typeof evidenceSourceTypeSchema>;
 
@@ -54,3 +90,11 @@ export type CreateTechnicalFactInput = z.infer<
 export type MarkQueueItemProcessedParams = z.infer<
   typeof markQueueItemProcessedSchema
 >["params"];
+
+export type ListByEvidenceParams = z.infer<
+  typeof listByEvidenceSchema
+>["params"];
+
+export type UpdateTechnicalFactInput = z.infer<
+  typeof updateTechnicalFactSchema
+>["body"];

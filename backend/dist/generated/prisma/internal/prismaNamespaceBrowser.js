@@ -70,6 +70,8 @@ export const Discussion_threadsScalarFieldEnum = {
     content: 'content',
     cached_upvotes: 'cached_upvotes',
     status: 'status',
+    is_hidden: 'is_hidden',
+    reports_locked: 'reports_locked',
     created_at: 'created_at'
 };
 export const Fact_evidenceScalarFieldEnum = {
@@ -95,6 +97,8 @@ export const OpinionsScalarFieldEnum = {
     content: 'content',
     cached_upvotes: 'cached_upvotes',
     status: 'status',
+    is_hidden: 'is_hidden',
+    reports_locked: 'reports_locked',
     created_at: 'created_at'
 };
 export const Product_nodesScalarFieldEnum = {
@@ -135,8 +139,12 @@ export const ReportsScalarFieldEnum = {
     id: 'id',
     reporter_id: 'reporter_id',
     target_interaction_id: 'target_interaction_id',
+    target_opinion_id: 'target_opinion_id',
     reason: 'reason',
     status: 'status',
+    reviewer_id: 'reviewer_id',
+    reviewed_at: 'reviewed_at',
+    admin_notes: 'admin_notes',
     created_at: 'created_at'
 };
 export const Technical_factsScalarFieldEnum = {
@@ -156,6 +164,7 @@ export const UsersScalarFieldEnum = {
     reputation_score: 'reputation_score',
     avatar_url: 'avatar_url',
     is_banned: 'is_banned',
+    is_admin: 'is_admin',
     created_at: 'created_at',
     deleted_at: 'deleted_at'
 };

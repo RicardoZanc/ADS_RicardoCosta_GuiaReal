@@ -14,6 +14,7 @@ type OpinionPageRow = {
   score: number;
   author_id: string;
   username: string;
+  reports_locked: boolean;
 };
 
 type ThreadRow = {
@@ -23,6 +24,7 @@ type ThreadRow = {
   content: string;
   created_at: Date | null;
   cached_upvotes: number | null;
+  reports_locked: boolean;
   users: { id: string; username: string };
 };
 
@@ -35,6 +37,7 @@ export type OpinionReply = {
   author: { id: string; username: string };
   cached_upvotes: number;
   user_vote: UserVote;
+  reports_locked: boolean;
   replies: OpinionReply[];
 };
 
@@ -47,6 +50,7 @@ export type OpinionListItem = {
   cached_upvotes: number;
   user_vote: UserVote;
   score: number;
+  reports_locked: boolean;
   replies: OpinionReply[];
 };
 
@@ -80,6 +84,7 @@ function mapThreadToReply(thread: ThreadRow): OpinionReply {
     },
     cached_upvotes: thread.cached_upvotes ?? 0,
     user_vote: null,
+    reports_locked: thread.reports_locked,
     replies: [],
   };
 }
@@ -179,7 +184,7 @@ export async function listOpinionsPage({
     prisma.$queryRaw<CountRow[]>`
       SELECT COUNT(*)::int AS count
       FROM opinions o
-      WHERE ${whereClause}
+      WHERE ${whereClause} AND o.is_hidden = false
     `,
     prisma.$queryRaw<OpinionPageRow[]>`
       SELECT
@@ -190,6 +195,7 @@ export async function listOpinionsPage({
         u.id AS author_id,
         u.username,
         COALESCE(o.cached_upvotes, 0)::int AS cached_upvotes,
+        o.reports_locked,
         (
           COALESCE(o.cached_upvotes, 0) + COALESCE(SUM(dt.cached_upvotes), 0)
         )::int AS score,
@@ -197,11 +203,12 @@ export async function listOpinionsPage({
           SELECT 1
           FROM discussion_threads dt2
           WHERE dt2.opinion_id = o.id
+            AND dt2.is_hidden = false
         ) AS has_replies
       FROM opinions o
       INNER JOIN users u ON u.id = o.user_id
-      LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id
-      WHERE ${whereClause}
+      LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id AND dt.is_hidden = false
+      WHERE ${whereClause} AND o.is_hidden = false
       GROUP BY o.id, u.id, u.username
       ORDER BY
         has_replies DESC,
@@ -221,6 +228,7 @@ export async function listOpinionsPage({
       ? await prisma.discussion_threads.findMany({
           where: {
             opinion_id: { in: opinionIds },
+            is_hidden: false,
           },
           select: {
             id: true,
@@ -229,6 +237,7 @@ export async function listOpinionsPage({
             content: true,
             created_at: true,
             cached_upvotes: true,
+            reports_locked: true,
             users: { select: { id: true, username: true } },
           },
         })
@@ -286,6 +295,7 @@ export async function listOpinionsPage({
       cached_upvotes: row.cached_upvotes,
       user_vote: votesByOpinionId.get(row.id) ?? null,
       score: row.score,
+      reports_locked: row.reports_locked,
       replies,
     };
   });

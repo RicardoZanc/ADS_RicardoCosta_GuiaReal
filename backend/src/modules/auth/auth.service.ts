@@ -160,6 +160,7 @@ const login = async (input: LoginInput) => {
       id: user.id,
       email: user.email,
       username: user.username,
+      is_admin: user.is_admin,
     },
   };
 };
@@ -184,6 +185,7 @@ const refreshAccessToken = async (input: RefreshTokenInput) => {
       username: true,
       is_banned: true,
       deleted_at: true,
+      is_admin: true,
     },
   });
 
@@ -202,6 +204,7 @@ const refreshAccessToken = async (input: RefreshTokenInput) => {
       id: user.id,
       email: user.email,
       username: user.username,
+      is_admin: user.is_admin,
     },
   };
 };

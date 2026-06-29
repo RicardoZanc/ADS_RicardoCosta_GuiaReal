@@ -1,0 +1,146 @@
+{
+  "id": "n8rC4HvhRG1NXvRw",
+  "name": "GuiaReal Report Fact Review",
+  "active": true,
+  "versionId": "8b39a521-e44c-4642-ad31-3bf4c5c91d74",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "report-fact-review",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 300],
+      "id": "report-webhook-trigger",
+      "name": "Report Webhook",
+      "webhookId": "ec49624a-478b-411f-a939-6d0b78ee86c5"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"system_prompt\": \"Role: Moderador de Conhecimento Técnico e Auditor de Evidências.\\nContexto: Um comentário ou opinião foi denunciado na comunidade GuiaReal. Esse conteúdo pode estar vinculado como evidência a fatos técnicos existentes. Reavalie se essas evidências ainda sustentam os fatos após a denúncia.\\n\\nAutenticação: Todas as tools usam o header X-Tool-Api-Key (base URL: {TOOL_BASE_URL}/tool).\\n\\nFluxo:\\n1. Para cada fact_id no payload, chame GET /tool/technical-facts/by-evidence/{source_type}/{source_id}.\\n2. Se a evidência denunciada for inválida: DELETE /tool/technical-facts/{fact_id}/evidence/{source_type}/{source_id}.\\n3. Se questionável mas o fato permanece: PATCH /tool/technical-facts/{fact_id} ajustando status e/ou consensus_score.\\n4. Não crie novos fatos. Nunca invente UUIDs.\",\n  \"user_prompt\": {{ JSON.stringify($json.body ?? $json) }}\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [520, 300],
+      "id": "report-review-agent",
+      "name": "Report Review Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [360, 520],
+      "id": "report-openai-model",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Xsje5BTZDZhDYAG0",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "toolDescription": "Lista fatos técnicos e contexto da evidência denunciada. Params: source_type (opinion|thread), source_id (uuid).",
+        "url": "={{ $env.TOOL_BASE_URL }}/technical-facts/by-evidence/{{ $fromAI('source_type') }}/{{ $fromAI('source_id') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [520, 520],
+      "id": "get-facts-by-evidence",
+      "name": "Get Facts By Evidence",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "PATCH",
+        "toolDescription": "Atualiza fato técnico existente. URL path id=uuid do fato. Body JSON: fact_label, fact_description, consensus_score, status.",
+        "url": "={{ $env.TOOL_BASE_URL }}/technical-facts/{{ $fromAI('fact_id') }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $fromAI('body') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [720, 520],
+      "id": "patch-technical-fact",
+      "name": "Update Technical Fact",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "DELETE",
+        "toolDescription": "Remove vínculo de evidência. Params: fact_id, source_type, source_id.",
+        "url": "={{ $env.TOOL_BASE_URL }}/technical-facts/{{ $fromAI('fact_id') }}/evidence/{{ $fromAI('source_type') }}/{{ $fromAI('source_id') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [920, 520],
+      "id": "delete-fact-evidence",
+      "name": "Delete Fact Evidence",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Report Webhook": {
+      "main": [[{ "node": "Report Review Agent", "type": "main", "index": 0 }]]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [[{ "node": "Report Review Agent", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Get Facts By Evidence": {
+      "ai_tool": [[{ "node": "Report Review Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "Update Technical Fact": {
+      "ai_tool": [[{ "node": "Report Review Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "Delete Fact Evidence": {
+      "ai_tool": [[{ "node": "Report Review Agent", "type": "ai_tool", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

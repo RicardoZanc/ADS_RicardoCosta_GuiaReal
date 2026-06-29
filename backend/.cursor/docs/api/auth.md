@@ -103,7 +103,8 @@ Autenticação com e-mail e senha.
   "user": {
     "id": "uuid",
     "email": "user@example.com",
-    "username": "usuario"
+    "username": "usuario",
+    "is_admin": false
   }
 }
 ```
@@ -137,7 +138,8 @@ Reemissão do access token a partir do cookie de refresh.
   "user": {
     "id": "uuid",
     "email": "user@example.com",
-    "username": "usuario"
+    "username": "usuario",
+    "is_admin": false
   }
 }
 ```
