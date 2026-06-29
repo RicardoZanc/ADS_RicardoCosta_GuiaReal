@@ -13,13 +13,73 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { InterestPicker } from "@/components/interests/InterestPicker";
 
 export default function RegisterPage() {
-  const { register, handleSubmit, onSubmit, errors, isSubmitting } =
-    useRegisterController();
+  const {
+    step,
+    register,
+    handleSubmit,
+    onAccountSubmit,
+    errors,
+    isSubmitting,
+    selectedInterestIds,
+    handleToggleInterest,
+    onInterestsSubmit,
+    skipInterests,
+    isSubmittingInterests,
+    interestOptions,
+  } = useRegisterController();
+
+  if (step === "interests") {
+    return (
+      <div className="w-full max-w-2xl">
+        <Card className="w-full">
+          <CardHeader>
+            <Eyebrow className="mx-auto">GuiaReal</Eyebrow>
+            <CardTitle className="text-h4 font-semibold">
+              O que te interessa?
+            </CardTitle>
+            <CardDescription>
+              Escolha tipos e categorias para personalizar sua experiência.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <InterestPicker
+              options={interestOptions.filteredOptions}
+              selectedIds={selectedInterestIds}
+              onToggle={handleToggleInterest}
+              isLoading={interestOptions.isLoading}
+              query={interestOptions.query}
+              onQueryChange={interestOptions.setQuery}
+            />
+          </CardContent>
+
+          <CardFooter className="flex-col gap-3 border-0 pt-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={skipInterests}
+              disabled={isSubmittingInterests}
+            >
+              Pular por agora
+            </Button>
+            <Button
+              type="button"
+              onClick={onInterestsSubmit}
+              loading={isSubmittingInterests}
+            >
+              Começar
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <Card className="w-full">
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
         <Eyebrow className="mx-auto">GuiaReal</Eyebrow>
         <CardTitle className="text-h4 font-semibold">Criar conta</CardTitle>
@@ -28,7 +88,7 @@ export default function RegisterPage() {
         </CardDescription>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={handleSubmit(onAccountSubmit)} noValidate>
         <CardContent className="flex flex-col gap-4">
           <div className="space-y-2">
             <label
@@ -115,7 +175,7 @@ export default function RegisterPage() {
 
         <CardFooter className="flex-col gap-4 border-0 pt-2">
           <Button type="submit" loading={isSubmitting}>
-            Cadastrar
+            Continuar
           </Button>
           <p className="text-center text-body text-muted">
             Já tem conta?{" "}

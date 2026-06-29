@@ -6,6 +6,7 @@ import { userExists, usernameAvailable, findUserForLoginByEmail, } from "./auth.
 import { logger } from "../../utils/logger";
 import { getRefreshTokenTtlSeconds, saveRefreshToken, getUserIdByRefreshHash, deleteRefreshToken, } from "../../lib/refreshTokenRedis.store";
 import { ConflictError, UnauthorizedError, } from "../../lib/errors/BaseError";
+import { assertValidInterestNodeIds, dedupeNodeIds, } from "../users/users.interests.domainRules";
 const LOGIN_FAIL_MESSAGE = "Credenciais inválidas";
 const REFRESH_FAIL_MESSAGE = "Token de atualização inválido";
 function signAccessToken(userId) {
@@ -18,7 +19,7 @@ function signAccessToken(userId) {
     return jwt.sign({ sub: userId }, secret, { expiresIn });
 }
 const signup = async (SignupInput) => {
-    const { email, password, username } = SignupInput;
+    const { email, password, username, interest_node_ids } = SignupInput;
     logger.debug("Cadastro: payload recebido", { email, username });
     const userExistsResult = await userExists(email);
     if (!userExistsResult) {
@@ -33,15 +34,43 @@ const signup = async (SignupInput) => {
         throw new ConflictError("Nome de usuário já cadastrado");
     }
     const hashedPassword = await cryptUtils.hashPassword(password);
-    const user = await prisma.users.create({
-        data: {
-            email,
-            username,
-            hashpassword: hashedPassword,
-        },
+    const interestNodeIds = interest_node_ids
+        ? dedupeNodeIds(interest_node_ids)
+        : [];
+    if (interestNodeIds.length > 0) {
+        await assertValidInterestNodeIds(interestNodeIds);
+    }
+    const user = await prisma.$transaction(async (tx) => {
+        const createdUser = await tx.users.create({
+            data: {
+                email,
+                username,
+                hashpassword: hashedPassword,
+            },
+            select: {
+                id: true,
+                email: true,
+                username: true,
+                created_at: true,
+            },
+        });
+        if (interestNodeIds.length > 0) {
+            await tx.user_interests.createMany({
+                data: interestNodeIds.map((nodeId) => ({
+                    user_id: createdUser.id,
+                    node_id: nodeId,
+                })),
+            });
+        }
+        return createdUser;
     });
     logger.debug("Cadastro: usuário persistido", { userId: user.id });
-    return user;
+    return {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        created_at: user.created_at?.toISOString() ?? new Date(0).toISOString(),
+    };
 };
 const login = async (input) => {
     logger.debug("Login: início da autenticação", { email: input.email });

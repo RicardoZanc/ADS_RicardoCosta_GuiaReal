@@ -35,5 +35,29 @@ const usersController = {
         logger.info("HTTP PATCH /api/users/me - Concluído", { userId });
         res.status(200).json(profile);
     },
+    getMyInterests: async (req, res) => {
+        const userId = req.user.id;
+        logger.info("HTTP GET /api/users/me/interests - Iniciado", { userId });
+        const interests = await usersService.getMyInterests(userId);
+        logger.info("HTTP GET /api/users/me/interests - Concluído", {
+            userId,
+            count: interests.length,
+        });
+        res.status(200).json({ data: interests });
+    },
+    replaceMyInterests: async (req, res) => {
+        const userId = req.user.id;
+        const body = req.body;
+        logger.info("HTTP PUT /api/users/me/interests - Iniciado", {
+            userId,
+            count: body.node_ids.length,
+        });
+        const interests = await usersService.replaceMyInterests(userId, body);
+        logger.info("HTTP PUT /api/users/me/interests - Concluído", {
+            userId,
+            count: interests.length,
+        });
+        res.status(200).json({ data: interests });
+    },
 };
 export { usersController };

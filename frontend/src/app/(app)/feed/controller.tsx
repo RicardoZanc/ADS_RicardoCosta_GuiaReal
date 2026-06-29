@@ -1,61 +1,45 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { fetchFeedPage } from "@/lib/feed";
+import { fetchSimplifiedFeed } from "@/lib/feed";
 import { notifyApiError } from "@/lib/notifyApiError";
 import type { FeedItem } from "@/lib/types/feed";
 
+type SimplifiedFeedState = {
+  community: FeedItem[];
+  interests: FeedItem[];
+  new: FeedItem[];
+};
+
+const EMPTY_FEED: SimplifiedFeedState = {
+  community: [],
+  interests: [],
+  new: [],
+};
+
 export function useFeedController() {
-  const [items, setItems] = useState<FeedItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [feed, setFeed] = useState<SimplifiedFeedState>(EMPTY_FEED);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const loadPage = useCallback(async (targetPage: number, append: boolean) => {
-    if (append) {
-      setIsLoadingMore(true);
-    } else {
-      setIsLoading(true);
-    }
-
+  const loadFeed = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const response = await fetchFeedPage(targetPage);
-      setItems((prev) =>
-        append ? [...prev, ...response.data] : response.data
-      );
-      setPage(response.pagination.page);
-      setTotalPages(response.pagination.totalPages);
+      const response = await fetchSimplifiedFeed();
+      setFeed(response);
     } catch (error) {
       notifyApiError(error);
-      if (!append) {
-        setItems([]);
-      }
+      setFeed(EMPTY_FEED);
     } finally {
-      if (append) {
-        setIsLoadingMore(false);
-      } else {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadPage(1, false);
-  }, [loadPage]);
-
-  const hasMore = page < totalPages;
-
-  function loadMore() {
-    if (!hasMore || isLoadingMore || isLoading) return;
-    void loadPage(page + 1, true);
-  }
+    void loadFeed();
+  }, [loadFeed]);
 
   return {
-    items,
+    feed,
     isLoading,
-    isLoadingMore,
-    hasMore,
-    loadMore,
   };
 }

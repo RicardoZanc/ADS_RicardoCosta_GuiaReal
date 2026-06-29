@@ -1,3 +1,10 @@
+export type UserInterest = {
+  id: string;
+  name: string;
+  type: "TIPO" | "CATEGORIA";
+  parent_id: string | null;
+};
+
 export type UserProfile = {
   id: string;
   username: string;
@@ -5,6 +12,7 @@ export type UserProfile = {
   avatar_url: string | null;
   created_at: string;
   email?: string | null;
+  interests: UserInterest[];
 };
 
 export type UserInteractionContext = {

@@ -1,12 +1,28 @@
 import { prisma } from "../../lib/prisma";
 import { BadRequestError, NotFoundError } from "../../lib/errors/BaseError";
 import { isAllowedProfileImageUrl } from "../../lib/supabase";
-import type { ListUserInteractionsQuery, UpdateUserMeInput } from "./users.schema";
+import type {
+  ListUserInteractionsQuery,
+  ReplaceMyInterestsInput,
+  UpdateUserMeInput,
+} from "./users.schema";
+import {
+  assertValidInterestNodeIds,
+  dedupeNodeIds,
+} from "./users.interests.domainRules";
+import type { node_type } from "../../generated/prisma/enums";
 
 type TransactionClient = Omit<
   typeof prisma,
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
 >;
+
+type UserInterest = {
+  id: string;
+  name: string;
+  type: "TIPO" | "CATEGORIA";
+  parent_id: string | null;
+};
 
 type UserProfile = {
   id: string;
@@ -15,6 +31,7 @@ type UserProfile = {
   avatar_url: string | null;
   created_at: string;
   email?: string | null;
+  interests: UserInterest[];
 };
 
 type UserInteraction = {
@@ -47,6 +64,49 @@ function toIsoString(date: Date | null | undefined): string {
   return (date ?? new Date(0)).toISOString();
 }
 
+function mapInterestNodes(
+  rows: Array<{
+    nodes: {
+      id: string;
+      name: string;
+      type: node_type;
+      parent_id: string | null;
+    };
+  }>
+): UserInterest[] {
+  return rows
+    .map((row) => ({
+      id: row.nodes.id,
+      name: row.nodes.name,
+      type: row.nodes.type as "TIPO" | "CATEGORIA",
+      parent_id: row.nodes.parent_id,
+    }))
+    .sort((a, b) => {
+      if (a.type !== b.type) {
+        return a.type === "TIPO" ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name, "pt-BR");
+    });
+}
+
+async function fetchInterestsByUserId(userId: string): Promise<UserInterest[]> {
+  const rows = await prisma.user_interests.findMany({
+    where: { user_id: userId },
+    select: {
+      nodes: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          parent_id: true,
+        },
+      },
+    },
+  });
+
+  return mapInterestNodes(rows);
+}
+
 function mapProfile(
   user: {
     id: string;
@@ -56,7 +116,8 @@ function mapProfile(
     avatar_url: string | null;
     created_at: Date | null;
   },
-  viewerId: string
+  viewerId: string,
+  interests: UserInterest[]
 ): UserProfile {
   const profile: UserProfile = {
     id: user.id,
@@ -64,6 +125,7 @@ function mapProfile(
     reputation_score: user.reputation_score ?? 0,
     avatar_url: user.avatar_url,
     created_at: toIsoString(user.created_at),
+    interests,
   };
 
   if (user.id === viewerId) {
@@ -117,7 +179,35 @@ const getByUsername = async (
   viewerId: string
 ): Promise<UserProfile> => {
   const user = await findActiveUserByUsername(username);
-  return mapProfile(user, viewerId);
+  const interests = await fetchInterestsByUserId(user.id);
+  return mapProfile(user, viewerId, interests);
+};
+
+const getMyInterests = async (userId: string): Promise<UserInterest[]> => {
+  return fetchInterestsByUserId(userId);
+};
+
+const replaceMyInterests = async (
+  userId: string,
+  input: ReplaceMyInterestsInput
+): Promise<UserInterest[]> => {
+  const nodeIds = dedupeNodeIds(input.node_ids);
+  await assertValidInterestNodeIds(nodeIds);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user_interests.deleteMany({ where: { user_id: userId } });
+
+    if (nodeIds.length > 0) {
+      await tx.user_interests.createMany({
+        data: nodeIds.map((nodeId) => ({
+          user_id: userId,
+          node_id: nodeId,
+        })),
+      });
+    }
+  });
+
+  return fetchInterestsByUserId(userId);
 };
 
 const listInteractions = async (
@@ -228,12 +318,15 @@ const updateMe = async (
     },
   });
 
-  return mapProfile(user, userId);
+  const interests = await fetchInterestsByUserId(userId);
+  return mapProfile(user, userId, interests);
 };
 
 export const usersService = {
   applyReputationDelta,
   getByUsername,
+  getMyInterests,
   listInteractions,
+  replaceMyInterests,
   updateMe,
 };

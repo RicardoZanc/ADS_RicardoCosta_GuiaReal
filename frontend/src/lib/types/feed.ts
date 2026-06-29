@@ -47,3 +47,9 @@ export interface FeedResponse {
   data: FeedItem[];
   pagination: FeedPagination;
 }
+
+export type SimplifiedFeedResponse = {
+  community: FeedItem[];
+  interests: FeedItem[];
+  new: FeedItem[];
+};

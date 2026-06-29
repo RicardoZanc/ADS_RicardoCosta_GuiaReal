@@ -27,6 +27,7 @@ export default function UserProfilePage() {
     loadMoreInteractions,
     handleSelectAvatar,
     handleRemoveAvatar,
+    handleInterestsUpdated,
   } = useUserProfileController();
 
   if (isLoadingProfile) {
@@ -74,6 +75,7 @@ export default function UserProfilePage() {
         isUploadingAvatar={isUploadingAvatar}
         onSelectAvatar={isOwnProfile ? handleSelectAvatar : undefined}
         onRemoveAvatar={isOwnProfile ? handleRemoveAvatar : undefined}
+        onInterestsUpdated={isOwnProfile ? handleInterestsUpdated : undefined}
       />
 
       {!isLoadingInteractions && hasMoreInteractions && (

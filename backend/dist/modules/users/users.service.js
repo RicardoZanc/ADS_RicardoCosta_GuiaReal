@@ -1,16 +1,49 @@
 import { prisma } from "../../lib/prisma";
 import { BadRequestError, NotFoundError } from "../../lib/errors/BaseError";
 import { isAllowedProfileImageUrl } from "../../lib/supabase";
+import { assertValidInterestNodeIds, dedupeNodeIds, } from "./users.interests.domainRules";
 function toIsoString(date) {
     return (date ?? new Date(0)).toISOString();
 }
-function mapProfile(user, viewerId) {
+function mapInterestNodes(rows) {
+    return rows
+        .map((row) => ({
+        id: row.nodes.id,
+        name: row.nodes.name,
+        type: row.nodes.type,
+        parent_id: row.nodes.parent_id,
+    }))
+        .sort((a, b) => {
+        if (a.type !== b.type) {
+            return a.type === "TIPO" ? -1 : 1;
+        }
+        return a.name.localeCompare(b.name, "pt-BR");
+    });
+}
+async function fetchInterestsByUserId(userId) {
+    const rows = await prisma.user_interests.findMany({
+        where: { user_id: userId },
+        select: {
+            nodes: {
+                select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    parent_id: true,
+                },
+            },
+        },
+    });
+    return mapInterestNodes(rows);
+}
+function mapProfile(user, viewerId, interests) {
     const profile = {
         id: user.id,
         username: user.username,
         reputation_score: user.reputation_score ?? 0,
         avatar_url: user.avatar_url,
         created_at: toIsoString(user.created_at),
+        interests,
     };
     if (user.id === viewerId) {
         profile.email = user.email;
@@ -49,7 +82,27 @@ const applyReputationDelta = async (userId, delta, tx) => {
 };
 const getByUsername = async (username, viewerId) => {
     const user = await findActiveUserByUsername(username);
-    return mapProfile(user, viewerId);
+    const interests = await fetchInterestsByUserId(user.id);
+    return mapProfile(user, viewerId, interests);
+};
+const getMyInterests = async (userId) => {
+    return fetchInterestsByUserId(userId);
+};
+const replaceMyInterests = async (userId, input) => {
+    const nodeIds = dedupeNodeIds(input.node_ids);
+    await assertValidInterestNodeIds(nodeIds);
+    await prisma.$transaction(async (tx) => {
+        await tx.user_interests.deleteMany({ where: { user_id: userId } });
+        if (nodeIds.length > 0) {
+            await tx.user_interests.createMany({
+                data: nodeIds.map((nodeId) => ({
+                    user_id: userId,
+                    node_id: nodeId,
+                })),
+            });
+        }
+    });
+    return fetchInterestsByUserId(userId);
 };
 const listInteractions = async (username, query) => {
     const user = await findActiveUserByUsername(username);
@@ -144,11 +197,14 @@ const updateMe = async (userId, input) => {
             created_at: true,
         },
     });
-    return mapProfile(user, userId);
+    const interests = await fetchInterestsByUserId(userId);
+    return mapProfile(user, userId, interests);
 };
 export const usersService = {
     applyReputationDelta,
     getByUsername,
+    getMyInterests,
     listInteractions,
+    replaceMyInterests,
     updateMe,
 };

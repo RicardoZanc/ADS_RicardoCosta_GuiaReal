@@ -18,3 +18,8 @@ export const updateUserMeSchema = z.object({
         avatar_url: z.string().url().nullable(),
     }),
 });
+export const replaceMyInterestsSchema = z.object({
+    body: z.object({
+        node_ids: z.array(z.uuid()).max(30),
+    }),
+});

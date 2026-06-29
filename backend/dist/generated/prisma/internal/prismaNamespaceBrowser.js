@@ -50,7 +50,8 @@ export const ModelName = {
     reaction_votes: 'reaction_votes',
     reports: 'reports',
     technical_facts: 'technical_facts',
-    users: 'users'
+    users: 'users',
+    user_interests: 'user_interests'
 };
 /*
  * Enums
@@ -157,6 +158,11 @@ export const UsersScalarFieldEnum = {
     is_banned: 'is_banned',
     created_at: 'created_at',
     deleted_at: 'deleted_at'
+};
+export const User_interestsScalarFieldEnum = {
+    user_id: 'user_id',
+    node_id: 'node_id',
+    created_at: 'created_at'
 };
 export const SortOrder = {
     asc: 'asc',

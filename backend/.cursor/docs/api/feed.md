@@ -119,3 +119,43 @@ Cada item inclui até **3 previews** de discussão (`discussionPreviews`), prior
 |--------|------------------|
 | `401` | Token ausente ou inválido |
 | `422` | `Dados inválidos` |
+
+---
+
+## `GET /feed?simplified=true`
+
+Feed simplificado em três seções para a home do app.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | JWT Bearer (usa interesses do usuário logado) |
+| Sucesso | `200 OK` |
+
+### Query
+
+| Parâmetro | Tipo | Default | Descrição |
+|-----------|------|---------|-----------|
+| `simplified` | `"true"` | — | Obrigatório para este modo |
+| `limit` | int | `8` | Itens por seção (1–20) |
+
+### Seções
+
+| Campo | Rótulo | Critério |
+|-------|--------|----------|
+| `community` | Do que a comunidade está falando | Itens com discussão recente, ordenados por atividade |
+| `interests` | Dos seus interesses | Produtos/nós ligados aos `user_interests` (TIPO/CATEGORIA) |
+| `new` | Novos | Itens mais recentes por `created_at` |
+
+Se o usuário não tiver interesses, `interests` retorna array vazio.
+
+### Resposta
+
+```json
+{
+  "community": [ /* FeedItem[] */ ],
+  "interests": [ /* FeedItem[] */ ],
+  "new": [ /* FeedItem[] */ ]
+}
+```
+
+Cada `FeedItem` segue o mesmo contrato do feed paginado (ver acima).

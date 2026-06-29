@@ -5,6 +5,8 @@ import { logger } from "../../utils/logger";
 import type { node_type } from "../../generated/prisma/enums";
 import type { ListFeedQuery } from "./feed.schema";
 
+export const SIMPLIFIED_SECTION_LIMIT = 8;
+
 const PREVIEWS_PER_ITEM = 3;
 
 const ALLOWED_FEED_NODE_TYPES = [
@@ -50,6 +52,12 @@ type FeedResponse = {
   };
 };
 
+type SimplifiedFeedResponse = {
+  community: FeedItem[];
+  interests: FeedItem[];
+  new: FeedItem[];
+};
+
 type FeedItemRow = {
   kind: "product" | "node";
   id: string;
@@ -73,7 +81,61 @@ type OpinionWithThreads = {
   }[];
 };
 
+type FetchFeedItemRowsOptions = {
+  limit: number;
+  offset?: number;
+  orderBy: "activity" | "created";
+  requireActivity?: boolean;
+  interestNodeIds?: string[] | null;
+};
+
 const allowedFeedNodeTypesSet = new Set<string>(ALLOWED_FEED_NODE_TYPES);
+
+const FEED_ITEMS_CTE = Prisma.sql`
+  feed_items AS (
+    SELECT
+      'product'::text AS kind,
+      p.id,
+      p.created_at,
+      (
+        SELECT MAX(
+          GREATEST(
+            o.created_at,
+            COALESCE(dt.created_at, o.created_at)
+          )
+        )
+        FROM opinions o
+        LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id
+        WHERE o.product_id = p.id
+      ) AS last_activity_at
+    FROM products p
+
+    UNION ALL
+
+    SELECT
+      'node'::text AS kind,
+      n.id,
+      n.created_at,
+      (
+        SELECT MAX(
+          GREATEST(
+            o.created_at,
+            COALESCE(dt.created_at, o.created_at)
+          )
+        )
+        FROM opinions o
+        LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id
+        WHERE o.node_id = n.id
+      ) AS last_activity_at
+    FROM nodes n
+    WHERE n.type IN (
+      'COMPOSICAO'::node_type,
+      'TECNOLOGIA'::node_type,
+      'MARCA'::node_type,
+      'ATRIBUTO'::node_type
+    )
+  )
+`;
 
 function isAllowedFeedNodeType(type: node_type): type is FeedNodeType {
   return allowedFeedNodeTypesSet.has(type);
@@ -182,94 +244,82 @@ const opinionSelect = {
   },
 } as const;
 
-const list = async (query: ListFeedQuery): Promise<FeedResponse> => {
-  const offset = (query.page - 1) * query.limit;
+function buildInterestFilter(interestNodeIds: string[]): Prisma.Sql {
+  const idList = Prisma.join(
+    interestNodeIds.map((id) => Prisma.sql`${id}::uuid`),
+    ", "
+  );
 
-  logger.debug("Feed: consulta iniciada", {
-    page: query.page,
-    limit: query.limit,
-  });
+  return Prisma.sql`
+    (
+      (kind = 'product' AND EXISTS (
+        SELECT 1
+        FROM product_nodes pn
+        JOIN nodes cat ON cat.id = pn.node_id AND cat.type = 'CATEGORIA'::node_type
+        WHERE pn.product_id = feed_items.id
+        AND (cat.id IN (${idList}) OR cat.parent_id IN (${idList}))
+      ))
+      OR (kind = 'node' AND EXISTS (
+        SELECT 1
+        FROM product_nodes pn_link
+        JOIN product_nodes pn_cat ON pn_cat.product_id = pn_link.product_id
+        JOIN nodes cat ON cat.id = pn_cat.node_id AND cat.type = 'CATEGORIA'::node_type
+        WHERE pn_link.node_id = feed_items.id
+        AND (cat.id IN (${idList}) OR cat.parent_id IN (${idList}))
+      ))
+    )
+  `;
+}
 
-  const [countResult, itemRows] = await Promise.all([
-    prisma.$queryRaw<CountRow[]>`
-      SELECT COUNT(*)::int AS count
-      FROM (
-        SELECT id FROM products
-        UNION ALL
-        SELECT id FROM nodes
-        WHERE type IN (
-          'COMPOSICAO'::node_type,
-          'TECNOLOGIA'::node_type,
-          'MARCA'::node_type,
-          'ATRIBUTO'::node_type
-        )
-      ) AS feed_items
-    `,
-    prisma.$queryRaw<FeedItemRow[]>`
-      WITH feed_items AS (
-        SELECT
-          'product'::text AS kind,
-          p.id,
-          p.created_at,
-          (
-            SELECT MAX(
-              GREATEST(
-                o.created_at,
-                COALESCE(dt.created_at, o.created_at)
-              )
-            )
-            FROM opinions o
-            LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id
-            WHERE o.product_id = p.id
-          ) AS last_activity_at
-        FROM products p
+async function fetchFeedItemRows(
+  options: FetchFeedItemRowsOptions
+): Promise<FeedItemRow[]> {
+  const {
+    limit,
+    offset = 0,
+    orderBy,
+    requireActivity = false,
+    interestNodeIds = null,
+  } = options;
 
-        UNION ALL
+  if (interestNodeIds !== null && interestNodeIds.length === 0) {
+    return [];
+  }
 
-        SELECT
-          'node'::text AS kind,
-          n.id,
-          n.created_at,
-          (
-            SELECT MAX(
-              GREATEST(
-                o.created_at,
-                COALESCE(dt.created_at, o.created_at)
-              )
-            )
-            FROM opinions o
-            LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id
-            WHERE o.node_id = n.id
-          ) AS last_activity_at
-        FROM nodes n
-        WHERE n.type IN (
-          'COMPOSICAO'::node_type,
-          'TECNOLOGIA'::node_type,
-          'MARCA'::node_type,
-          'ATRIBUTO'::node_type
-        )
-      )
-      SELECT kind, id
-      FROM feed_items
-      ORDER BY last_activity_at DESC NULLS LAST, created_at DESC
-      LIMIT ${query.limit}
-      OFFSET ${offset}
-    `,
-  ]);
+  const conditions: Prisma.Sql[] = [];
 
-  const total = countResult[0]?.count ?? 0;
-  const totalPages = total === 0 ? 0 : Math.ceil(total / query.limit);
+  if (requireActivity) {
+    conditions.push(Prisma.sql`last_activity_at IS NOT NULL`);
+  }
 
+  if (interestNodeIds !== null) {
+    conditions.push(buildInterestFilter(interestNodeIds));
+  }
+
+  const whereClause =
+    conditions.length > 0
+      ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`
+      : Prisma.empty;
+
+  const orderClause =
+    orderBy === "created"
+      ? Prisma.sql`ORDER BY created_at DESC`
+      : Prisma.sql`ORDER BY last_activity_at DESC NULLS LAST, created_at DESC`;
+
+  return prisma.$queryRaw<FeedItemRow[]>`
+    WITH ${FEED_ITEMS_CTE}
+    SELECT kind, id
+    FROM feed_items
+    ${whereClause}
+    ${orderClause}
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `;
+}
+
+async function enrichFeedItems(itemRows: FeedItemRow[]): Promise<FeedItem[]> {
   if (itemRows.length === 0) {
-    return {
-      data: [],
-      pagination: {
-        page: query.page,
-        limit: query.limit,
-        total,
-        totalPages,
-      },
-    };
+    return [];
   }
 
   const productIds = itemRows
@@ -332,7 +382,7 @@ const list = async (query: ListFeedQuery): Promise<FeedResponse> => {
   const productMap = new Map(products.map((product) => [product.id, product]));
   const nodeMap = new Map(nodes.map((node) => [node.id, node]));
 
-  const data: FeedItem[] = itemRows.map((row) => {
+  return itemRows.map((row) => {
     if (row.kind === "product") {
       const product = productMap.get(row.id);
       if (!product) {
@@ -378,6 +428,49 @@ const list = async (query: ListFeedQuery): Promise<FeedResponse> => {
       discussionPreviews: buildDiscussionPreviews(node.opinions),
     };
   });
+}
+
+async function fetchUserInterestNodeIds(userId: string): Promise<string[]> {
+  const rows = await prisma.user_interests.findMany({
+    where: { user_id: userId },
+    select: { node_id: true },
+  });
+  return rows.map((row) => row.node_id);
+}
+
+const list = async (query: ListFeedQuery): Promise<FeedResponse> => {
+  const offset = (query.page - 1) * query.limit;
+
+  logger.debug("Feed: consulta iniciada", {
+    page: query.page,
+    limit: query.limit,
+  });
+
+  const [countResult, itemRows] = await Promise.all([
+    prisma.$queryRaw<CountRow[]>`
+      SELECT COUNT(*)::int AS count
+      FROM (
+        SELECT id FROM products
+        UNION ALL
+        SELECT id FROM nodes
+        WHERE type IN (
+          'COMPOSICAO'::node_type,
+          'TECNOLOGIA'::node_type,
+          'MARCA'::node_type,
+          'ATRIBUTO'::node_type
+        )
+      ) AS feed_items
+    `,
+    fetchFeedItemRows({
+      limit: query.limit,
+      offset,
+      orderBy: "activity",
+    }),
+  ]);
+
+  const total = countResult[0]?.count ?? 0;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / query.limit);
+  const data = await enrichFeedItems(itemRows);
 
   logger.debug("Feed: consulta concluída", {
     page: query.page,
@@ -397,4 +490,44 @@ const list = async (query: ListFeedQuery): Promise<FeedResponse> => {
   };
 };
 
-export const feedService = { list };
+const listSimplified = async (
+  userId: string,
+  limit: number
+): Promise<SimplifiedFeedResponse> => {
+  logger.debug("Feed simplificado: consulta iniciada", { userId, limit });
+
+  const interestNodeIds = await fetchUserInterestNodeIds(userId);
+
+  const [communityRows, interestRows, newRows] = await Promise.all([
+    fetchFeedItemRows({
+      limit,
+      orderBy: "activity",
+      requireActivity: true,
+    }),
+    fetchFeedItemRows({
+      limit,
+      orderBy: "activity",
+      interestNodeIds,
+    }),
+    fetchFeedItemRows({
+      limit,
+      orderBy: "created",
+    }),
+  ]);
+
+  const [community, interests, newItems] = await Promise.all([
+    enrichFeedItems(communityRows),
+    enrichFeedItems(interestRows),
+    enrichFeedItems(newRows),
+  ]);
+
+  logger.debug("Feed simplificado: consulta concluída", {
+    community: community.length,
+    interests: interests.length,
+    new: newItems.length,
+  });
+
+  return { community, interests, new: newItems };
+};
+
+export const feedService = { list, listSimplified };

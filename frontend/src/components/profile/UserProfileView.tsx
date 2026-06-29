@@ -1,9 +1,11 @@
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { FadeIn } from "@/components/motion/FadeIn";
-import type { UserInteraction, UserProfile } from "@/lib/types/users";
+import type { UserInteraction, UserInterest, UserProfile } from "@/lib/types/users";
 import { UserAvatar } from "@/components/profile/UserAvatar";
 import { UserAvatarUploadControls } from "@/components/profile/UserAvatarUploadControls";
 import { UserInteractionList } from "@/components/profile/UserInteractionList";
+import { UserInterestBadges } from "@/components/interests/UserInterestBadges";
+import { InterestPickerDialog } from "@/components/interests/InterestPickerDialog";
 
 interface UserProfileViewProps {
   profile: UserProfile;
@@ -13,6 +15,7 @@ interface UserProfileViewProps {
   isUploadingAvatar?: boolean;
   onSelectAvatar?: (file: File) => void;
   onRemoveAvatar?: () => void;
+  onInterestsUpdated?: (interests: UserInterest[]) => void;
 }
 
 export function UserProfileView({
@@ -23,6 +26,7 @@ export function UserProfileView({
   isUploadingAvatar = false,
   onSelectAvatar,
   onRemoveAvatar,
+  onInterestsUpdated,
 }: UserProfileViewProps) {
   const displayAvatarUrl = avatarPreviewUrl ?? profile.avatar_url;
   const canEditAvatar =
@@ -86,7 +90,16 @@ export function UserProfileView({
       </FadeIn>
 
       <section>
-        <Eyebrow className="mb-4 lg:mb-5">Interações</Eyebrow>
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 lg:mb-5">
+          <Eyebrow>Interações</Eyebrow>
+          <UserInterestBadges interests={profile.interests ?? []} />
+          {isOwnProfile && onInterestsUpdated && (
+            <InterestPickerDialog
+              initialInterests={profile.interests ?? []}
+              onSaved={onInterestsUpdated}
+            />
+          )}
+        </div>
         <UserInteractionList interactions={interactions} />
       </section>
     </div>

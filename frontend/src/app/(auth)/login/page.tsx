@@ -19,7 +19,7 @@ export default function LoginPage() {
     useLoginController();
 
   return (
-    <Card className="w-full">
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
         <Eyebrow className="mx-auto">GuiaReal</Eyebrow>
         <CardTitle className="text-h4 font-semibold">Entrar</CardTitle>

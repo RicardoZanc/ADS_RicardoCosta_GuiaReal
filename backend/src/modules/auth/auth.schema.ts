@@ -9,6 +9,7 @@ export const signupSchema = z.object({
       .trim()
       .min(2, "Nome muito curto")
       .max(50, "Nome muito longo"),
+    interest_node_ids: z.array(z.uuid()).max(30).optional(),
   }),
 });
 

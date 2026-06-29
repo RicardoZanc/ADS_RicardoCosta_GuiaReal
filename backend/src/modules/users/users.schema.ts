@@ -22,8 +22,17 @@ export const updateUserMeSchema = z.object({
   }),
 });
 
+export const replaceMyInterestsSchema = z.object({
+  body: z.object({
+    node_ids: z.array(z.uuid()).max(30),
+  }),
+});
+
 export type ListUserInteractionsQuery = z.infer<
   typeof listUserInteractionsSchema
 >["query"];
 
 export type UpdateUserMeInput = z.infer<typeof updateUserMeSchema>["body"];
+export type ReplaceMyInterestsInput = z.infer<
+  typeof replaceMyInterestsSchema
+>["body"];

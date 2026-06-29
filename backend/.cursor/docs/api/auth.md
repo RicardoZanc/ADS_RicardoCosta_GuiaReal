@@ -55,6 +55,7 @@ Cadastro de novo usuário.
 | `email` | string | sim | E-mail válido |
 | `password` | string | sim | Mínimo 6 caracteres |
 | `username` | string | sim | 2–50 caracteres (trim) |
+| `interest_node_ids` | uuid[] | não | Máximo 30; apenas nós `TIPO` ou `CATEGORIA` |
 
 ### Resposta
 
@@ -63,11 +64,7 @@ Cadastro de novo usuário.
   "id": "uuid",
   "email": "user@example.com",
   "username": "usuario",
-  "hashpassword": "...",
-  "reputation_score": 0,
-  "is_banned": false,
-  "created_at": "2026-01-01T00:00:00.000Z",
-  "deleted_at": null
+  "created_at": "2026-01-01T00:00:00.000Z"
 }
 ```
 
@@ -77,6 +74,7 @@ Cadastro de novo usuário.
 |--------|------------------|
 | `409` | `User already exists` |
 | `409` | `Nome de usuário já cadastrado` |
+| `400` | Interesse inválido (nó inexistente ou tipo não permitido) |
 | `422` | `Dados inválidos` |
 
 ---

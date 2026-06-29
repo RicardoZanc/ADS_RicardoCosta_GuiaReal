@@ -11,7 +11,7 @@ import {
   fetchUserProfile,
   updateUserAvatar,
 } from "@/lib/users";
-import type { UserInteraction, UserProfile } from "@/lib/types/users";
+import type { UserInteraction, UserInterest, UserProfile } from "@/lib/types/users";
 
 function revokeBlobUrl(url: string | null) {
   if (url?.startsWith("blob:")) {
@@ -162,6 +162,10 @@ export function useUserProfileController() {
     }
   }
 
+  const handleInterestsUpdated = useCallback((interests: UserInterest[]) => {
+    setProfile((prev) => (prev ? { ...prev, interests } : prev));
+  }, []);
+
   return {
     profile,
     interactions,
@@ -176,5 +180,6 @@ export function useUserProfileController() {
     loadMoreInteractions,
     handleSelectAvatar,
     handleRemoveAvatar,
+    handleInterestsUpdated,
   };
 }
