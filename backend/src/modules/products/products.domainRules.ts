@@ -253,6 +253,51 @@ export async function ensureNameAvailable(name: string) {
   }
 }
 
+export type ProductSearchScope = {
+  tipo_id?: string;
+  categoria_id?: string;
+};
+
+export async function resolveProductSearchScope(
+  query: ProductSearchScope
+): Promise<ProductSearchScope> {
+  if (query.categoria_id) {
+    const categoria = await prisma.nodes.findUnique({
+      where: { id: query.categoria_id },
+      select: { id: true, type: true },
+    });
+
+    if (!categoria) {
+      throw new NotFoundError("Categoria não encontrada");
+    }
+
+    if (categoria.type !== "CATEGORIA") {
+      throw new BadRequestError("categoria_id deve referenciar um nó do tipo CATEGORIA");
+    }
+
+    return { categoria_id: query.categoria_id };
+  }
+
+  if (query.tipo_id) {
+    const tipo = await prisma.nodes.findUnique({
+      where: { id: query.tipo_id },
+      select: { id: true, type: true },
+    });
+
+    if (!tipo) {
+      throw new NotFoundError("Tipo não encontrado");
+    }
+
+    if (tipo.type !== "TIPO") {
+      throw new BadRequestError("tipo_id deve referenciar um nó do tipo TIPO");
+    }
+
+    return { tipo_id: query.tipo_id };
+  }
+
+  throw new BadRequestError("Informe tipo_id ou categoria_id");
+}
+
 export async function ensureEanAvailable(ean?: string) {
   if (!ean) {
     return;

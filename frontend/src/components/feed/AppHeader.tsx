@@ -76,6 +76,7 @@ export function AppHeader({ username, isAdmin = false }: AppHeaderProps) {
           </Link>
           <nav className="hidden items-center gap-5 sm:flex">
             <NavLink href="/feed">Feed</NavLink>
+            <NavLink href="/busca">Busca</NavLink>
             <NavLink href="/chat">Assistente</NavLink>
             {isAdmin ? (
               <NavLink href="/admin/reports">Moderação</NavLink>

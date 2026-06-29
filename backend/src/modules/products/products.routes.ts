@@ -4,11 +4,27 @@ import {
   createProductSchema,
   getProductSchema,
   listProductOpinionsSchema,
+  productFacetsSchema,
+  productSearchSchema,
 } from "./products.schema";
 import { validate } from "../../middlewares/validate.middleware";
 import { authenticateJwt } from "../../middlewares/auth.middleware";
 
 const productsRoutes = Router();
+
+productsRoutes.get(
+  "/facets",
+  authenticateJwt,
+  validate(productFacetsSchema),
+  productsController.getFacets
+);
+
+productsRoutes.get(
+  "/search",
+  authenticateJwt,
+  validate(productSearchSchema),
+  productsController.search
+);
 
 productsRoutes.get(
   "/:id/opinions",

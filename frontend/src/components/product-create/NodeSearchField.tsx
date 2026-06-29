@@ -11,6 +11,7 @@ interface NodeSearchFieldProps {
   isLoading: boolean;
   disabled?: boolean;
   placeholder?: string;
+  allowCreate?: boolean;
   onQueryChange: (value: string) => void;
   onSelect: (node: NodeRecord) => void;
   onCreate: (name: string) => void;
@@ -22,6 +23,7 @@ export function NodeSearchField({
   isLoading,
   disabled = false,
   placeholder,
+  allowCreate = true,
   onQueryChange,
   onSelect,
   onCreate,
@@ -32,7 +34,7 @@ export function NodeSearchField({
   const hasExactMatch = suggestions.some(
     (node) => node.name.toLowerCase() === trimmed.toLowerCase()
   );
-  const showCreate = trimmed.length >= 1 && !hasExactMatch;
+  const showCreate = allowCreate && trimmed.length >= 1 && !hasExactMatch;
   const showDropdown =
     trimmed.length >= 1 && (isLoading || suggestions.length > 0 || showCreate);
 
