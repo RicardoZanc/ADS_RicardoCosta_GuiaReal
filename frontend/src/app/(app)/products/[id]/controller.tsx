@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams } from "next/navigation";
+import { useAuthGate } from "@/hooks/useAuthGate";
 import {
   createNodeOpinion,
   createOpinionThread,
@@ -47,6 +48,7 @@ function getOpinionParams(
 
 export function useProductDetailController() {
   const params = useParams();
+  const { requireAuth } = useAuthGate();
   const productId = typeof params.id === "string" ? params.id : "";
 
   const [product, setProduct] = useState<ProductDetailResponse | null>(null);
@@ -211,6 +213,13 @@ export function useProductDetailController() {
 
   const onSubmitOpinion = handleOpinionSubmit(async (data) => {
     if (!productId || !activeTab) return;
+    if (
+      !requireAuth(
+        "Crie uma conta para publicar opiniões e participar da comunidade."
+      )
+    ) {
+      return;
+    }
 
     setIsSubmittingOpinion(true);
 
@@ -232,6 +241,14 @@ export function useProductDetailController() {
   });
 
   function startReply(opinionId: string, parentInteractionId?: string) {
+    if (
+      !requireAuth(
+        "Crie uma conta para responder discussões da comunidade."
+      )
+    ) {
+      return;
+    }
+
     setReplyTarget({
       opinionId,
       ...(parentInteractionId ? { parentInteractionId } : {}),
@@ -246,6 +263,13 @@ export function useProductDetailController() {
 
   const onSubmitReply = handleReplySubmit(async (data) => {
     if (!replyTarget) return;
+    if (
+      !requireAuth(
+        "Crie uma conta para responder discussões da comunidade."
+      )
+    ) {
+      return;
+    }
 
     setIsSubmittingReply(true);
 
@@ -285,6 +309,12 @@ export function useProductDetailController() {
   }
 
   function onVoteOpinion(opinionId: string) {
+    if (
+      !requireAuth("Crie uma conta para votar nas opiniões da comunidade.")
+    ) {
+      return;
+    }
+
     void applyReaction(
       opinionId,
       () => reactToOpinion(opinionId, "like"),
@@ -295,6 +325,12 @@ export function useProductDetailController() {
   }
 
   function onDislikeOpinion(opinionId: string) {
+    if (
+      !requireAuth("Crie uma conta para votar nas opiniões da comunidade.")
+    ) {
+      return;
+    }
+
     void applyReaction(
       opinionId,
       () => reactToOpinion(opinionId, "dislike"),
@@ -305,6 +341,12 @@ export function useProductDetailController() {
   }
 
   function onVoteThread(threadId: string) {
+    if (
+      !requireAuth("Crie uma conta para votar nas respostas da comunidade.")
+    ) {
+      return;
+    }
+
     void applyReaction(
       threadId,
       () => reactToThread(threadId, "like"),
@@ -315,6 +357,12 @@ export function useProductDetailController() {
   }
 
   function onDislikeThread(threadId: string) {
+    if (
+      !requireAuth("Crie uma conta para votar nas respostas da comunidade.")
+    ) {
+      return;
+    }
+
     void applyReaction(
       threadId,
       () => reactToThread(threadId, "dislike"),

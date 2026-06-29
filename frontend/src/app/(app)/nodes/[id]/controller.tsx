@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams } from "next/navigation";
+import { useAuthGate } from "@/hooks/useAuthGate";
 import { fetchNodeDetail, fetchNodeOpinions } from "@/lib/nodes";
 import {
   createNodeOpinion,
@@ -29,6 +30,7 @@ import type { NodeDetailResponse } from "@/lib/types/nodes";
 
 export function useNodeDetailController() {
   const params = useParams();
+  const { requireAuth } = useAuthGate();
   const nodeId = typeof params.id === "string" ? params.id : "";
 
   const [node, setNode] = useState<NodeDetailResponse | null>(null);
@@ -172,6 +174,13 @@ export function useNodeDetailController() {
 
   const onSubmitOpinion = handleOpinionSubmit(async (data) => {
     if (!nodeId) return;
+    if (
+      !requireAuth(
+        "Crie uma conta para publicar opiniões e participar da comunidade."
+      )
+    ) {
+      return;
+    }
 
     setIsSubmittingOpinion(true);
 
@@ -188,6 +197,14 @@ export function useNodeDetailController() {
   });
 
   function startReply(opinionId: string, parentInteractionId?: string) {
+    if (
+      !requireAuth(
+        "Crie uma conta para responder discussões da comunidade."
+      )
+    ) {
+      return;
+    }
+
     setReplyTarget({
       opinionId,
       ...(parentInteractionId ? { parentInteractionId } : {}),
@@ -202,6 +219,13 @@ export function useNodeDetailController() {
 
   const onSubmitReply = handleReplySubmit(async (data) => {
     if (!replyTarget) return;
+    if (
+      !requireAuth(
+        "Crie uma conta para responder discussões da comunidade."
+      )
+    ) {
+      return;
+    }
 
     setIsSubmittingReply(true);
 
@@ -241,6 +265,12 @@ export function useNodeDetailController() {
   }
 
   function onVoteOpinion(opinionId: string) {
+    if (
+      !requireAuth("Crie uma conta para votar nas opiniões da comunidade.")
+    ) {
+      return;
+    }
+
     void applyReaction(
       opinionId,
       () => reactToOpinion(opinionId, "like"),
@@ -251,6 +281,12 @@ export function useNodeDetailController() {
   }
 
   function onDislikeOpinion(opinionId: string) {
+    if (
+      !requireAuth("Crie uma conta para votar nas opiniões da comunidade.")
+    ) {
+      return;
+    }
+
     void applyReaction(
       opinionId,
       () => reactToOpinion(opinionId, "dislike"),
@@ -261,6 +297,12 @@ export function useNodeDetailController() {
   }
 
   function onVoteThread(threadId: string) {
+    if (
+      !requireAuth("Crie uma conta para votar nas respostas da comunidade.")
+    ) {
+      return;
+    }
+
     void applyReaction(
       threadId,
       () => reactToThread(threadId, "like"),
@@ -271,6 +313,12 @@ export function useNodeDetailController() {
   }
 
   function onDislikeThread(threadId: string) {
+    if (
+      !requireAuth("Crie uma conta para votar nas respostas da comunidade.")
+    ) {
+      return;
+    }
+
     void applyReaction(
       threadId,
       () => reactToThread(threadId, "dislike"),

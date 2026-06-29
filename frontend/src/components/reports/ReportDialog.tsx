@@ -17,6 +17,7 @@ import {
   type ReportTargetType,
 } from "@/lib/reports";
 import { cn } from "@/lib/utils";
+import { useAuthGate } from "@/hooks/useAuthGate";
 
 interface ReportDialogProps {
   targetType: ReportTargetType;
@@ -31,6 +32,7 @@ export function ReportDialog({
   disabled = false,
   className,
 }: ReportDialogProps) {
+  const { requireAuth } = useAuthGate();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<ReportReason>("SPAM");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,7 +76,16 @@ export function ReportDialog({
         size="sm"
         className={cn("text-muted hover:text-destructive", className)}
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          if (
+            !requireAuth(
+              "Crie uma conta para denunciar conteúdo e ajudar na moderação."
+            )
+          ) {
+            return;
+          }
+          setOpen(true);
+        }}
       >
         <Flag size={14} strokeWidth={2} className="mr-1" aria-hidden />
         Denunciar

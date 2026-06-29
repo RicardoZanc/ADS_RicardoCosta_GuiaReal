@@ -11,11 +11,11 @@ const feedController = {
 
     if (query.simplified) {
       const limit = Math.min(Math.max(query.limit ?? 8, 1), 20);
-      const userId = req.user!.id;
+      const userId = req.user?.id;
 
       logger.info("HTTP GET /api/feed?simplified=true - Iniciado", {
         limit,
-        userId,
+        userId: userId ?? null,
       });
 
       const result = await feedService.listSimplified(userId, limit);

@@ -122,6 +122,7 @@ export async function apiClient<T = unknown>(
     !isAuthPublicPath(endpoint);
 
   if (shouldRetryAuth) {
+    const hadToken = accessToken !== null;
     const refreshed = await refreshSession();
 
     if (refreshed) {
@@ -129,7 +130,9 @@ export async function apiClient<T = unknown>(
       response = await fetchWithAuth(endpoint, options, accessToken);
     } else {
       useAuthStore.getState().clearAuth();
-      redirectToLogin();
+      if (hadToken) {
+        redirectToLogin();
+      }
       const body = await response.json().catch(() => ({}));
       const { message, details } = parseApiErrorResponse(body, 401);
       throw new ApiError(401, message, details);

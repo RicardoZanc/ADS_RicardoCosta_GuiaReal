@@ -52,7 +52,7 @@ const productsController = {
       page: query.page,
       limit: query.limit,
     });
-    const result = await productsService.listOpinions(id, query, req.user!.id);
+    const result = await productsService.listOpinions(id, query, req.user?.id);
     logger.info("HTTP GET /api/products/:id/opinions - Concluído", {
       productId: id,
       scope: query.scope,

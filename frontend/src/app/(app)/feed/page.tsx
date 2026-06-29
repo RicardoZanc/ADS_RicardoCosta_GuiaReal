@@ -1,8 +1,12 @@
 "use client";
 
 import { FeedSectionRow } from "@/components/feed/FeedSectionRow";
+import { FeedInterestsGate } from "@/components/feed/FeedInterestsGate";
 import { PageHeader } from "@/components/ui/page-header";
-import { useAuthStore } from "@/store/authStore";
+import {
+  selectIsAuthenticated,
+  useAuthStore,
+} from "@/store/authStore";
 import { useFeedController } from "./controller";
 
 function FeedSectionSkeleton() {
@@ -23,6 +27,7 @@ function FeedSectionSkeleton() {
 
 export default function FeedPage() {
   const { feed, isLoading } = useFeedController();
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const username = useAuthStore((state) => state.user?.username);
 
   return (
@@ -48,18 +53,10 @@ export default function FeedPage() {
             emptyMessage="Nenhuma discussão recente."
           />
 
-          <FeedSectionRow
-            title="Dos seus interesses"
+          <FeedInterestsGate
+            isAuthenticated={isAuthenticated}
             items={feed.interests}
-            emptyMessage="Configure seus interesses para ver recomendações."
-            emptyAction={
-              username
-                ? {
-                    label: "Editar interesses no perfil",
-                    href: `/users/${encodeURIComponent(username)}`,
-                  }
-                : undefined
-            }
+            username={username}
           />
 
           <FeedSectionRow

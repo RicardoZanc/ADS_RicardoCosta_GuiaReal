@@ -8,13 +8,16 @@ import {
   updateNodeSchema,
 } from "./nodes.schema";
 import { validate } from "../../middlewares/validate.middleware";
-import { authenticateJwt } from "../../middlewares/auth.middleware";
+import {
+  authenticateJwt,
+  optionalAuthenticateJwt,
+} from "../../middlewares/auth.middleware";
 
 const nodesRoutes = Router();
 
 nodesRoutes.get(
   "/",
-  authenticateJwt,
+  optionalAuthenticateJwt,
   validate(listNodesSchema),
   nodesController.list
 );
@@ -28,14 +31,14 @@ nodesRoutes.post(
 
 nodesRoutes.get(
   "/:id/opinions",
-  authenticateJwt,
+  optionalAuthenticateJwt,
   validate(listNodeOpinionsSchema),
   nodesController.listOpinions
 );
 
 nodesRoutes.get(
   "/:id",
-  authenticateJwt,
+  optionalAuthenticateJwt,
   validate(getNodeSchema),
   nodesController.getById
 );

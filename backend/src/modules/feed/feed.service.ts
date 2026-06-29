@@ -491,12 +491,17 @@ const list = async (query: ListFeedQuery): Promise<FeedResponse> => {
 };
 
 const listSimplified = async (
-  userId: string,
+  userId: string | undefined,
   limit: number
 ): Promise<SimplifiedFeedResponse> => {
-  logger.debug("Feed simplificado: consulta iniciada", { userId, limit });
+  logger.debug("Feed simplificado: consulta iniciada", {
+    userId: userId ?? null,
+    limit,
+  });
 
-  const interestNodeIds = await fetchUserInterestNodeIds(userId);
+  const interestNodeIds = userId
+    ? await fetchUserInterestNodeIds(userId)
+    : [];
 
   const [communityRows, interestRows, newRows] = await Promise.all([
     fetchFeedItemRows({
@@ -504,11 +509,13 @@ const listSimplified = async (
       orderBy: "activity",
       requireActivity: true,
     }),
-    fetchFeedItemRows({
-      limit,
-      orderBy: "activity",
-      interestNodeIds,
-    }),
+    userId
+      ? fetchFeedItemRows({
+          limit,
+          orderBy: "activity",
+          interestNodeIds,
+        })
+      : Promise.resolve([]),
     fetchFeedItemRows({
       limit,
       orderBy: "created",

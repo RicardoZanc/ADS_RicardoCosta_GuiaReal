@@ -4,7 +4,8 @@ import { fetchNodeGraph } from "../../lib/nodeGraph";
 import { listOpinionsPage } from "../../lib/opinionListing";
 import { ConflictError, NotFoundError } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
-import { buildDiscussionTabs, buildProductTaxonomy, ensureEanAvailable, ensureNameAvailable, ensureProductExists, ensureProductLinkedNode, validateProductNodeDependencies, } from "./products.domainRules";
+import { getProductsSearchFuzziness } from "./products.config";
+import { buildDiscussionTabs, buildProductTaxonomy, ensureEanAvailable, ensureNameAvailable, ensureProductExists, ensureProductLinkedNode, resolveProductSearchScope, validateProductNodeDependencies, } from "./products.domainRules";
 function isUniqueConstraintError(error) {
     return (typeof error === "object" &&
         error !== null &&
@@ -14,6 +15,193 @@ function isUniqueConstraintError(error) {
 function toIsoString(date) {
     return (date ?? new Date(0)).toISOString();
 }
+function buildScopedProductsCte(scope) {
+    if (scope.categoria_id) {
+        return Prisma.sql `
+      scoped_products AS (
+        SELECT DISTINCT p.id
+        FROM products p
+        INNER JOIN product_nodes pn ON pn.product_id = p.id
+          AND pn.node_id = ${scope.categoria_id}::uuid
+      )
+    `;
+    }
+    return Prisma.sql `
+    scoped_products AS (
+      SELECT DISTINCT p.id
+      FROM products p
+      INNER JOIN product_nodes pn ON pn.product_id = p.id
+      INNER JOIN nodes cat ON cat.id = pn.node_id
+        AND cat.type = 'CATEGORIA'::node_type
+        AND cat.parent_id = ${scope.tipo_id}::uuid
+    )
+  `;
+}
+function buildNodeFiltersClause(nodeIds) {
+    if (nodeIds.length === 0) {
+        return Prisma.sql `TRUE`;
+    }
+    const conditions = nodeIds.map((nodeId) => Prisma.sql `EXISTS (
+      SELECT 1
+      FROM product_nodes pn_filter
+      WHERE pn_filter.product_id = p.id
+        AND pn_filter.node_id = ${nodeId}::uuid
+    )`);
+    return Prisma.join(conditions, " AND ");
+}
+function buildNameFilterClause(q, fuzziness) {
+    if (!q) {
+        return Prisma.sql `TRUE`;
+    }
+    return Prisma.sql `similarity(p.name, ${q}) >= ${fuzziness}`;
+}
+function buildSearchOrderClause(q) {
+    if (q) {
+        return Prisma.sql `similarity(p.name, ${q}) DESC, p.name ASC`;
+    }
+    return Prisma.sql `p.name ASC`;
+}
+function mapFacetRows(rows) {
+    const toFacetNode = (row) => ({
+        id: row.id,
+        name: row.name,
+        productCount: row.product_count,
+    });
+    return {
+        tecnologias: rows
+            .filter((row) => row.type === "TECNOLOGIA")
+            .map(toFacetNode),
+        composicoes: rows
+            .filter((row) => row.type === "COMPOSICAO")
+            .map(toFacetNode),
+        atributos: rows
+            .filter((row) => row.type === "ATRIBUTO")
+            .map(toFacetNode),
+    };
+}
+function mapProductSearchRow(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        brand_name: row.brand_name,
+        image_url: row.image_url,
+        created_at: toIsoString(row.created_at),
+        categoria: row.categoria_id && row.categoria_name
+            ? { id: row.categoria_id, name: row.categoria_name }
+            : null,
+        marca: row.marca_id && row.marca_name
+            ? { id: row.marca_id, name: row.marca_name }
+            : null,
+    };
+}
+const getFacets = async (query) => {
+    const scope = await resolveProductSearchScope(query);
+    const scopedProductsCte = buildScopedProductsCte(scope);
+    logger.debug("Facets de produto: consulta iniciada", scope);
+    const rows = await prisma.$queryRaw `
+    WITH ${scopedProductsCte}
+    SELECT
+      n.id,
+      n.name,
+      n.type,
+      COUNT(DISTINCT sp.id)::int AS product_count
+    FROM scoped_products sp
+    INNER JOIN product_nodes pn ON pn.product_id = sp.id
+    INNER JOIN nodes n ON n.id = pn.node_id
+    WHERE n.type IN (
+      'TECNOLOGIA'::node_type,
+      'COMPOSICAO'::node_type,
+      'ATRIBUTO'::node_type
+    )
+    GROUP BY n.id, n.name, n.type
+    ORDER BY n.type, n.name
+  `;
+    logger.debug("Facets de produto: consulta concluída", {
+        ...scope,
+        totalFacets: rows.length,
+    });
+    return mapFacetRows(rows);
+};
+const search = async (query) => {
+    const scope = await resolveProductSearchScope(query);
+    const fuzziness = getProductsSearchFuzziness();
+    const nodeIds = [...new Set(query.node_ids ?? [])];
+    const offset = (query.page - 1) * query.limit;
+    const scopedProductsCte = buildScopedProductsCte(scope);
+    const nodeFiltersClause = buildNodeFiltersClause(nodeIds);
+    const nameFilterClause = buildNameFilterClause(query.q, fuzziness);
+    const orderClause = buildSearchOrderClause(query.q);
+    logger.debug("Busca de produtos: consulta iniciada", {
+        ...scope,
+        nodeCount: nodeIds.length,
+        q: query.q,
+        page: query.page,
+        limit: query.limit,
+        fuzziness,
+    });
+    const [countResult, rows] = await Promise.all([
+        prisma.$queryRaw `
+      WITH ${scopedProductsCte}
+      SELECT COUNT(*)::int AS count
+      FROM products p
+      INNER JOIN scoped_products sp ON sp.id = p.id
+      WHERE ${nodeFiltersClause}
+        AND ${nameFilterClause}
+    `,
+        prisma.$queryRaw `
+      WITH ${scopedProductsCte}
+      SELECT
+        p.id,
+        p.name,
+        p.brand_name,
+        p.image_url,
+        p.created_at,
+        cat_node.id AS categoria_id,
+        cat_node.name AS categoria_name,
+        marca_node.id AS marca_id,
+        marca_node.name AS marca_name
+      FROM products p
+      INNER JOIN scoped_products sp ON sp.id = p.id
+      LEFT JOIN LATERAL (
+        SELECT n.id, n.name
+        FROM product_nodes pn
+        INNER JOIN nodes n ON n.id = pn.node_id
+          AND n.type = 'CATEGORIA'::node_type
+        WHERE pn.product_id = p.id
+        LIMIT 1
+      ) cat_node ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT n.id, n.name
+        FROM product_nodes pn
+        INNER JOIN nodes n ON n.id = pn.node_id
+          AND n.type = 'MARCA'::node_type
+        WHERE pn.product_id = p.id
+        LIMIT 1
+      ) marca_node ON TRUE
+      WHERE ${nodeFiltersClause}
+        AND ${nameFilterClause}
+      ORDER BY ${orderClause}
+      LIMIT ${query.limit}
+      OFFSET ${offset}
+    `,
+    ]);
+    const total = countResult[0]?.count ?? 0;
+    const totalPages = total === 0 ? 0 : Math.ceil(total / query.limit);
+    logger.debug("Busca de produtos: consulta concluída", {
+        ...scope,
+        total,
+        returned: rows.length,
+    });
+    return {
+        data: rows.map(mapProductSearchRow),
+        pagination: {
+            page: query.page,
+            limit: query.limit,
+            total,
+            totalPages,
+        },
+    };
+};
 async function fetchOpinionCounts(productId, nodeIds) {
     const [productCount, nodeCountRows] = await Promise.all([
         prisma.opinions.count({
@@ -168,5 +356,7 @@ const create = async (input) => {
 export const productsService = {
     create,
     getById,
+    getFacets,
     listOpinions,
+    search,
 };

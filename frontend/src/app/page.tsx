@@ -24,6 +24,15 @@ export default function HomePage() {
             <Link href="/login">Entrar</Link>
           </Button>
         </div>
+
+        <div className="text-center">
+          <Link
+            href="/feed"
+            className="text-body font-medium text-accent hover:text-accent/80"
+          >
+            Explorar sem conta
+          </Link>
+        </div>
       </FadeIn>
     </main>
   );

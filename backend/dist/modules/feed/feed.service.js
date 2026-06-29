@@ -342,19 +342,26 @@ const list = async (query) => {
     };
 };
 const listSimplified = async (userId, limit) => {
-    logger.debug("Feed simplificado: consulta iniciada", { userId, limit });
-    const interestNodeIds = await fetchUserInterestNodeIds(userId);
+    logger.debug("Feed simplificado: consulta iniciada", {
+        userId: userId ?? null,
+        limit,
+    });
+    const interestNodeIds = userId
+        ? await fetchUserInterestNodeIds(userId)
+        : [];
     const [communityRows, interestRows, newRows] = await Promise.all([
         fetchFeedItemRows({
             limit,
             orderBy: "activity",
             requireActivity: true,
         }),
-        fetchFeedItemRows({
-            limit,
-            orderBy: "activity",
-            interestNodeIds,
-        }),
+        userId
+            ? fetchFeedItemRows({
+                limit,
+                orderBy: "activity",
+                interestNodeIds,
+            })
+            : Promise.resolve([]),
         fetchFeedItemRows({
             limit,
             orderBy: "created",

@@ -44,3 +44,43 @@ export const listProductOpinionsSchema = z.object({
         }
     }),
 });
+const productSearchScopeSchema = z
+    .object({
+    tipo_id: z.uuid("tipo_id inválido").optional(),
+    categoria_id: z.uuid("categoria_id inválido").optional(),
+})
+    .superRefine((data, ctx) => {
+    if (!data.tipo_id && !data.categoria_id) {
+        ctx.addIssue({
+            code: "custom",
+            message: "Informe tipo_id ou categoria_id",
+            path: ["tipo_id"],
+        });
+    }
+});
+const nodeIdsQuerySchema = z.preprocess((value) => {
+    if (value == null || value === "") {
+        return [];
+    }
+    if (Array.isArray(value)) {
+        return value;
+    }
+    if (typeof value === "string") {
+        return value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+    return value;
+}, z.array(z.uuid("Cada node_id deve ser um UUID válido")));
+export const productFacetsSchema = z.object({
+    query: productSearchScopeSchema,
+});
+export const productSearchSchema = z.object({
+    query: productSearchScopeSchema.extend({
+        node_ids: nodeIdsQuerySchema.default([]),
+        q: z.string().trim().min(1).optional(),
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(20),
+    }),
+});

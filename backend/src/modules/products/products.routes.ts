@@ -8,34 +8,37 @@ import {
   productSearchSchema,
 } from "./products.schema";
 import { validate } from "../../middlewares/validate.middleware";
-import { authenticateJwt } from "../../middlewares/auth.middleware";
+import {
+  authenticateJwt,
+  optionalAuthenticateJwt,
+} from "../../middlewares/auth.middleware";
 
 const productsRoutes = Router();
 
 productsRoutes.get(
   "/facets",
-  authenticateJwt,
+  optionalAuthenticateJwt,
   validate(productFacetsSchema),
   productsController.getFacets
 );
 
 productsRoutes.get(
   "/search",
-  authenticateJwt,
+  optionalAuthenticateJwt,
   validate(productSearchSchema),
   productsController.search
 );
 
 productsRoutes.get(
   "/:id/opinions",
-  authenticateJwt,
+  optionalAuthenticateJwt,
   validate(listProductOpinionsSchema),
   productsController.listOpinions
 );
 
 productsRoutes.get(
   "/:id",
-  authenticateJwt,
+  optionalAuthenticateJwt,
   validate(getProductSchema),
   productsController.getById
 );

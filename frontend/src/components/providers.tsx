@@ -2,6 +2,7 @@
 
 import { ThemeProvider } from "next-themes";
 import { AuthBootstrap } from "@/components/AuthBootstrap";
+import { AuthPromptProvider } from "@/components/auth/AuthPromptProvider";
 import { APP_THEMES, DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/theme";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -15,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableColorScheme
     >
       <AuthBootstrap />
-      {children}
+      <AuthPromptProvider>{children}</AuthPromptProvider>
     </ThemeProvider>
   );
 }

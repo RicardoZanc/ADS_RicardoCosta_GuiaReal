@@ -35,3 +35,23 @@ export const authenticateJwt = async (
     next(error);
   }
 };
+
+export const optionalAuthenticateJwt = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = getBearerToken(req);
+    if (!token) {
+      req.user = undefined;
+      next();
+      return;
+    }
+
+    req.user = await authenticateAccessToken(token);
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
