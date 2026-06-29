@@ -20,7 +20,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <AppHeader username={user.username} />
+      <AppHeader username={user.username} isAdmin={user.is_admin} />
       <main className="flex flex-1 flex-col">{children}</main>
     </div>
   );

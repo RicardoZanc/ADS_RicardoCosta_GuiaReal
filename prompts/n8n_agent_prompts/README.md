@@ -94,3 +94,37 @@ O payload `data[]` contém itens unificados com `source_type` (`opinion` | `thre
 No n8n, configure cada rota como um nó **HTTP Request Tool** conectado ao AI Agent, com `toolDescription` espelhando a documentação da API.
 
 Documentação completa: [backend/.cursor/docs/api/technical_facts.md](../../backend/.cursor/docs/api/technical_facts.md), [products_tool.md](../../backend/.cursor/docs/api/products_tool.md)
+
+## Report Fact Review Agent
+
+Fluxo: `Webhook` (`report-fact-review`) → `AI Agent` → tools HTTP
+
+| Arquivo | Uso no n8n |
+|---------|------------|
+| [review_technical_facts_on_report.md](review_technical_facts_on_report.md) | **System Message** do nó AI Agent |
+
+Workflow versionado: [backend/n8n_workflows/ReportFactReview.json](../../backend/n8n_workflows/ReportFactReview.json)
+
+### Payload recebido no webhook
+
+Disparado pelo backend (`N8N_REPORT_WEBHOOK_URL`) quando uma denúncia envolve fatos técnicos:
+
+```json
+{
+  "report_id": "uuid",
+  "source_type": "thread",
+  "source_id": "uuid",
+  "reason": "MISLEADING",
+  "fact_ids": ["uuid"]
+}
+```
+
+### Tools disponíveis para o agente
+
+| Tool | Método | Uso |
+|------|--------|-----|
+| Get Facts By Evidence | `GET /tool/technical-facts/by-evidence/{source_type}/{source_id}` | Contexto do conteúdo denunciado e fatos vinculados |
+| Update Technical Fact | `PATCH /tool/technical-facts/{id}` | Ajustar status/consenso após revisão |
+| Delete Fact Evidence | `DELETE /tool/technical-facts/{fact_id}/evidence/{source_type}/{source_id}` | Remover evidência inválida |
+
+Documentação: [reports.md](../../backend/.cursor/docs/api/reports.md), [technical_facts.md](../../backend/.cursor/docs/api/technical_facts.md)

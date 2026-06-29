@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 interface AppHeaderProps {
   username: string;
+  isAdmin?: boolean;
 }
 
 interface NavLinkProps {
@@ -50,7 +51,7 @@ function NavLink({ href, children, className }: NavLinkProps) {
   );
 }
 
-export function AppHeader({ username }: AppHeaderProps) {
+export function AppHeader({ username, isAdmin = false }: AppHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -76,6 +77,9 @@ export function AppHeader({ username }: AppHeaderProps) {
           <nav className="hidden items-center gap-5 sm:flex">
             <NavLink href="/feed">Feed</NavLink>
             <NavLink href="/chat">Assistente</NavLink>
+            {isAdmin ? (
+              <NavLink href="/admin/reports">Moderação</NavLink>
+            ) : null}
             <Link
               href={profilePath}
               className={cn(

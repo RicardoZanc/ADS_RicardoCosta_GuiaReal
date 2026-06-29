@@ -83,6 +83,7 @@ export interface OpinionReply {
   author: OpinionAuthor;
   cached_upvotes: number;
   user_vote: UserVote;
+  reports_locked: boolean;
   replies: OpinionReply[];
 }
 
@@ -100,6 +101,7 @@ export interface OpinionListItem {
   cached_upvotes: number;
   user_vote: UserVote;
   score: number;
+  reports_locked: boolean;
   replies: OpinionReply[];
 }
 

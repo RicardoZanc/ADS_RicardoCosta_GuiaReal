@@ -7,6 +7,8 @@ import { UserLink } from "@/components/profile/UserLink";
 import { cn } from "@/lib/utils";
 import { ReplyComposer } from "./ReplyComposer";
 import { VoteControls } from "./VoteControls";
+import { ReportDialog } from "@/components/reports/ReportDialog";
+import { useAuthStore } from "@/store/authStore";
 import { getThreadLevelClass } from "./threadLayout";
 
 function formatDate(iso: string): string {
@@ -71,6 +73,9 @@ export function ThreadReplyNode({
   const isCollapsed = collapsedIds.has(reply.id);
   const isActive = isReplyTarget(replyTarget, opinionId, reply.id);
   const isVoting = votingTargetId === reply.id;
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const canReport =
+    currentUserId !== reply.author.id && !reply.reports_locked;
 
   return (
     <li className={getThreadLevelClass(depth)}>
@@ -114,6 +119,9 @@ export function ThreadReplyNode({
               onLike={() => onVoteThread(reply.id)}
               onDislike={() => onDislikeThread(reply.id)}
             />
+            {canReport ? (
+              <ReportDialog targetType="thread" targetId={reply.id} />
+            ) : null}
           </div>
         </article>
       </div>

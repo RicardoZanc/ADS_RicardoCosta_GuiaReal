@@ -12,6 +12,8 @@ import { UserLink } from "@/components/profile/UserLink";
 import { ReplyComposer } from "./ReplyComposer";
 import { ThreadReplyNode } from "./ThreadReplyNode";
 import { VoteControls } from "./VoteControls";
+import { ReportDialog } from "@/components/reports/ReportDialog";
+import { useAuthStore } from "@/store/authStore";
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -86,8 +88,11 @@ function OpinionCard({
   onDislikeThread: (threadId: string) => void;
 }) {
   const prefersReducedMotion = useReducedMotion();
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const isRootReplyActive = isReplyTarget(replyTarget, opinion.id);
   const isVoting = votingTargetId === opinion.id;
+  const canReport =
+    currentUserId !== opinion.author.id && !opinion.reports_locked;
 
   return (
     <motion.div
@@ -110,6 +115,9 @@ function OpinionCard({
             onLike={() => onVoteOpinion(opinion.id)}
             onDislike={() => onDislikeOpinion(opinion.id)}
           />
+          {canReport ? (
+            <ReportDialog targetType="opinion" targetId={opinion.id} />
+          ) : null}
         </div>
       </article>
 
