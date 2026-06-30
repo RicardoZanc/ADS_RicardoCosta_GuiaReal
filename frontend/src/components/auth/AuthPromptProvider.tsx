@@ -4,10 +4,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import { AuthPromptModal } from "@/components/auth/AuthPromptModal";
 import {
   selectIsAuthenticated,
@@ -21,10 +23,20 @@ interface AuthPromptContextValue {
 
 const AuthPromptContext = createContext<AuthPromptContextValue | null>(null);
 
+const AUTH_ROUTES = new Set(["/register", "/login"]);
+
 export function AuthPromptProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<string | undefined>();
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const isAuthRoute = AUTH_ROUTES.has(pathname);
+
+  useEffect(() => {
+    if (isAuthRoute) {
+      setOpen(false);
+    }
+  }, [isAuthRoute]);
 
   const openAuthPrompt = useCallback((nextReason?: string) => {
     setReason(nextReason);
@@ -52,7 +64,7 @@ export function AuthPromptProvider({ children }: { children: ReactNode }) {
     <AuthPromptContext.Provider value={value}>
       {children}
       <AuthPromptModal
-        open={open}
+        open={open && !isAuthRoute}
         onOpenChange={setOpen}
         reason={reason}
       />

@@ -33,11 +33,14 @@ const technicalFactsController = {
         res.status(200).json(result);
     },
     listByNode: async (req, res) => {
-        const nodeId = req.query.node_id;
-        logger.info("HTTP GET /tool/technical-facts - Iniciado", { nodeId });
-        const result = await technicalFactsService.listByNode(nodeId);
+        const query = req.query;
+        logger.info("HTTP GET /tool/technical-facts - Iniciado", {
+            nodeId: query.node_id,
+            status: query.status,
+            limit: query.limit,
+        });
+        const result = await technicalFactsService.listFacts(query);
         logger.info("HTTP GET /tool/technical-facts - Concluído", {
-            nodeId,
             count: result.data.length,
         });
         res.status(200).json(result);
@@ -57,6 +60,19 @@ const technicalFactsController = {
         });
         const fact = await technicalFactsService.updateFact(factId, body);
         logger.info("HTTP PATCH /tool/technical-facts/:id - Concluído", {
+            factId: fact.id,
+        });
+        res.status(200).json(fact);
+    },
+    addEvidence: async (req, res) => {
+        const factId = req.params.id;
+        const body = req.body;
+        logger.info("HTTP POST /tool/technical-facts/:id/evidence - Iniciado", {
+            factId,
+            evidenceCount: body.evidence.length,
+        });
+        const fact = await technicalFactsService.addEvidence(factId, body);
+        logger.info("HTTP POST /tool/technical-facts/:id/evidence - Concluído", {
             factId: fact.id,
         });
         res.status(200).json(fact);

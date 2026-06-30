@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { technicalFactsController } from "./technical_facts.controller";
-import { createTechnicalFactSchema, listByEvidenceSchema, listPendingQueueSchema, listTechnicalFactsByNodeSchema, markQueueItemProcessedSchema, removeEvidenceSchema, updateTechnicalFactSchema, } from "./technical_facts.schema";
+import { addEvidenceSchema, createTechnicalFactSchema, listByEvidenceSchema, listPendingQueueSchema, listTechnicalFactsByNodeSchema, markQueueItemProcessedSchema, removeEvidenceSchema, updateTechnicalFactSchema, } from "./technical_facts.schema";
 import { validate } from "../../middlewares/validate.middleware";
 import { authenticateToolApiKey } from "../../middlewares/toolAuth.middleware";
 const technicalFactsRoutes = Router();
@@ -10,6 +10,7 @@ technicalFactsRoutes.post("/", validate(createTechnicalFactSchema), technicalFac
 technicalFactsRoutes.patch("/queue/:source_type/:source_id/processed", validate(markQueueItemProcessedSchema), technicalFactsController.markQueueItemProcessed);
 technicalFactsRoutes.get("/by-evidence/:source_type/:source_id", validate(listByEvidenceSchema), technicalFactsController.listByEvidence);
 technicalFactsRoutes.patch("/:id", validate(updateTechnicalFactSchema), technicalFactsController.updateFact);
+technicalFactsRoutes.post("/:id/evidence", validate(addEvidenceSchema), technicalFactsController.addEvidence);
 technicalFactsRoutes.delete("/:fact_id/evidence/:source_type/:source_id", validate(removeEvidenceSchema), technicalFactsController.removeEvidence);
 technicalFactsRoutes.get("/", validate(listTechnicalFactsByNodeSchema), technicalFactsController.listByNode);
 export { technicalFactsRoutes };

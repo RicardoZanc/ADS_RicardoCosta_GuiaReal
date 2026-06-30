@@ -105,8 +105,8 @@ const FEED_ITEMS_CTE = Prisma.sql`
           )
         )
         FROM opinions o
-        LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id
-        WHERE o.product_id = p.id
+        LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id AND dt.is_hidden = false
+        WHERE o.product_id = p.id AND o.is_hidden = false
       ) AS last_activity_at
     FROM products p
 
@@ -124,8 +124,8 @@ const FEED_ITEMS_CTE = Prisma.sql`
           )
         )
         FROM opinions o
-        LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id
-        WHERE o.node_id = n.id
+        LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id AND dt.is_hidden = false
+        WHERE o.node_id = n.id AND o.is_hidden = false
       ) AS last_activity_at
     FROM nodes n
     WHERE n.type IN (
@@ -242,6 +242,7 @@ const opinionSelect = {
   created_at: true,
   users: { select: { id: true, username: true, is_admin: true } },
   discussion_threads: {
+    where: { is_hidden: false },
     select: {
       id: true,
       content: true,
@@ -359,6 +360,7 @@ async function enrichFeedItems(itemRows: FeedItemRow[]): Promise<FeedItem[]> {
               },
             },
             opinions: {
+              where: { is_hidden: false },
               select: opinionSelect,
             },
           },
@@ -375,6 +377,7 @@ async function enrichFeedItems(itemRows: FeedItemRow[]): Promise<FeedItem[]> {
             type: true,
             parent_id: true,
             opinions: {
+              where: { is_hidden: false },
               select: opinionSelect,
             },
           },

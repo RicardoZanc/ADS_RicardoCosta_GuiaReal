@@ -80,10 +80,14 @@ export function AuthPromptModal({
 
           <div className="flex flex-col gap-2 pt-2 sm:flex-row">
             <Button asChild size="lg" className="flex-1">
-              <Link href="/register">Criar conta</Link>
+              <Link href="/register" onClick={() => onOpenChange(false)}>
+                Criar conta
+              </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="flex-1">
-              <Link href="/login">Entrar</Link>
+              <Link href="/login" onClick={() => onOpenChange(false)}>
+                Entrar
+              </Link>
             </Button>
           </div>
         </div>

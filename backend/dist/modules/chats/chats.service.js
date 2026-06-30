@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import { logger } from "../../utils/logger";
-import { dispatchN8nChatWebhook } from "../../lib/n8nChatWebhook";
+import { dispatchN8nChatWebhook, } from "../../lib/n8nChatWebhook";
 import { chatRoomId, getIo } from "../../lib/socket";
 import { assertChatBelongsToUser, assertChatExists, } from "./chats.domainRules";
 const chatSelect = {
@@ -30,6 +30,25 @@ const dedupeEvidence = (items) => {
         unique.push(item);
     }
     return unique;
+};
+const getChatContextMessageLimit = () => {
+    const parsed = Number(process.env.CHAT_CONTEXT_MESSAGE_LIMIT ?? 20);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 20;
+};
+const getMessageHistoryForAgent = async (chatId, excludeMessageId, limit = getChatContextMessageLimit()) => {
+    const messages = await prisma.chat_messages.findMany({
+        where: {
+            chat_id: chatId,
+            id: { not: excludeMessageId },
+        },
+        orderBy: { created_at: "desc" },
+        take: limit,
+        select: {
+            sender: true,
+            content: true,
+        },
+    });
+    return messages.reverse();
 };
 const resolveMentionedEvidence = (input) => {
     const facts = input.mentioned_technical_facts ?? null;
@@ -72,6 +91,7 @@ const createWithFirstMessage = async (userId, input) => {
         user_id: userId,
         user_message: input.content,
         should_name_conversation: true,
+        message_history: [],
     });
     logger.debug("Chat: persistência concluída", {
         chatId: result.chat.id,
@@ -170,11 +190,13 @@ const sendMessage = async (userId, chatId, input) => {
         },
         select: messageSelect,
     });
+    const message_history = await getMessageHistoryForAgent(chatId, message.id);
     dispatchN8nChatWebhook({
         chat_id: chatId,
         user_id: userId,
         user_message: input.content,
         should_name_conversation: false,
+        message_history,
     });
     logger.debug("Chat: mensagem do usuário persistida", {
         chatId,

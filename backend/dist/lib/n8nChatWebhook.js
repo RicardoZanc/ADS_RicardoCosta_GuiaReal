@@ -12,6 +12,7 @@ export async function notifyN8nChatWebhook(payload) {
     logger.debug("Enviando payload ao webhook n8n chat", {
         chatId: payload.chat_id,
         userId: payload.user_id,
+        historyLength: payload.message_history.length,
     });
     const response = await fetch(webhookUrl, {
         method: "POST",

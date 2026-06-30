@@ -214,10 +214,34 @@ const markQueueItemProcessed = async (sourceType, sourceId) => {
         status: updated.status,
     };
 };
-const listByNode = async (nodeId) => {
-    await ensureNodeExists(nodeId);
+const mapFactWithEvidence = (fact) => ({
+    id: fact.id,
+    node_id: fact.node_id,
+    fact_label: fact.fact_label,
+    fact_description: fact.fact_description,
+    consensus_score: fact.consensus_score,
+    status: fact.status,
+    last_updated: fact.last_updated,
+    evidence: fact.fact_evidence.map((item) => item.opinion_id
+        ? {
+            source_type: "opinion",
+            source_id: item.opinion_id,
+        }
+        : {
+            source_type: "thread",
+            source_id: item.interaction_id,
+        }),
+});
+const listFacts = async (query) => {
+    const { node_id: nodeId, status, limit = 20 } = query;
+    if (nodeId !== undefined) {
+        await ensureNodeExists(nodeId);
+    }
     const facts = await prisma.technical_facts.findMany({
-        where: { node_id: nodeId },
+        where: {
+            ...(nodeId !== undefined ? { node_id: nodeId } : {}),
+            ...(status !== undefined ? { status } : {}),
+        },
         include: {
             fact_evidence: {
                 select: {
@@ -226,28 +250,17 @@ const listByNode = async (nodeId) => {
                 },
             },
         },
-        orderBy: { last_updated: "desc" },
+        orderBy: {
+            last_updated: nodeId !== undefined ? "desc" : "asc",
+        },
+        take: limit,
     });
     return {
-        data: facts.map((fact) => ({
-            id: fact.id,
-            node_id: fact.node_id,
-            fact_label: fact.fact_label,
-            fact_description: fact.fact_description,
-            consensus_score: fact.consensus_score,
-            status: fact.status,
-            last_updated: fact.last_updated,
-            evidence: fact.fact_evidence.map((item) => item.opinion_id
-                ? {
-                    source_type: "opinion",
-                    source_id: item.opinion_id,
-                }
-                : {
-                    source_type: "thread",
-                    source_id: item.interaction_id,
-                }),
-        })),
+        data: facts.map(mapFactWithEvidence),
     };
+};
+const listByNode = async (nodeId, status) => {
+    return listFacts({ node_id: nodeId, status });
 };
 const listByEvidence = async (sourceType, sourceId) => {
     const evidenceRows = await prisma.fact_evidence.findMany({
@@ -329,6 +342,87 @@ const listByEvidence = async (sourceType, sourceId) => {
         })),
     };
 };
+const addEvidence = async (factId, input) => {
+    const existing = await prisma.technical_facts.findUnique({
+        where: { id: factId },
+        select: { id: true },
+    });
+    if (!existing) {
+        throw new NotFoundError("Fato técnico não encontrado");
+    }
+    const uniqueEvidence = dedupeEvidence(input.evidence);
+    const opinionIds = uniqueEvidence
+        .filter((item) => item.source_type === "opinion")
+        .map((item) => item.source_id);
+    const threadIds = uniqueEvidence
+        .filter((item) => item.source_type === "thread")
+        .map((item) => item.source_id);
+    const [opinions, threads] = await Promise.all([
+        opinionIds.length > 0
+            ? prisma.opinions.findMany({
+                where: { id: { in: opinionIds } },
+                select: { id: true },
+            })
+            : Promise.resolve([]),
+        threadIds.length > 0
+            ? prisma.discussion_threads.findMany({
+                where: { id: { in: threadIds } },
+                select: { id: true },
+            })
+            : Promise.resolve([]),
+    ]);
+    if (opinions.length !== opinionIds.length) {
+        throw new NotFoundError("Uma ou mais opiniões de evidência não existem");
+    }
+    if (threads.length !== threadIds.length) {
+        throw new NotFoundError("Uma ou mais threads de evidência não existem");
+    }
+    return prisma.$transaction(async (tx) => {
+        await tx.fact_evidence.createMany({
+            data: uniqueEvidence.map((item) => ({
+                fact_id: factId,
+                interaction_id: item.source_type === "thread" ? item.source_id : null,
+                opinion_id: item.source_type === "opinion" ? item.source_id : null,
+            })),
+            skipDuplicates: true,
+        });
+        if (opinionIds.length > 0) {
+            await tx.opinions.updateMany({
+                where: { id: { in: opinionIds } },
+                data: { status: "PROCESSED" },
+            });
+        }
+        if (threadIds.length > 0) {
+            await tx.discussion_threads.updateMany({
+                where: { id: { in: threadIds } },
+                data: { status: "PROCESSED" },
+            });
+        }
+        const fact = await tx.technical_facts.update({
+            where: { id: factId },
+            data: {
+                ...(input.consensus_score !== undefined
+                    ? { consensus_score: input.consensus_score }
+                    : {}),
+                ...(input.status !== undefined ? { status: input.status } : {}),
+                last_updated: new Date(),
+            },
+            select: {
+                id: true,
+                node_id: true,
+                fact_label: true,
+                fact_description: true,
+                consensus_score: true,
+                status: true,
+                last_updated: true,
+            },
+        });
+        return {
+            ...fact,
+            evidence: uniqueEvidence,
+        };
+    });
+};
 const updateFact = async (factId, input) => {
     const existing = await prisma.technical_facts.findUnique({
         where: { id: factId },
@@ -389,8 +483,10 @@ export const technicalFactsService = {
     listPendingQueue,
     createFact,
     markQueueItemProcessed,
+    listFacts,
     listByNode,
     listByEvidence,
+    addEvidence,
     updateFact,
     removeEvidence,
 };
