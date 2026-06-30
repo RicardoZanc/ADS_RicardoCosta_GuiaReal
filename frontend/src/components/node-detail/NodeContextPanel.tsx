@@ -31,6 +31,40 @@ function formatOpinionCount(count: number): string {
   return `${count} opiniões`;
 }
 
+function NodeImage({
+  node,
+  initials,
+}: {
+  node: NodeDetailResponse;
+  initials: string;
+}) {
+  const frameClass =
+    "size-20 shrink-0 overflow-hidden rounded-lg border border-border/15 bg-muted/10 lg:size-28 lg:rounded-2xl";
+
+  if (node.image_url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={node.image_url}
+        alt={node.name}
+        className={cn(frameClass, "object-cover")}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        frameClass,
+        "flex items-center justify-center text-small font-medium text-muted"
+      )}
+      aria-hidden
+    >
+      {initials}
+    </div>
+  );
+}
+
 export function NodeContextPanel({ node }: NodeContextPanelProps) {
   const typeLabel = getNodeTypeLabel(node.type);
   const initials = node.name.slice(0, 2).toUpperCase();
@@ -38,15 +72,7 @@ export function NodeContextPanel({ node }: NodeContextPanelProps) {
   return (
     <section className="rounded-2xl border border-border/15 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 lg:p-8">
       <div className="grid gap-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start lg:gap-10">
-        <div
-          className={cn(
-            "flex size-20 shrink-0 items-center justify-center rounded-lg lg:size-28 lg:rounded-2xl",
-            "border border-border/15 bg-muted/10 text-small font-medium text-muted"
-          )}
-          aria-hidden
-        >
-          {initials}
-        </div>
+        <NodeImage node={node} initials={initials} />
         <div className="min-w-0 lg:pt-1">
           <Tag variant="accent">{typeLabel}</Tag>
           <h1 className="text-product-name mt-2">{node.name}</h1>

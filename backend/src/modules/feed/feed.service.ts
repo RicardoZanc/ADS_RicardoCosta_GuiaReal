@@ -362,6 +362,7 @@ async function enrichFeedItems(itemRows: FeedItemRow[]): Promise<FeedItem[]> {
           select: {
             id: true,
             name: true,
+            image_url: true,
             created_at: true,
             type: true,
             parent_id: true,
@@ -422,7 +423,7 @@ async function enrichFeedItems(itemRows: FeedItemRow[]): Promise<FeedItem[]> {
       id: node.id,
       name: node.name,
       brand_name: null,
-      image_url: null,
+      image_url: node.image_url,
       created_at: toIsoString(node.created_at),
       nodes: resolveNodesWithParents([seedNode], nodeById),
       discussionPreviews: buildDiscussionPreviews(node.opinions),

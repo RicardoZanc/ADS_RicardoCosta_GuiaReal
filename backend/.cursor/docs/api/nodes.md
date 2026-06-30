@@ -60,6 +60,7 @@ Busca paginada de nós com filtro opcional por nome (fuzzy) e tipo.
       "type": "CATEGORIA",
       "parent_id": "uuid",
       "wikidata_id": null,
+      "image_url": null,
       "created_at": "2026-01-01T00:00:00.000Z"
     }
   ],
@@ -99,6 +100,7 @@ Criação de nó na árvore taxonômica.
 | `type` | enum | sim | Um dos tipos pesquisáveis |
 | `parent_id` | uuid | condicional | Obrigatório para `CATEGORIA` (deve apontar para nó `TIPO`) |
 | `wikidata_id` | string | não | Máx. 50 caracteres |
+| `image_url` | url | não | URL pública do bucket `nodes` no Supabase Storage |
 
 ### Regras de negócio
 
@@ -115,6 +117,7 @@ Criação de nó na árvore taxonômica.
   "type": "TECNOLOGIA",
   "parent_id": "uuid-root",
   "wikidata_id": null,
+  "image_url": null,
   "created_at": "2026-01-01T00:00:00.000Z"
 }
 ```
@@ -155,6 +158,7 @@ Detalhe de um nó visualizável.
   "name": "Guitarras",
   "type": "CATEGORIA",
   "wikidata_id": null,
+  "image_url": null,
   "created_at": "2026-01-01T00:00:00.000Z",
   "context": {
     "parentTipo": {

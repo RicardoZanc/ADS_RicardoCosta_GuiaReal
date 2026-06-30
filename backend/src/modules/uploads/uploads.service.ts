@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestError } from "../../lib/errors/BaseError";
 import {
+  buildNodeImagePublicUrl,
   buildProfileImagePublicUrl,
   buildProductImagePublicUrl,
+  getNodesBucketName,
   getProfilesBucketName,
   getProductsBucketName,
   getSupabaseAdmin,
@@ -71,7 +73,20 @@ const createProfileImageUpload = async (
   );
 };
 
+const createNodeImageUpload = async (
+  userId: string,
+  contentType: ProductImageContentType
+) => {
+  return createSignedUpload(
+    userId,
+    contentType,
+    getNodesBucketName(),
+    buildNodeImagePublicUrl
+  );
+};
+
 export const uploadsService = {
   createProductImageUpload,
   createProfileImageUpload,
+  createNodeImageUpload,
 };

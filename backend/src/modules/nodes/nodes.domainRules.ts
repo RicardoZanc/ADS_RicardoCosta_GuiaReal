@@ -41,6 +41,7 @@ export type ViewableNode = {
   type: ViewableNodeType;
   parent_id: string | null;
   wikidata_id: string | null;
+  image_url: string | null;
   created_at: Date | null;
 };
 
@@ -57,6 +58,7 @@ export async function ensureNodeViewable(id: string): Promise<ViewableNode> {
       type: true,
       parent_id: true,
       wikidata_id: true,
+      image_url: true,
       created_at: true,
     },
   });

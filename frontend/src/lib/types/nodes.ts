@@ -22,6 +22,7 @@ export interface NodeDetailResponse {
   name: string;
   type: ViewableNodeType;
   wikidata_id: string | null;
+  image_url: string | null;
   created_at: string;
   context: NodeContext;
   opinionCount: number;
@@ -33,6 +34,7 @@ export interface NodeRecord {
   type: NodeType;
   parent_id: string | null;
   wikidata_id: string | null;
+  image_url: string | null;
   created_at: string | null;
 }
 

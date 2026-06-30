@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Input } from "@/components/ui/input";
 import { NodeSearchField } from "@/components/product-create/NodeSearchField";
+import { ProductImageField } from "@/components/product-create/ProductImageField";
 import { SelectedNodeCard } from "@/components/product-create/SelectedNodeCard";
 import { TIPO_PARENT_CONFIG } from "@/lib/nodeCreate/constants";
 import type { NodeType } from "@/lib/types/nodes";
@@ -71,6 +72,10 @@ export default function NodeCreatePage() {
     canSubmitCreate,
     duplicate,
     tipoSearch,
+    imagePreviewUrl,
+    isUploadingImage,
+    selectImage,
+    removeImage,
     selectType,
     selectTipo,
     swapTipo,
@@ -190,6 +195,27 @@ export default function NodeCreatePage() {
             onSubmit={submitCreate}
           />
         )}
+
+        <section className="space-y-3">
+          <div>
+            <p className="text-small font-medium text-foreground">
+              Imagem (opcional)
+            </p>
+            <p className="mt-1 text-body text-muted">
+              Adicione uma foto para identificar visualmente este tópico.
+            </p>
+          </div>
+
+          <ProductImageField
+            previewUrl={imagePreviewUrl}
+            disabled={isSubmitting}
+            isUploading={isUploadingImage}
+            entityLabel="tópico"
+            previewAlt="Pré-visualização da imagem do tópico"
+            onSelect={selectImage}
+            onRemove={removeImage}
+          />
+        </section>
 
         {duplicate && (
           <div className="rounded-xl border border-border/15 bg-muted/5 p-4">

@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import type { CreateReplyFormData } from "@/lib/schemas/productDetail";
 import type { OpinionReply, ReplyTarget } from "@/lib/types/products";
+import { UserAvatar } from "@/components/profile/UserAvatar";
 import { UserLink } from "@/components/profile/UserLink";
 import { cn } from "@/lib/utils";
 import { ReplyComposer } from "./ReplyComposer";
@@ -79,7 +81,7 @@ export function ThreadReplyNode({
 
   return (
     <li className={getThreadLevelClass(depth)}>
-      <div className="flex min-w-0 items-start gap-1">
+      <div className="flex min-w-0 items-start gap-2">
         {hasChildren ? (
           <button
             type="button"
@@ -102,6 +104,17 @@ export function ThreadReplyNode({
         ) : (
           <span className="inline-block h-6 w-6 shrink-0" aria-hidden />
         )}
+
+        <Link
+          href={`/users/${encodeURIComponent(reply.author.username)}`}
+          className="shrink-0"
+        >
+          <UserAvatar
+            username={reply.author.username}
+            avatarUrl={reply.author.avatar_url}
+            size="sm"
+          />
+        </Link>
 
         <article className="min-w-0 flex-1 break-words">
           <p className="text-comment whitespace-pre-wrap text-foreground/90">

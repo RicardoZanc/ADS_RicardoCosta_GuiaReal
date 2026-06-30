@@ -46,6 +46,28 @@ const uploadsController = {
 
     res.status(200).json(result);
   },
+
+  createNodeImageUpload: async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const { contentType } = req.body;
+
+    logger.info("HTTP POST /api/uploads/node-image - Iniciado", {
+      userId,
+      contentType,
+    });
+
+    const result = await uploadsService.createNodeImageUpload(
+      userId,
+      contentType
+    );
+
+    logger.info("HTTP POST /api/uploads/node-image - Concluído", {
+      userId,
+      path: result.path,
+    });
+
+    res.status(200).json(result);
+  },
 };
 
 export { uploadsController };

@@ -3,13 +3,14 @@ import { cn } from "@/lib/utils";
 interface UserAvatarProps {
   username: string;
   avatarUrl?: string | null;
-  size?: "md" | "lg";
+  size?: "sm" | "md" | "lg";
   className?: string;
 }
 
 const sizeClasses = {
-  md: "size-24 text-h4",
-  lg: "size-40 text-h2 lg:size-48",
+  sm: "size-8 text-[10px] rounded-lg",
+  md: "size-24 text-h4 rounded-2xl",
+  lg: "size-40 text-h2 lg:size-48 rounded-2xl",
 } as const;
 
 export function UserAvatar({
@@ -27,7 +28,7 @@ export function UserAvatar({
         src={avatarUrl}
         alt={`Avatar de ${username}`}
         className={cn(
-          "shrink-0 rounded-2xl border border-border/15 object-cover",
+          "shrink-0 border border-border/15 object-cover",
           sizeClasses[size],
           className
         )}
@@ -38,7 +39,7 @@ export function UserAvatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-2xl",
+        "flex shrink-0 items-center justify-center",
         "border border-border/15 bg-muted/10 text-muted",
         sizeClasses[size],
         className

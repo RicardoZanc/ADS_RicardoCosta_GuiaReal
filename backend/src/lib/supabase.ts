@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const PRODUCTS_BUCKET = "products";
 const PROFILES_BUCKET = "profiles";
+const NODES_BUCKET = "nodes";
 
 function requireSupabaseUrl(): string {
   const url = process.env.SUPABASE_URL?.trim();
@@ -47,6 +48,10 @@ export function getProfilesBucketName(): string {
   return PROFILES_BUCKET;
 }
 
+export function getNodesBucketName(): string {
+  return NODES_BUCKET;
+}
+
 export function buildProductImagePublicUrl(path: string): string {
   const baseUrl = requireSupabaseUrl();
   return `${baseUrl}/storage/v1/object/public/${PRODUCTS_BUCKET}/${path}`;
@@ -55,6 +60,11 @@ export function buildProductImagePublicUrl(path: string): string {
 export function buildProfileImagePublicUrl(path: string): string {
   const baseUrl = requireSupabaseUrl();
   return `${baseUrl}/storage/v1/object/public/${PROFILES_BUCKET}/${path}`;
+}
+
+export function buildNodeImagePublicUrl(path: string): string {
+  const baseUrl = requireSupabaseUrl();
+  return `${baseUrl}/storage/v1/object/public/${NODES_BUCKET}/${path}`;
 }
 
 export function getProductImagePublicUrlPrefix(): string | null {
@@ -77,6 +87,16 @@ export function getProfileImagePublicUrlPrefix(): string | null {
   return `${baseUrl}/storage/v1/object/public/${PROFILES_BUCKET}/`;
 }
 
+export function getNodeImagePublicUrlPrefix(): string | null {
+  const url = process.env.SUPABASE_URL?.trim();
+  if (!url) {
+    return null;
+  }
+
+  const baseUrl = url.replace(/\/$/, "");
+  return `${baseUrl}/storage/v1/object/public/${NODES_BUCKET}/`;
+}
+
 export function isAllowedProductImageUrl(imageUrl: string): boolean {
   const prefix = getProductImagePublicUrlPrefix();
   if (!prefix) {
@@ -88,6 +108,15 @@ export function isAllowedProductImageUrl(imageUrl: string): boolean {
 
 export function isAllowedProfileImageUrl(imageUrl: string): boolean {
   const prefix = getProfileImagePublicUrlPrefix();
+  if (!prefix) {
+    return false;
+  }
+
+  return imageUrl.startsWith(prefix);
+}
+
+export function isAllowedNodeImageUrl(imageUrl: string): boolean {
+  const prefix = getNodeImagePublicUrlPrefix();
   if (!prefix) {
     return false;
   }

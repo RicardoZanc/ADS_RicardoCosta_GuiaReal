@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { apiClient } from "@/lib/api";
 import { isApiError } from "@/lib/errors";
 import { notifyApiError } from "@/lib/notifyApiError";
+import { uploadNodeImage } from "@/lib/uploads/nodeImage";
 import { useNodeSearch } from "@/hooks/useNodeSearch";
 import {
   getNodeCreateOption,
@@ -34,8 +35,19 @@ export function useNodeCreateController() {
   const [selectedType, setSelectedType] = useState<NodeType>("TIPO");
   const [selectedTipo, setSelectedTipo] = useState<SelectedNode | null>(null);
   const [nodeName, setNodeName] = useState("");
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imagePublicUrl, setImagePublicUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicate, setDuplicate] = useState<DuplicatePrompt | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   const typeConfig = getNodeCreateOption(selectedType);
   const isCategoriaFlow = selectedType === "CATEGORIA";
@@ -51,6 +63,7 @@ export function useNodeCreateController() {
     setSelectedType(type);
     setSelectedTipo(null);
     setNodeName("");
+    removeImage();
     resetTipoSearch();
   }
 
@@ -93,6 +106,39 @@ export function useNodeCreateController() {
     }
   }
 
+  function removeImage() {
+    setImagePublicUrl(null);
+    setImagePreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return null;
+    });
+  }
+
+  async function selectImage(file: File) {
+    const preview = URL.createObjectURL(file);
+    setImagePreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return preview;
+    });
+    setImagePublicUrl(null);
+    setIsUploadingImage(true);
+
+    try {
+      const publicUrl = await uploadNodeImage(file);
+      setImagePublicUrl(publicUrl);
+    } catch (error) {
+      removeImage();
+      if (notifyApiError(error)) return;
+      throw error;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
   async function createNode(name?: string) {
     const trimmed = (name ?? nodeName).trim();
     if (trimmed.length === 0) return;
@@ -103,8 +149,17 @@ export function useNodeCreateController() {
     try {
       const payload =
         isCategoriaFlow && selectedTipo
-          ? { name: trimmed, type: "CATEGORIA", parent_id: selectedTipo.id }
-          : { name: trimmed, type: selectedType };
+          ? {
+              name: trimmed,
+              type: "CATEGORIA",
+              parent_id: selectedTipo.id,
+              ...(imagePublicUrl ? { image_url: imagePublicUrl } : {}),
+            }
+          : {
+              name: trimmed,
+              type: selectedType,
+              ...(imagePublicUrl ? { image_url: imagePublicUrl } : {}),
+            };
 
       const node = await apiClient<NodeRecord>("/nodes", {
         method: "POST",
@@ -184,7 +239,10 @@ export function useNodeCreateController() {
 
   function hasAnyData(): boolean {
     return Boolean(
-      selectedTipo || tipoSearch.query.trim() || nodeName.trim()
+      selectedTipo ||
+        tipoSearch.query.trim() ||
+        nodeName.trim() ||
+        imagePublicUrl
     );
   }
 
@@ -213,6 +271,10 @@ export function useNodeCreateController() {
     canSubmitCreate,
     duplicate,
     tipoSearch,
+    imagePreviewUrl,
+    isUploadingImage,
+    selectImage,
+    removeImage,
     selectType,
     selectTipo,
     swapTipo,

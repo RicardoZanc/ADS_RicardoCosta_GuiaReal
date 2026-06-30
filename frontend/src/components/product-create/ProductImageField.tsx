@@ -9,6 +9,8 @@ interface ProductImageFieldProps {
   previewUrl: string | null;
   disabled?: boolean;
   isUploading?: boolean;
+  entityLabel?: string;
+  previewAlt?: string;
   onSelect: (file: File) => void;
   onRemove: () => void;
 }
@@ -17,11 +19,14 @@ export function ProductImageField({
   previewUrl,
   disabled = false,
   isUploading = false,
+  entityLabel = "produto",
+  previewAlt,
   onSelect,
   onRemove,
 }: ProductImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const isBusy = disabled || isUploading;
+  const altText = previewAlt ?? `Pré-visualização da imagem do ${entityLabel}`;
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -57,7 +62,7 @@ export function ProductImageField({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={previewUrl}
-              alt="Pré-visualização da imagem do produto"
+              alt={altText}
               className="size-full object-cover"
             />
             {isUploading && (

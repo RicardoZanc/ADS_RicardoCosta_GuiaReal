@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAllowedNodeImageUrl } from "../../lib/supabase";
 
 export const searchableNodeTypes = [
   "TIPO",
@@ -15,6 +16,13 @@ export const createNodeSchema = z.object({
     type: z.enum(searchableNodeTypes),
     parent_id: z.uuid("Parent ID inválido").optional(),
     wikidata_id: z.string().trim().max(50).optional(),
+    image_url: z
+      .url("URL da imagem inválida")
+      .optional()
+      .refine(
+        (url) => !url || isAllowedNodeImageUrl(url),
+        "URL da imagem deve ser do bucket de nós do Supabase"
+      ),
   }),
 });
 

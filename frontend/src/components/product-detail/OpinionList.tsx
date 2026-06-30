@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import type { CreateReplyFormData } from "@/lib/schemas/productDetail";
 import type { OpinionListItem, ReplyTarget } from "@/lib/types/products";
 import { StaggerItem, StaggerList } from "@/components/motion/StaggerList";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { UserAvatar } from "@/components/profile/UserAvatar";
 import { UserLink } from "@/components/profile/UserLink";
 import { ReplyComposer } from "./ReplyComposer";
 import { ThreadReplyNode } from "./ThreadReplyNode";
@@ -99,73 +101,88 @@ function OpinionCard({
       whileHover={prefersReducedMotion ? undefined : { x: 2 }}
       className="min-w-0 overflow-x-hidden rounded-xl border border-border/15 bg-card/50 p-4 transition-colors hover:border-accent/20 hover:bg-card hover:shadow-[var(--shadow-card)]"
     >
-      <article>
-        <p className="text-comment whitespace-pre-wrap text-foreground/90">
-          {opinion.content}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <p className="text-small text-muted">
-            <UserLink username={opinion.author.username} /> ·{" "}
-            {formatDate(opinion.created_at)}
-          </p>
-          <VoteControls
-            cachedUpvotes={opinion.cached_upvotes}
-            userVote={opinion.user_vote}
-            disabled={isVoting}
-            onLike={() => onVoteOpinion(opinion.id)}
-            onDislike={() => onDislikeOpinion(opinion.id)}
-          />
-          {canReport ? (
-            <ReportDialog targetType="opinion" targetId={opinion.id} />
-          ) : null}
-        </div>
-      </article>
-
-      {isRootReplyActive ? (
-        <ReplyComposer
-          register={replyRegister}
-          errors={replyErrors}
-          isSubmitting={isSubmittingReply}
-          onSubmit={onSubmitReply}
-          onCancel={onCancelReply}
-        />
-      ) : (
-        <div className="mt-3">
-          <Button
-            type="button"
-            variant="ghost"
+      <div className="flex gap-3">
+        <Link
+          href={`/users/${encodeURIComponent(opinion.author.username)}`}
+          className="shrink-0"
+        >
+          <UserAvatar
+            username={opinion.author.username}
+            avatarUrl={opinion.author.avatar_url}
             size="sm"
-            onClick={() => onStartReply(opinion.id)}
-          >
-            Responder
-          </Button>
-        </div>
-      )}
+          />
+        </Link>
 
-      {opinion.replies.length > 0 && (
-        <ul className="mt-4 min-w-0 space-y-3 overflow-x-hidden border-t border-border/15 pt-4">
-          {opinion.replies.map((reply) => (
-            <ThreadReplyNode
-              key={reply.id}
-              reply={reply}
-              opinionId={opinion.id}
-              depth={1}
-              replyTarget={replyTarget}
-              isSubmittingReply={isSubmittingReply}
-              votingTargetId={votingTargetId}
-              collapsedIds={collapsedIds}
-              replyRegister={replyRegister}
-              replyErrors={replyErrors}
-              onStartReply={onStartReply}
-              onCancelReply={onCancelReply}
-              onSubmitReply={onSubmitReply}
-              onToggleCollapse={onToggleCollapse}
-              onVoteThread={onVoteThread}
-              onDislikeThread={onDislikeThread}
+        <div className="min-w-0 flex-1">
+          <article>
+            <p className="text-comment whitespace-pre-wrap text-foreground/90">
+              {opinion.content}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <p className="text-small text-muted">
+                <UserLink username={opinion.author.username} /> ·{" "}
+                {formatDate(opinion.created_at)}
+              </p>
+              <VoteControls
+                cachedUpvotes={opinion.cached_upvotes}
+                userVote={opinion.user_vote}
+                disabled={isVoting}
+                onLike={() => onVoteOpinion(opinion.id)}
+                onDislike={() => onDislikeOpinion(opinion.id)}
+              />
+              {canReport ? (
+                <ReportDialog targetType="opinion" targetId={opinion.id} />
+              ) : null}
+            </div>
+          </article>
+
+          {isRootReplyActive ? (
+            <ReplyComposer
+              register={replyRegister}
+              errors={replyErrors}
+              isSubmitting={isSubmittingReply}
+              onSubmit={onSubmitReply}
+              onCancel={onCancelReply}
             />
-          ))}
-        </ul>
-      )}
+          ) : (
+            <div className="mt-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onStartReply(opinion.id)}
+              >
+                Responder
+              </Button>
+            </div>
+          )}
+
+          {opinion.replies.length > 0 && (
+            <ul className="mt-4 min-w-0 space-y-3 overflow-x-hidden border-t border-border/15 pt-4">
+              {opinion.replies.map((reply) => (
+                <ThreadReplyNode
+                  key={reply.id}
+                  reply={reply}
+                  opinionId={opinion.id}
+                  depth={1}
+                  replyTarget={replyTarget}
+                  isSubmittingReply={isSubmittingReply}
+                  votingTargetId={votingTargetId}
+                  collapsedIds={collapsedIds}
+                  replyRegister={replyRegister}
+                  replyErrors={replyErrors}
+                  onStartReply={onStartReply}
+                  onCancelReply={onCancelReply}
+                  onSubmitReply={onSubmitReply}
+                  onToggleCollapse={onToggleCollapse}
+                  onVoteThread={onVoteThread}
+                  onDislikeThread={onDislikeThread}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }

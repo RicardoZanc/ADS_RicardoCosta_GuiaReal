@@ -30,6 +30,7 @@ type NodeSearchRow = {
   type: node_type;
   parent_id: string | null;
   wikidata_id: string | null;
+  image_url: string | null;
   created_at: Date | null;
 };
 
@@ -97,6 +98,7 @@ const getById = async (id: string) => {
     name: node.name,
     type: node.type,
     wikidata_id: node.wikidata_id,
+    image_url: node.image_url,
     created_at: toIsoString(node.created_at),
     context,
     opinionCount,
@@ -145,6 +147,7 @@ const create = async (input: CreateNodeInput) => {
       data: {
         ...data,
         type: data.type as node_type,
+        image_url: input.image_url,
       },
       select: {
         id: true,
@@ -152,6 +155,7 @@ const create = async (input: CreateNodeInput) => {
         type: true,
         parent_id: true,
         wikidata_id: true,
+        image_url: true,
         created_at: true,
       },
     });
@@ -189,6 +193,7 @@ const update = async (id: string, name: string) => {
         type: true,
         parent_id: true,
         wikidata_id: true,
+        image_url: true,
         created_at: true,
       },
     });
@@ -234,7 +239,7 @@ const search = async (query: ResolvedNodeSearchQuery) => {
       WHERE ${whereClause}
     `,
     prisma.$queryRaw<NodeSearchRow[]>`
-      SELECT id, name, type, parent_id, wikidata_id, created_at
+      SELECT id, name, type, parent_id, wikidata_id, image_url, created_at
       FROM nodes
       WHERE ${whereClause}
       ORDER BY ${orderClause}

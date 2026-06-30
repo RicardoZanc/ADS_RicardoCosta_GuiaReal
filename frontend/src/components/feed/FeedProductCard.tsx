@@ -93,20 +93,30 @@ function ProductFeedCardContent({ item }: FeedProductCardProps) {
 
 function NodeFeedCardContent({ item }: FeedProductCardProps) {
   const typeLabel = getNodeTypeLabelForItem(item);
+  const imageInitials = item.name.slice(0, 2).toUpperCase();
 
   return (
     <Card className="h-full border-border/15 group-hover:border-accent/30 group-hover:shadow-lg">
       <CardHeader className="pb-3">
         <div className="flex gap-4">
-          <div
-            className={cn(
-              "flex size-16 shrink-0 items-center justify-center rounded-lg",
-              "border border-border/15 bg-muted/10 text-small font-medium text-muted"
-            )}
-            aria-hidden
-          >
-            {item.name.slice(0, 2).toUpperCase()}
-          </div>
+          {item.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.image_url}
+              alt={item.name}
+              className="size-16 shrink-0 rounded-lg border border-border/15 object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div
+              className={cn(
+                "flex size-16 shrink-0 items-center justify-center rounded-lg",
+                "border border-border/15 bg-muted/10 text-small font-medium text-muted"
+              )}
+              aria-hidden
+            >
+              {imageInitials}
+            </div>
+          )}
           <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
             <CardTitle className="text-product-name transition-colors group-hover:text-accent">
               {item.name}

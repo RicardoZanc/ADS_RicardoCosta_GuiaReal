@@ -65,6 +65,7 @@ export interface ProductDetailResponse {
 export interface OpinionAuthor {
   id: string;
   username: string;
+  avatar_url: string | null;
 }
 
 export type UserVote = 1 | -1 | null;

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { uploadsController } from "./uploads.controller";
 import {
+  createNodeImageUploadSchema,
   createProductImageUploadSchema,
   createProfileImageUploadSchema,
 } from "./uploads.schema";
@@ -21,6 +22,13 @@ uploadsRoutes.post(
   authenticateJwt,
   validate(createProfileImageUploadSchema),
   uploadsController.createProfileImageUpload
+);
+
+uploadsRoutes.post(
+  "/node-image",
+  authenticateJwt,
+  validate(createNodeImageUploadSchema),
+  uploadsController.createNodeImageUpload
 );
 
 export { uploadsRoutes };

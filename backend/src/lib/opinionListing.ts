@@ -14,6 +14,7 @@ type OpinionPageRow = {
   score: number;
   author_id: string;
   username: string;
+  author_avatar_url: string | null;
   reports_locked: boolean;
 };
 
@@ -25,7 +26,7 @@ type ThreadRow = {
   created_at: Date | null;
   cached_upvotes: number | null;
   reports_locked: boolean;
-  users: { id: string; username: string };
+  users: { id: string; username: string; avatar_url: string | null };
 };
 
 export type UserVote = 1 | -1 | null;
@@ -34,7 +35,7 @@ export type OpinionReply = {
   id: string;
   content: string;
   created_at: string;
-  author: { id: string; username: string };
+  author: { id: string; username: string; avatar_url: string | null };
   cached_upvotes: number;
   user_vote: UserVote;
   reports_locked: boolean;
@@ -46,7 +47,7 @@ export type OpinionListItem = {
   title: string | null;
   content: string;
   created_at: string;
-  author: { id: string; username: string };
+  author: { id: string; username: string; avatar_url: string | null };
   cached_upvotes: number;
   user_vote: UserVote;
   score: number;
@@ -81,6 +82,7 @@ function mapThreadToReply(thread: ThreadRow): OpinionReply {
     author: {
       id: thread.users.id,
       username: thread.users.username,
+      avatar_url: thread.users.avatar_url,
     },
     cached_upvotes: thread.cached_upvotes ?? 0,
     user_vote: null,
@@ -194,6 +196,7 @@ export async function listOpinionsPage({
         o.created_at,
         u.id AS author_id,
         u.username,
+        u.avatar_url AS author_avatar_url,
         COALESCE(o.cached_upvotes, 0)::int AS cached_upvotes,
         o.reports_locked,
         (
@@ -209,7 +212,7 @@ export async function listOpinionsPage({
       INNER JOIN users u ON u.id = o.user_id
       LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id AND dt.is_hidden = false
       WHERE ${whereClause} AND o.is_hidden = false
-      GROUP BY o.id, u.id, u.username
+      GROUP BY o.id, u.id, u.username, u.avatar_url
       ORDER BY
         has_replies DESC,
         score DESC,
@@ -238,7 +241,9 @@ export async function listOpinionsPage({
             created_at: true,
             cached_upvotes: true,
             reports_locked: true,
-            users: { select: { id: true, username: true } },
+            users: {
+              select: { id: true, username: true, avatar_url: true },
+            },
           },
         })
       : [];
@@ -291,7 +296,11 @@ export async function listOpinionsPage({
       title: row.title,
       content: row.content,
       created_at: toIsoString(row.created_at),
-      author: { id: row.author_id, username: row.username },
+      author: {
+        id: row.author_id,
+        username: row.username,
+        avatar_url: row.author_avatar_url,
+      },
       cached_upvotes: row.cached_upvotes,
       user_vote: votesByOpinionId.get(row.id) ?? null,
       score: row.score,
