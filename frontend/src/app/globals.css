@@ -225,4 +225,22 @@ body {
     line-height: 1.65;
     letter-spacing: 0.012em;
   }
+
+  .evidence-highlight {
+    animation: evidence-highlight-pulse 3s ease-out;
+  }
+}
+
+@keyframes evidence-highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent);
+  }
+
+  20% {
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 45%, transparent);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent);
+  }
 }

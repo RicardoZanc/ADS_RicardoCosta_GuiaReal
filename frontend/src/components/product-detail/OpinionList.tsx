@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
@@ -47,6 +47,7 @@ interface OpinionListProps {
   votingTargetId: string | null;
   replyRegister: UseFormRegister<CreateReplyFormData>;
   replyErrors: FieldErrors<CreateReplyFormData>;
+  expandedThreadIds?: string[];
   onStartReply: (opinionId: string, parentInteractionId?: string) => void;
   onCancelReply: () => void;
   onSubmitReply: () => void;
@@ -98,8 +99,9 @@ function OpinionCard({
 
   return (
     <motion.div
+      id={`opinion-${opinion.id}`}
       whileHover={prefersReducedMotion ? undefined : { x: 2 }}
-      className="min-w-0 overflow-x-hidden rounded-xl border border-border/15 bg-card/50 p-4 transition-colors hover:border-accent/20 hover:bg-card hover:shadow-[var(--shadow-card)]"
+      className="min-w-0 scroll-mt-24 overflow-x-hidden rounded-xl border border-border/15 bg-card/50 p-4 transition-colors hover:border-accent/20 hover:bg-card hover:shadow-[var(--shadow-card)]"
     >
       <div className="flex gap-3">
         <Link
@@ -197,6 +199,7 @@ export function OpinionList({
   votingTargetId,
   replyRegister,
   replyErrors,
+  expandedThreadIds,
   onStartReply,
   onCancelReply,
   onSubmitReply,
@@ -206,6 +209,18 @@ export function OpinionList({
   onDislikeThread,
 }: OpinionListProps) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    if (!expandedThreadIds?.length) return;
+
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of expandedThreadIds) {
+        next.delete(id);
+      }
+      return next;
+    });
+  }, [expandedThreadIds]);
 
   const onToggleCollapse = useCallback((id: string) => {
     setCollapsedIds((prev) => {

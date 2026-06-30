@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams } from "next/navigation";
 import { useAuthGate } from "@/hooks/useAuthGate";
+import { useEvidenceHighlight } from "@/hooks/useEvidenceHighlight";
 import { fetchNodeDetail, fetchNodeOpinions } from "@/lib/nodes";
 import {
   createNodeOpinion,
@@ -159,6 +160,12 @@ export function useNodeDetailController() {
     // Recarrega opiniões ao trocar nó; refresh pós-escrita atualiza via refreshAfterWrite.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeId, node?.id]);
+
+  const { expandedThreadIds } = useEvidenceHighlight({
+    opinions,
+    setOpinions,
+    isLoadingOpinions,
+  });
 
   function loadMoreOpinions() {
     if (
@@ -357,5 +364,6 @@ export function useNodeDetailController() {
     onDislikeOpinion,
     onVoteThread,
     onDislikeThread,
+    expandedThreadIds,
   };
 }

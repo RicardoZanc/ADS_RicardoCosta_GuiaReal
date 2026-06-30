@@ -10,6 +10,7 @@ import { usersRoutes } from "../modules/users/users.routes";
 import { reportsRoutes } from "../modules/reports/reports.routes";
 import { adminRequestsRoutes } from "../modules/admin-requests/adminRequests.routes";
 import { changeRequestsRoutes } from "../modules/change-requests/changeRequests.routes";
+import { evidenceRoutes } from "../modules/evidence/evidence.routes";
 
 const apiRoutes = Router();
 
@@ -24,5 +25,6 @@ apiRoutes.use('/users', usersRoutes);
 apiRoutes.use('/reports', reportsRoutes);
 apiRoutes.use('/admin-requests', adminRequestsRoutes);
 apiRoutes.use('/change-requests', changeRequestsRoutes);
+apiRoutes.use('/evidence', evidenceRoutes);
 
 export { apiRoutes };

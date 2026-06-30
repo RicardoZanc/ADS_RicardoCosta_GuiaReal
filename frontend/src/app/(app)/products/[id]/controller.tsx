@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useAuthGate } from "@/hooks/useAuthGate";
+import { useEvidenceHighlight } from "@/hooks/useEvidenceHighlight";
 import {
   createNodeOpinion,
   createOpinionThread,
@@ -48,6 +49,7 @@ function getOpinionParams(
 
 export function useProductDetailController() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { requireAuth } = useAuthGate();
   const productId = typeof params.id === "string" ? params.id : "";
 
@@ -100,8 +102,20 @@ export function useProductDetailController() {
 
     try {
       const detail = await fetchProductDetail(productId);
+      const nodeIdFromUrl = searchParams.get("node_id");
+      let nextTabIndex = 0;
+
+      if (nodeIdFromUrl) {
+        const tabIndex = detail.discussionTabs.findIndex(
+          (tab) => tab.scope === "node" && tab.nodeId === nodeIdFromUrl
+        );
+        if (tabIndex >= 0) {
+          nextTabIndex = tabIndex;
+        }
+      }
+
       setProduct(detail);
-      setActiveTabIndex(0);
+      setActiveTabIndex(nextTabIndex);
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 404) {
         setNotFound(true);
@@ -113,7 +127,13 @@ export function useProductDetailController() {
     } finally {
       setIsLoadingProduct(false);
     }
-  }, [productId]);
+  }, [productId, searchParams]);
+
+  const { expandedThreadIds } = useEvidenceHighlight({
+    opinions,
+    setOpinions,
+    isLoadingOpinions,
+  });
 
   const loadOpinions = useCallback(
     async (targetPage: number, append: boolean) => {
@@ -403,5 +423,6 @@ export function useProductDetailController() {
     onDislikeOpinion,
     onVoteThread,
     onDislikeThread,
+    expandedThreadIds,
   };
 }

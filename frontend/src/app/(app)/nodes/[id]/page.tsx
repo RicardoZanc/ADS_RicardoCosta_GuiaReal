@@ -47,6 +47,7 @@ export default function NodeDetailPage() {
     onDislikeOpinion,
     onVoteThread,
     onDislikeThread,
+    expandedThreadIds,
   } = useNodeDetailController();
 
   if (isLoadingNode) {
@@ -129,6 +130,7 @@ export default function NodeDetailPage() {
               <>
                 <OpinionList
                   opinions={opinions}
+                  expandedThreadIds={expandedThreadIds}
                   replyTarget={replyTarget}
                   isSubmittingReply={isSubmittingReply}
                   votingTargetId={votingTargetId}

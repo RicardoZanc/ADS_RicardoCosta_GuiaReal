@@ -55,6 +55,7 @@ export default function ProductDetailPage() {
     onDislikeOpinion,
     onVoteThread,
     onDislikeThread,
+    expandedThreadIds,
   } = useProductDetailController();
 
   if (isLoadingProduct) {
@@ -129,6 +130,7 @@ export default function ProductDetailPage() {
               <>
                 <OpinionList
                   opinions={opinions}
+                  expandedThreadIds={expandedThreadIds}
                   replyTarget={replyTarget}
                   isSubmittingReply={isSubmittingReply}
                   votingTargetId={votingTargetId}

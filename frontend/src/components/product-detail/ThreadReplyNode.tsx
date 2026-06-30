@@ -80,7 +80,7 @@ export function ThreadReplyNode({
     currentUserId !== reply.author.id && !reply.reports_locked;
 
   return (
-    <li className={getThreadLevelClass(depth)}>
+    <li id={`thread-${reply.id}`} className={cn(getThreadLevelClass(depth), "scroll-mt-24")}>
       <div className="flex min-w-0 items-start gap-2">
         {hasChildren ? (
           <button
