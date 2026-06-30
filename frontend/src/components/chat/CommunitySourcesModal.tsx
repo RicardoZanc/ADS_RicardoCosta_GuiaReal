@@ -1,14 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Eyebrow } from "@/components/ui/eyebrow";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { EvidenceCarousel } from "@/components/chat/EvidenceCarousel";
 import { fetchEvidencePreview } from "@/lib/evidence";
 import type { EvidenceRef } from "@/lib/types/chats";
@@ -79,33 +72,31 @@ export function CommunitySourcesModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="top-1/2 max-h-[calc(100vh-2rem)] max-w-4xl -translate-y-1/2 gap-0 overflow-hidden border-border/15 p-0">
-        <DialogHeader className="space-y-3 px-6 pb-2 pt-6">
-          <Eyebrow size="sm">Comunidade</Eyebrow>
-          <DialogTitle className="text-h4">Fontes da resposta</DialogTitle>
-          <DialogDescription className="text-comment">
-            {factLabel
-              ? `Opiniões e comentários que sustentam: ${factLabel}`
-              : "Trechos da discussão usados como referência nesta resposta."}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        className="top-1/2 max-h-[calc(100vh-2rem)] max-w-3xl -translate-y-1/2 border-none bg-transparent p-4 shadow-none sm:p-6"
+        overlayClassName="bg-background/70 backdrop-blur-md"
+      >
+        <DialogTitle className="sr-only">Fontes da resposta</DialogTitle>
+        <DialogDescription className="sr-only">
+          {factLabel
+            ? `Opiniões e comentários que sustentam: ${factLabel}`
+            : "Trechos da discussão usados como referência nesta resposta."}
+        </DialogDescription>
 
-        <div className="px-4 pb-6 pt-2 sm:px-6">
-          {isLoading ? (
-            <div className="space-y-3 py-6">
-              <div className="skeleton-shimmer h-40 rounded-xl" />
-              <p className="text-center text-comment text-muted">
-                Carregando fontes...
-              </p>
-            </div>
-          ) : error ? (
-            <p className="py-10 text-center text-comment text-destructive">
-              {error}
+        {isLoading ? (
+          <div className="mx-auto w-full max-w-xl space-y-3">
+            <div className="skeleton-shimmer h-72 rounded-2xl shadow-[var(--shadow-card)]" />
+            <p className="text-center text-comment text-muted-foreground">
+              Carregando fontes...
             </p>
-          ) : (
-            <EvidenceCarousel items={previews} />
-          )}
-        </div>
+          </div>
+        ) : error ? (
+          <div className="mx-auto w-full max-w-xl rounded-2xl border border-border/20 bg-card px-6 py-10 text-center shadow-[var(--shadow-card)]">
+            <p className="text-comment text-destructive">{error}</p>
+          </div>
+        ) : (
+          <EvidenceCarousel items={previews} factLabel={factLabel} />
+        )}
       </DialogContent>
     </Dialog>
   );

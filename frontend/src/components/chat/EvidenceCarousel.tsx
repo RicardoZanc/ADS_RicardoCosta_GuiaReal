@@ -1,154 +1,157 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EvidencePreviewCard } from "@/components/chat/EvidencePreviewCard";
+import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { easeOut } from "@/lib/motion";
 import type { EvidencePreview } from "@/lib/types/evidence";
 import { cn } from "@/lib/utils";
 
-const CARD_GAP_PX = 20;
-
 interface EvidenceCarouselProps {
   items: EvidencePreview[];
+  factLabel?: string;
 }
 
-function getScrollStep(container: HTMLDivElement): number {
-  const firstItem = container.querySelector<HTMLElement>("[data-carousel-item]");
-  if (firstItem) {
-    return firstItem.offsetWidth + CARD_GAP_PX;
-  }
-  return 380;
-}
+const SLIDE_OFFSET = 48;
 
-export function EvidenceCarousel({ items }: EvidenceCarouselProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? SLIDE_OFFSET : -SLIDE_OFFSET,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -SLIDE_OFFSET : SLIDE_OFFSET,
+    opacity: 0,
+  }),
+};
+
+const reducedSlideVariants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+
+export function EvidenceCarousel({ items, factLabel }: EvidenceCarouselProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
 
-  const updateScrollState = useCallback(() => {
-    const container = scrollRef.current;
-    if (!container) return;
+  const showControls = items.length > 1;
+  const canGoPrev = activeIndex > 0;
+  const canGoNext = activeIndex < items.length - 1;
 
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    const maxScrollLeft = scrollWidth - clientWidth;
-    const step = getScrollStep(container);
-    const index = step > 0 ? Math.round(scrollLeft / step) : 0;
+  const goPrev = useCallback(() => {
+    setDirection(-1);
+    setActiveIndex((index) => Math.max(0, index - 1));
+  }, []);
 
-    setCanScrollLeft(scrollLeft > 4);
-    setCanScrollRight(scrollLeft < maxScrollLeft - 4);
-    setActiveIndex(Math.min(index, items.length - 1));
+  const goNext = useCallback(() => {
+    setDirection(1);
+    setActiveIndex((index) => Math.min(items.length - 1, index + 1));
   }, [items.length]);
 
   useEffect(() => {
-    const container = scrollRef.current;
-    if (!container || items.length === 0) return;
+    setActiveIndex(0);
+    setDirection(0);
+  }, [items]);
 
-    updateScrollState();
+  useEffect(() => {
+    if (!showControls) return;
 
-    const observer = new ResizeObserver(updateScrollState);
-    observer.observe(container);
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goPrev();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goNext();
+      }
+    }
 
-    return () => observer.disconnect();
-  }, [items.length, updateScrollState]);
-
-  const scroll = (direction: -1 | 1) => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    container.scrollBy({
-      left: direction * getScrollStep(container),
-      behavior: "smooth",
-    });
-  };
-
-  const showControls = items.length > 1;
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showControls, goPrev, goNext]);
 
   if (items.length === 0) {
     return (
-      <p className="px-2 py-10 text-center text-comment text-muted">
+      <p className="rounded-2xl border border-border/15 bg-card px-6 py-10 text-center text-comment text-muted shadow-[var(--shadow-card)]">
         Nenhuma fonte disponível para exibir.
       </p>
     );
   }
 
+  const preview = items[activeIndex];
+  const previewKey = `${preview.ref.source_type}-${preview.ref.source_id}`;
+
   return (
-    <div className="space-y-4">
-      {showControls ? (
-        <p className="text-center text-small text-muted">
-          {activeIndex + 1} de {items.length}
-        </p>
-      ) : null}
-
-      <div className="-mx-1 flex items-center gap-2 sm:gap-3">
-        <div className="flex w-10 shrink-0 items-center justify-center sm:w-11">
-          {showControls ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label="Fonte anterior"
-              disabled={!canScrollLeft}
-              onClick={() => scroll(-1)}
-              className="rounded-full border-border/40 bg-card shadow-sm"
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-          ) : null}
-        </div>
-
-        <div className="relative min-w-0 flex-1 overflow-hidden rounded-2xl">
-          {canScrollLeft && (
-            <div
-              className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-linear-to-r from-card via-card/80 to-transparent sm:w-16"
-              aria-hidden
-            />
-          )}
-          {canScrollRight && (
-            <div
-              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-linear-to-l from-card via-card/80 to-transparent sm:w-16"
-              aria-hidden
-            />
-          )}
-
-          <div
-            ref={scrollRef}
-            onScroll={updateScrollState}
+    <div className="flex w-full items-center justify-center gap-3 sm:gap-5">
+      <div className="flex w-10 shrink-0 items-center justify-center sm:w-11">
+        {showControls ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Fonte anterior"
+            disabled={!canGoPrev}
+            onClick={goPrev}
             className={cn(
-              "flex gap-5 overflow-x-auto scroll-smooth py-1",
-              "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              "size-10 rounded-full border-border/30 bg-card/95 shadow-md backdrop-blur-sm",
+              "hover:bg-card disabled:opacity-30"
             )}
           >
-            {items.map((preview) => (
-              <div
-                key={`${preview.ref.source_type}-${preview.ref.source_id}`}
-                data-carousel-item
-                className="w-[min(100%,22rem)] shrink-0 sm:w-[24rem]"
-              >
-                <div className="flex max-h-[min(70vh,32rem)] min-h-[18rem] flex-col">
-                  <EvidencePreviewCard preview={preview} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+            <ChevronLeft className="size-5" />
+          </Button>
+        ) : null}
+      </div>
 
-        <div className="flex w-10 shrink-0 items-center justify-center sm:w-11">
-          {showControls ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label="Próxima fonte"
-              disabled={!canScrollRight}
-              onClick={() => scroll(1)}
-              className="rounded-full border-border/40 bg-card shadow-sm"
+      <div className="min-w-0 flex-1">
+        {showControls ? (
+          <p className="mb-3 text-center text-small text-muted-foreground">
+            {activeIndex + 1} de {items.length}
+          </p>
+        ) : null}
+
+        <div className="overflow-hidden">
+          <AnimatePresence mode="wait" custom={direction} initial={false}>
+            <motion.div
+              key={previewKey}
+              custom={direction}
+              variants={prefersReducedMotion ? reducedSlideVariants : slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={prefersReducedMotion ? { duration: 0.01 } : easeOut}
             >
-              <ChevronRight className="size-4" />
-            </Button>
-          ) : null}
+              <EvidencePreviewCard preview={preview} factLabel={factLabel} />
+            </motion.div>
+          </AnimatePresence>
         </div>
+      </div>
+
+      <div className="flex w-10 shrink-0 items-center justify-center sm:w-11">
+        {showControls ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Próxima fonte"
+            disabled={!canGoNext}
+            onClick={goNext}
+            className={cn(
+              "size-10 rounded-full border-border/30 bg-card/95 shadow-md backdrop-blur-sm",
+              "hover:bg-card disabled:opacity-30"
+            )}
+          >
+            <ChevronRight className="size-5" />
+          </Button>
+        ) : null}
       </div>
     </div>
   );
