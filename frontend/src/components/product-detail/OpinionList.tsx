@@ -120,7 +120,10 @@ function OpinionCard({
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <p className="text-small text-muted">
-                <UserLink username={opinion.author.username} /> ·{" "}
+                <UserLink
+                  username={opinion.author.username}
+                  isAdmin={opinion.author.is_admin}
+                /> ·{" "}
                 {formatDate(opinion.created_at)}
               </p>
               <VoteControls

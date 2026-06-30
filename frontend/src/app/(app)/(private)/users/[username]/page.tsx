@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { AdminBadge } from "@/components/profile/AdminBadge";
 import { UserProfileView } from "@/components/profile/UserProfileView";
 import { useUserProfileController } from "./controller";
 
@@ -28,6 +29,11 @@ export default function UserProfilePage() {
     handleSelectAvatar,
     handleRemoveAvatar,
     handleInterestsUpdated,
+    adminRequests,
+    adminEligibility,
+    isLoadingAdminRequests,
+    showAdminRequestSection,
+    handleAdminRequestCreated,
   } = useUserProfileController();
 
   if (isLoadingProfile) {
@@ -63,7 +69,12 @@ export default function UserProfilePage() {
 
       <PageHeader
         eyebrow="Perfil"
-        title={`@${profile.username}`}
+        title={
+          <span className="inline-flex items-center gap-2.5">
+            @{profile.username}
+            {profile.is_admin ? <AdminBadge size="md" /> : null}
+          </span>
+        }
         className="lg:mb-10"
       />
 
@@ -76,6 +87,13 @@ export default function UserProfilePage() {
         onSelectAvatar={isOwnProfile ? handleSelectAvatar : undefined}
         onRemoveAvatar={isOwnProfile ? handleRemoveAvatar : undefined}
         onInterestsUpdated={isOwnProfile ? handleInterestsUpdated : undefined}
+        showAdminRequestSection={showAdminRequestSection}
+        adminRequests={adminRequests}
+        adminEligibility={adminEligibility}
+        isLoadingAdminRequests={isLoadingAdminRequests}
+        onAdminRequestCreated={
+          showAdminRequestSection ? handleAdminRequestCreated : undefined
+        }
       />
 
       {!isLoadingInteractions && hasMoreInteractions && (

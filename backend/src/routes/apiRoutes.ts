@@ -8,6 +8,7 @@ import { chatsRoutes } from "../modules/chats/chats.routes";
 import { uploadsRoutes } from "../modules/uploads/uploads.routes";
 import { usersRoutes } from "../modules/users/users.routes";
 import { reportsRoutes } from "../modules/reports/reports.routes";
+import { adminRequestsRoutes } from "../modules/admin-requests/adminRequests.routes";
 
 const apiRoutes = Router();
 
@@ -20,5 +21,6 @@ apiRoutes.use('/chats', chatsRoutes);
 apiRoutes.use('/uploads', uploadsRoutes);
 apiRoutes.use('/users', usersRoutes);
 apiRoutes.use('/reports', reportsRoutes);
+apiRoutes.use('/admin-requests', adminRequestsRoutes);
 
 export { apiRoutes };

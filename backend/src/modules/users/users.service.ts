@@ -30,6 +30,7 @@ type UserProfile = {
   reputation_score: number;
   avatar_url: string | null;
   created_at: string;
+  is_admin: boolean;
   email?: string | null;
   interests: UserInterest[];
 };
@@ -115,6 +116,7 @@ function mapProfile(
     reputation_score: number | null;
     avatar_url: string | null;
     created_at: Date | null;
+    is_admin: boolean;
   },
   viewerId: string,
   interests: UserInterest[]
@@ -125,6 +127,7 @@ function mapProfile(
     reputation_score: user.reputation_score ?? 0,
     avatar_url: user.avatar_url,
     created_at: toIsoString(user.created_at),
+    is_admin: user.is_admin,
     interests,
   };
 
@@ -149,6 +152,7 @@ async function findActiveUserByUsername(username: string) {
       reputation_score: true,
       avatar_url: true,
       created_at: true,
+      is_admin: true,
     },
   });
 
@@ -315,6 +319,7 @@ const updateMe = async (
       reputation_score: true,
       avatar_url: true,
       created_at: true,
+      is_admin: true,
     },
   });
 

@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SectionHeader } from "@/components/ui/section-header";
 import { UserLink } from "@/components/profile/UserLink";
-import { useRequireAdmin } from "@/hooks/useRequireAdmin";
 import {
   fetchAdminReports,
   updateAdminReport,
@@ -32,7 +30,6 @@ function reasonLabel(reason: string): string {
 }
 
 export default function AdminReportsPage() {
-  const { isReady, isAdmin } = useRequireAdmin();
   const [reports, setReports] = useState<AdminReportItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "ALL">(
     "PENDING"
@@ -64,9 +61,8 @@ export default function AdminReportsPage() {
   }, [statusFilter]);
 
   useEffect(() => {
-    if (!isReady || !isAdmin) return;
     void loadReports();
-  }, [isReady, isAdmin, loadReports]);
+  }, [loadReports]);
 
   async function handleUpdate(
     reportId: string,
@@ -87,23 +83,9 @@ export default function AdminReportsPage() {
     }
   }
 
-  if (!isReady || !isAdmin) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <div className="skeleton-shimmer h-8 w-32 rounded-lg" aria-hidden />
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
-      <SectionHeader
-        eyebrow="Administração"
-        title="Moderação de denúncias"
-        description="Analise denúncias de opiniões e comentários da comunidade."
-      />
-
-      <div className="mt-6 flex flex-wrap gap-2">
+    <>
+      <div className="flex flex-wrap gap-2">
         {(["ALL", "PENDING", "UNDER_REVIEW", "RESOLVED", "REJECTED"] as const).map(
           (status) => (
             <Button
@@ -213,6 +195,6 @@ export default function AdminReportsPage() {
           ))}
         </ul>
       )}
-    </div>
+    </>
   );
 }

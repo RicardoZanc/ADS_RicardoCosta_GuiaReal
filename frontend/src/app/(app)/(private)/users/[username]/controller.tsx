@@ -11,7 +11,13 @@ import {
   fetchUserProfile,
   updateUserAvatar,
 } from "@/lib/users";
+import { fetchMyAdminRequests } from "@/lib/adminRequests";
+import { refreshSession } from "@/lib/api";
 import type { UserInteraction, UserInterest, UserProfile } from "@/lib/types/users";
+import type {
+  AdminRequestEligibility,
+  AdminRequestItem,
+} from "@/lib/types/adminRequests";
 
 function revokeBlobUrl(url: string | null) {
   if (url?.startsWith("blob:")) {
@@ -35,8 +41,14 @@ export function useUserProfileController() {
     useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [adminRequests, setAdminRequests] = useState<AdminRequestItem[]>([]);
+  const [adminEligibility, setAdminEligibility] =
+    useState<AdminRequestEligibility | null>(null);
+  const [isLoadingAdminRequests, setIsLoadingAdminRequests] = useState(false);
 
   const isOwnProfile = authUser?.username === profile?.username;
+  const showAdminRequestSection =
+    isOwnProfile && authUser !== null && !authUser.is_admin;
 
   useEffect(() => {
     return () => {
@@ -103,6 +115,47 @@ export function useUserProfileController() {
   useEffect(() => {
     void loadInteractions(1, false);
   }, [loadInteractions]);
+
+  const loadAdminRequests = useCallback(async () => {
+    if (!showAdminRequestSection) {
+      setAdminRequests([]);
+      setAdminEligibility(null);
+      return;
+    }
+
+    setIsLoadingAdminRequests(true);
+    try {
+      const data = await fetchMyAdminRequests();
+      setAdminRequests(data.requests);
+      setAdminEligibility(data.eligibility);
+
+      const hasApproved = data.requests.some(
+        (request) => request.status === "APPROVED"
+      );
+      if (hasApproved && !authUser?.is_admin) {
+        await refreshSession();
+      }
+    } catch (error) {
+      notifyApiError(error);
+      setAdminRequests([]);
+      setAdminEligibility(null);
+    } finally {
+      setIsLoadingAdminRequests(false);
+    }
+  }, [authUser?.is_admin, showAdminRequestSection]);
+
+  useEffect(() => {
+    void loadAdminRequests();
+  }, [loadAdminRequests]);
+
+  const handleAdminRequestCreated = useCallback((request: AdminRequestItem) => {
+    setAdminRequests((prev) => [request, ...prev]);
+    setAdminEligibility((prev) =>
+      prev
+        ? { ...prev, can_request: false, reason: "PENDING_REQUEST" }
+        : prev
+    );
+  }, []);
 
   const hasMoreInteractions = page < totalPages;
 
@@ -181,5 +234,10 @@ export function useUserProfileController() {
     handleSelectAvatar,
     handleRemoveAvatar,
     handleInterestsUpdated,
+    adminRequests,
+    adminEligibility,
+    isLoadingAdminRequests,
+    showAdminRequestSection,
+    handleAdminRequestCreated,
   };
 }

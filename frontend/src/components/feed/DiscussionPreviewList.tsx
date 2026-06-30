@@ -32,7 +32,11 @@ export function DiscussionPreviewList({ previews }: DiscussionPreviewListProps) 
             {truncateContent(preview.content)}
           </p>
           <p className="mt-1.5">
-            <UserLink username={preview.author.username} nested />
+            <UserLink
+              username={preview.author.username}
+              isAdmin={preview.author.is_admin}
+              nested
+            />
           </p>
         </li>
       ))}

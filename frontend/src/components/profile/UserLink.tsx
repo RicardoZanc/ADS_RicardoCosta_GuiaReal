@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { cn } from "@/lib/utils";
+import { AdminBadge } from "@/components/profile/AdminBadge";
 
 interface UserLinkProps {
   username: string;
+  isAdmin?: boolean;
   className?: string;
   onClick?: (event: MouseEvent<HTMLElement>) => void;
   /** Use when rendered inside another interactive container (e.g. feed card). */
@@ -14,10 +16,26 @@ interface UserLinkProps {
 }
 
 const linkClassName =
-  "text-small text-muted transition-colors hover:text-accent";
+  "inline-flex items-center gap-1 text-small text-muted transition-colors hover:text-accent";
+
+function UsernameContent({
+  username,
+  isAdmin,
+}: {
+  username: string;
+  isAdmin?: boolean;
+}) {
+  return (
+    <>
+      @{username}
+      {isAdmin ? <AdminBadge /> : null}
+    </>
+  );
+}
 
 export function UserLink({
   username,
+  isAdmin = false,
   className,
   onClick,
   nested = false,
@@ -46,14 +64,14 @@ export function UserLink({
           }
         }}
       >
-        @{username}
+        <UsernameContent username={username} isAdmin={isAdmin} />
       </span>
     );
   }
 
   return (
     <Link href={href} className={classes} onClick={onClick}>
-      @{username}
+      <UsernameContent username={username} isAdmin={isAdmin} />
     </Link>
   );
 }

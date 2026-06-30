@@ -66,6 +66,7 @@ export interface OpinionAuthor {
   id: string;
   username: string;
   avatar_url: string | null;
+  is_admin: boolean;
 }
 
 export type UserVote = 1 | -1 | null;

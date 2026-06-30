@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   eyebrow: string;
-  title: string;
+  title: React.ReactNode;
   description?: string;
   className?: string;
   centered?: boolean;

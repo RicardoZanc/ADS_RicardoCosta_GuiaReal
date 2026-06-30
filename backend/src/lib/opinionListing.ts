@@ -15,6 +15,7 @@ type OpinionPageRow = {
   author_id: string;
   username: string;
   author_avatar_url: string | null;
+  author_is_admin: boolean;
   reports_locked: boolean;
 };
 
@@ -26,7 +27,7 @@ type ThreadRow = {
   created_at: Date | null;
   cached_upvotes: number | null;
   reports_locked: boolean;
-  users: { id: string; username: string; avatar_url: string | null };
+  users: { id: string; username: string; avatar_url: string | null; is_admin: boolean };
 };
 
 export type UserVote = 1 | -1 | null;
@@ -35,7 +36,7 @@ export type OpinionReply = {
   id: string;
   content: string;
   created_at: string;
-  author: { id: string; username: string; avatar_url: string | null };
+  author: { id: string; username: string; avatar_url: string | null; is_admin: boolean };
   cached_upvotes: number;
   user_vote: UserVote;
   reports_locked: boolean;
@@ -47,7 +48,7 @@ export type OpinionListItem = {
   title: string | null;
   content: string;
   created_at: string;
-  author: { id: string; username: string; avatar_url: string | null };
+  author: { id: string; username: string; avatar_url: string | null; is_admin: boolean };
   cached_upvotes: number;
   user_vote: UserVote;
   score: number;
@@ -83,6 +84,7 @@ function mapThreadToReply(thread: ThreadRow): OpinionReply {
       id: thread.users.id,
       username: thread.users.username,
       avatar_url: thread.users.avatar_url,
+      is_admin: thread.users.is_admin,
     },
     cached_upvotes: thread.cached_upvotes ?? 0,
     user_vote: null,
@@ -197,6 +199,7 @@ export async function listOpinionsPage({
         u.id AS author_id,
         u.username,
         u.avatar_url AS author_avatar_url,
+        u.is_admin AS author_is_admin,
         COALESCE(o.cached_upvotes, 0)::int AS cached_upvotes,
         o.reports_locked,
         (
@@ -212,7 +215,7 @@ export async function listOpinionsPage({
       INNER JOIN users u ON u.id = o.user_id
       LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id AND dt.is_hidden = false
       WHERE ${whereClause} AND o.is_hidden = false
-      GROUP BY o.id, u.id, u.username, u.avatar_url
+      GROUP BY o.id, u.id, u.username, u.avatar_url, u.is_admin
       ORDER BY
         has_replies DESC,
         score DESC,
@@ -242,7 +245,7 @@ export async function listOpinionsPage({
             cached_upvotes: true,
             reports_locked: true,
             users: {
-              select: { id: true, username: true, avatar_url: true },
+              select: { id: true, username: true, avatar_url: true, is_admin: true },
             },
           },
         })
@@ -300,6 +303,7 @@ export async function listOpinionsPage({
         id: row.author_id,
         username: row.username,
         avatar_url: row.author_avatar_url,
+        is_admin: row.author_is_admin,
       },
       cached_upvotes: row.cached_upvotes,
       user_vote: votesByOpinionId.get(row.id) ?? null,

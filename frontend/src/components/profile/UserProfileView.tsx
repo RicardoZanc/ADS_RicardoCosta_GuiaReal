@@ -6,6 +6,11 @@ import { UserAvatarUploadControls } from "@/components/profile/UserAvatarUploadC
 import { UserInteractionList } from "@/components/profile/UserInteractionList";
 import { UserInterestBadges } from "@/components/interests/UserInterestBadges";
 import { InterestPickerDialog } from "@/components/interests/InterestPickerDialog";
+import { AdminRequestSection } from "@/components/profile/AdminRequestSection";
+import type {
+  AdminRequestEligibility,
+  AdminRequestItem,
+} from "@/lib/types/adminRequests";
 
 interface UserProfileViewProps {
   profile: UserProfile;
@@ -16,6 +21,11 @@ interface UserProfileViewProps {
   onSelectAvatar?: (file: File) => void;
   onRemoveAvatar?: () => void;
   onInterestsUpdated?: (interests: UserInterest[]) => void;
+  showAdminRequestSection?: boolean;
+  adminRequests?: AdminRequestItem[];
+  adminEligibility?: AdminRequestEligibility | null;
+  isLoadingAdminRequests?: boolean;
+  onAdminRequestCreated?: (request: AdminRequestItem) => void;
 }
 
 export function UserProfileView({
@@ -27,6 +37,11 @@ export function UserProfileView({
   onSelectAvatar,
   onRemoveAvatar,
   onInterestsUpdated,
+  showAdminRequestSection = false,
+  adminRequests = [],
+  adminEligibility = null,
+  isLoadingAdminRequests = false,
+  onAdminRequestCreated,
 }: UserProfileViewProps) {
   const displayAvatarUrl = avatarPreviewUrl ?? profile.avatar_url;
   const canEditAvatar =
@@ -88,6 +103,19 @@ export function UserProfileView({
           </div>
         </section>
       </FadeIn>
+
+      {showAdminRequestSection ? (
+        isLoadingAdminRequests || !adminEligibility ? (
+          <div className="skeleton-shimmer h-32 rounded-2xl border border-border/15" />
+        ) : onAdminRequestCreated ? (
+          <AdminRequestSection
+            requests={adminRequests}
+            eligibility={adminEligibility}
+            reputationScore={profile.reputation_score}
+            onRequestCreated={onAdminRequestCreated}
+          />
+        ) : null
+      ) : null}
 
       <section>
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 lg:mb-5">

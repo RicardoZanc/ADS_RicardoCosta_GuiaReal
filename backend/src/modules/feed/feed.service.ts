@@ -28,7 +28,7 @@ type FeedDiscussionPreview = {
   id: string;
   content: string;
   created_at: string;
-  author: { id: string; username: string };
+  author: { id: string; username: string; is_admin: boolean };
 };
 
 type FeedItem = {
@@ -71,13 +71,13 @@ type OpinionWithThreads = {
   id: string;
   content: string;
   created_at: Date | null;
-  users: { id: string; username: string };
+  users: { id: string; username: string; is_admin: boolean };
   discussion_threads: {
     id: string;
     content: string;
     created_at: Date | null;
     parent_interaction_id: string | null;
-    users: { id: string; username: string };
+    users: { id: string; username: string; is_admin: boolean };
   }[];
 };
 
@@ -173,7 +173,11 @@ function buildDiscussionPreviews(
       id: thread.id,
       content: thread.content,
       created_at: toIsoString(thread.created_at),
-      author: { id: thread.author.id, username: thread.author.username },
+      author: {
+        id: thread.author.id,
+        username: thread.author.username,
+        is_admin: thread.author.is_admin,
+      },
     });
     usedIds.add(thread.id);
   }
@@ -192,7 +196,11 @@ function buildDiscussionPreviews(
         id: opinion.id,
         content: opinion.content,
         created_at: toIsoString(opinion.created_at),
-        author: { id: opinion.users.id, username: opinion.users.username },
+        author: {
+          id: opinion.users.id,
+          username: opinion.users.username,
+          is_admin: opinion.users.is_admin,
+        },
       });
       usedIds.add(opinion.id);
     }
@@ -232,14 +240,14 @@ const opinionSelect = {
   id: true,
   content: true,
   created_at: true,
-  users: { select: { id: true, username: true } },
+  users: { select: { id: true, username: true, is_admin: true } },
   discussion_threads: {
     select: {
       id: true,
       content: true,
       created_at: true,
       parent_interaction_id: true,
-      users: { select: { id: true, username: true } },
+      users: { select: { id: true, username: true, is_admin: true } },
     },
   },
 } as const;

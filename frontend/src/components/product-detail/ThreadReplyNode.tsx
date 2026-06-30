@@ -122,7 +122,10 @@ export function ThreadReplyNode({
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <p className="text-small text-muted">
-              <UserLink username={reply.author.username} /> ·{" "}
+              <UserLink
+                username={reply.author.username}
+                isAdmin={reply.author.is_admin}
+              /> ·{" "}
               {formatDate(reply.created_at)}
             </p>
             <VoteControls

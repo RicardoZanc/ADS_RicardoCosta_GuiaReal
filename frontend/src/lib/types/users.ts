@@ -11,6 +11,7 @@ export type UserProfile = {
   reputation_score: number;
   avatar_url: string | null;
   created_at: string;
+  is_admin: boolean;
   email?: string | null;
   interests: UserInterest[];
 };

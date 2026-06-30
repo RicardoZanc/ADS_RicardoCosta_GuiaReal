@@ -16,6 +16,7 @@ export interface FeedNode {
 export interface FeedDiscussionAuthor {
   id: string;
   username: string;
+  is_admin: boolean;
 }
 
 export interface FeedDiscussionPreview {
