@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { technicalFactsController } from "./technical_facts.controller";
 import {
+  addEvidenceSchema,
   createTechnicalFactSchema,
   listByEvidenceSchema,
   listPendingQueueSchema,
@@ -44,6 +45,12 @@ technicalFactsRoutes.patch(
   "/:id",
   validate(updateTechnicalFactSchema),
   technicalFactsController.updateFact
+);
+
+technicalFactsRoutes.post(
+  "/:id/evidence",
+  validate(addEvidenceSchema),
+  technicalFactsController.addEvidence
 );
 
 technicalFactsRoutes.delete(

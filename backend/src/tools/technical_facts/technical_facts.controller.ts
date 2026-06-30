@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { technicalFactsService } from "./technical_facts.service";
 import type {
+  AddEvidenceInput,
   CreateTechnicalFactInput,
   ListByEvidenceParams,
   ListPendingQueueQuery,
+  ListTechnicalFactsQuery,
   MarkQueueItemProcessedParams,
   UpdateTechnicalFactInput,
 } from "./technical_facts.schema";
@@ -67,14 +69,17 @@ const technicalFactsController = {
   },
 
   listByNode: async (req: Request, res: Response) => {
-    const nodeId = req.query.node_id as string;
+    const query = req.query as unknown as ListTechnicalFactsQuery;
 
-    logger.info("HTTP GET /tool/technical-facts - Iniciado", { nodeId });
+    logger.info("HTTP GET /tool/technical-facts - Iniciado", {
+      nodeId: query.node_id,
+      status: query.status,
+      limit: query.limit,
+    });
 
-    const result = await technicalFactsService.listByNode(nodeId);
+    const result = await technicalFactsService.listFacts(query);
 
     logger.info("HTTP GET /tool/technical-facts - Concluído", {
-      nodeId,
       count: result.data.length,
     });
 
@@ -114,6 +119,24 @@ const technicalFactsController = {
     const fact = await technicalFactsService.updateFact(factId, body);
 
     logger.info("HTTP PATCH /tool/technical-facts/:id - Concluído", {
+      factId: fact.id,
+    });
+
+    res.status(200).json(fact);
+  },
+
+  addEvidence: async (req: Request, res: Response) => {
+    const factId = req.params.id as string;
+    const body = req.body as AddEvidenceInput;
+
+    logger.info("HTTP POST /tool/technical-facts/:id/evidence - Iniciado", {
+      factId,
+      evidenceCount: body.evidence.length,
+    });
+
+    const fact = await technicalFactsService.addEvidence(factId, body);
+
+    logger.info("HTTP POST /tool/technical-facts/:id/evidence - Concluído", {
       factId: fact.id,
     });
 

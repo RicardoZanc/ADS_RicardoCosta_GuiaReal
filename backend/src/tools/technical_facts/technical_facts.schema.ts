@@ -35,8 +35,27 @@ export const markQueueItemProcessedSchema = z.object({
 });
 
 export const listTechnicalFactsByNodeSchema = z.object({
-  query: z.object({
-    node_id: z.uuid("ID do nó inválido"),
+  query: z
+    .object({
+      node_id: z.uuid("ID do nó inválido").optional(),
+      status: z.enum(["HYPOTHESIS", "VERIFIED", "DISPUTED"]).optional(),
+      limit: z.coerce.number().int().min(1).max(50).default(20),
+    })
+    .refine((q) => q.node_id !== undefined || q.status !== undefined, {
+      message: "Informe node_id e/ou status",
+    }),
+});
+
+export const addEvidenceSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID do fato inválido"),
+  }),
+  body: z.object({
+    evidence: z
+      .array(evidenceRefSchema)
+      .min(1, "Informe ao menos uma evidência"),
+    consensus_score: z.number().min(0).max(1).optional(),
+    status: z.enum(["HYPOTHESIS", "VERIFIED", "DISPUTED"]).optional(),
   }),
 });
 
@@ -83,6 +102,10 @@ export type ListPendingQueueQuery = z.infer<
   typeof listPendingQueueSchema
 >["query"];
 
+export type ListTechnicalFactsQuery = z.infer<
+  typeof listTechnicalFactsByNodeSchema
+>["query"];
+
 export type CreateTechnicalFactInput = z.infer<
   typeof createTechnicalFactSchema
 >["body"];
@@ -98,3 +121,5 @@ export type ListByEvidenceParams = z.infer<
 export type UpdateTechnicalFactInput = z.infer<
   typeof updateTechnicalFactSchema
 >["body"];
+
+export type AddEvidenceInput = z.infer<typeof addEvidenceSchema>["body"];
