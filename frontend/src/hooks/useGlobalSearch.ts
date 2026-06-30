@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { notifyApiError } from "@/lib/notifyApiError";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import type { NodeRecord, NodesListResponse } from "@/lib/types/nodes";
+import type { NodeRecord } from "@/lib/types/nodes";
+import type { GlobalSearchResponse, ProductSearchItem } from "@/lib/types/search";
 
 interface UseGlobalSearchResult {
   query: string;
   setQuery: (value: string) => void;
-  results: NodeRecord[];
+  nodeResults: NodeRecord[];
+  productResults: ProductSearchItem[];
   isLoading: boolean;
   hasSearched: boolean;
   reset: () => void;
@@ -15,7 +17,8 @@ interface UseGlobalSearchResult {
 
 export function useGlobalSearch(): UseGlobalSearchResult {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<NodeRecord[]>([]);
+  const [nodeResults, setNodeResults] = useState<NodeRecord[]>([]);
+  const [productResults, setProductResults] = useState<ProductSearchItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -25,7 +28,8 @@ export function useGlobalSearch(): UseGlobalSearchResult {
     const trimmed = debounced.trim();
 
     if (trimmed.length < 1) {
-      setResults([]);
+      setNodeResults([]);
+      setProductResults([]);
       setIsLoading(false);
       return;
     }
@@ -33,17 +37,19 @@ export function useGlobalSearch(): UseGlobalSearchResult {
     let active = true;
     setIsLoading(true);
 
-    apiClient<NodesListResponse>("/nodes", {
-      params: { q: trimmed, limit: "20" },
+    apiClient<GlobalSearchResponse>("/search", {
+      params: { q: trimmed, limit_nodes: "20", limit_products: "10" },
     })
       .then((response) => {
         if (active) {
-          setResults(response.data);
+          setNodeResults(response.nodes.data);
+          setProductResults(response.products.data);
         }
       })
       .catch((error) => {
         if (active) {
-          setResults([]);
+          setNodeResults([]);
+          setProductResults([]);
           notifyApiError(error);
         }
       })
@@ -63,10 +69,19 @@ export function useGlobalSearch(): UseGlobalSearchResult {
 
   const reset = useCallback(() => {
     setQuery("");
-    setResults([]);
+    setNodeResults([]);
+    setProductResults([]);
     setIsLoading(false);
     setHasSearched(false);
   }, []);
 
-  return { query, setQuery, results, isLoading, hasSearched, reset };
+  return {
+    query,
+    setQuery,
+    nodeResults,
+    productResults,
+    isLoading,
+    hasSearched,
+    reset,
+  };
 }

@@ -11,6 +11,7 @@ import { reportsRoutes } from "../modules/reports/reports.routes";
 import { adminRequestsRoutes } from "../modules/admin-requests/adminRequests.routes";
 import { changeRequestsRoutes } from "../modules/change-requests/changeRequests.routes";
 import { evidenceRoutes } from "../modules/evidence/evidence.routes";
+import { searchRoutes } from "../modules/search/search.routes";
 
 const apiRoutes = Router();
 
@@ -26,5 +27,6 @@ apiRoutes.use('/reports', reportsRoutes);
 apiRoutes.use('/admin-requests', adminRequestsRoutes);
 apiRoutes.use('/change-requests', changeRequestsRoutes);
 apiRoutes.use('/evidence', evidenceRoutes);
+apiRoutes.use('/search', searchRoutes);
 
 export { apiRoutes };

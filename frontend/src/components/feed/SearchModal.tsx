@@ -16,17 +16,96 @@ import { Button } from "@/components/ui/button";
 import { Tag } from "@/components/ui/tag";
 import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 import type { NodeRecord } from "@/lib/types/nodes";
+import type { ProductSearchItem } from "@/lib/types/search";
 
 interface SearchModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+function LoadingSkeletons() {
+  return (
+    <div className="space-y-2 px-2">
+      {[0, 1, 2].map((key) => (
+        <div
+          key={key}
+          className="skeleton-shimmer h-12 rounded-lg"
+          aria-hidden
+        />
+      ))}
+    </div>
+  );
+}
+
+function NodeResultItem({
+  node,
+  onSelect,
+}: {
+  node: NodeRecord;
+  onSelect: (node: NodeRecord) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(node)}
+      className="flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-muted/10"
+    >
+      <span className="truncate text-body text-foreground">{node.name}</span>
+      <Tag>{node.type}</Tag>
+    </button>
+  );
+}
+
+function ProductResultItem({
+  product,
+  onSelect,
+}: {
+  product: ProductSearchItem;
+  onSelect: (product: ProductSearchItem) => void;
+}) {
+  const subtitleParts: string[] = [];
+
+  if (product.brand_name) {
+    subtitleParts.push(product.brand_name);
+  }
+
+  if (product.categoria) {
+    subtitleParts.push(`Categoria: ${product.categoria.name}`);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(product)}
+      className="flex w-full items-start justify-between gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-muted/10"
+    >
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-body text-foreground">
+          {product.name}
+        </span>
+        {subtitleParts.length > 0 && (
+          <span className="mt-0.5 block truncate text-small text-muted">
+            {subtitleParts.join(" · ")}
+          </span>
+        )}
+      </div>
+      <Tag>Produto</Tag>
+    </button>
+  );
+}
+
 export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const { query, setQuery, results, isLoading, hasSearched, reset } =
-    useGlobalSearch();
+  const {
+    query,
+    setQuery,
+    nodeResults,
+    productResults,
+    isLoading,
+    hasSearched,
+    reset,
+  } = useGlobalSearch();
 
   useEffect(() => {
     if (!open) {
@@ -46,13 +125,21 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     router.push("/create");
   }
 
-  function handleSelect(node: NodeRecord) {
+  function handleSelectNode(node: NodeRecord) {
     onOpenChange(false);
     router.push(`/nodes/${node.id}`);
   }
 
+  function handleSelectProduct(product: ProductSearchItem) {
+    onOpenChange(false);
+    router.push(`/products/${product.id}`);
+  }
+
   const trimmed = query.trim();
   const showResults = trimmed.length >= 1;
+  const hasNodeResults = nodeResults.length > 0;
+  const hasProductResults = productResults.length > 0;
+  const hasAnyResults = hasNodeResults || hasProductResults;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -60,7 +147,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
         <DialogHeader>
           <DialogTitle>Pesquisar</DialogTitle>
           <DialogDescription>
-            Encontre tipos, categorias, marcas e outros tópicos da plataforma.
+            Encontre tópicos, categorias, marcas e produtos da plataforma.
           </DialogDescription>
         </DialogHeader>
 
@@ -85,36 +172,52 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               Digite para começar a buscar.
             </p>
           ) : isLoading ? (
-            <div className="space-y-2 px-2">
-              {[0, 1, 2].map((key) => (
-                <div
-                  key={key}
-                  className="skeleton-shimmer h-12 rounded-lg"
-                  aria-hidden
-                />
-              ))}
-            </div>
-          ) : results.length === 0 ? (
+            <LoadingSkeletons />
+          ) : !hasAnyResults ? (
             <p className="px-4 py-6 text-center text-body text-muted">
               Nenhum resultado encontrado.
             </p>
           ) : (
-            <StaggerList key={results.length} className="space-y-1">
-              {results.map((node) => (
-                <StaggerListItem key={node.id}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelect(node)}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-muted/10"
+            <div className="space-y-4">
+              {hasNodeResults && (
+                <section>
+                  <h3 className="px-4 pb-1 text-small font-medium text-muted">
+                    Tópicos
+                  </h3>
+                  <StaggerList key={nodeResults.length} className="space-y-1">
+                    {nodeResults.map((node) => (
+                      <StaggerListItem key={node.id}>
+                        <NodeResultItem
+                          node={node}
+                          onSelect={handleSelectNode}
+                        />
+                      </StaggerListItem>
+                    ))}
+                  </StaggerList>
+                </section>
+              )}
+
+              {hasProductResults && (
+                <section>
+                  <h3 className="px-4 pb-1 text-small font-medium text-muted">
+                    Produtos
+                  </h3>
+                  <StaggerList
+                    key={productResults.length}
+                    className="space-y-1"
                   >
-                    <span className="truncate text-body text-foreground">
-                      {node.name}
-                    </span>
-                    <Tag>{node.type}</Tag>
-                  </button>
-                </StaggerListItem>
-              ))}
-            </StaggerList>
+                    {productResults.map((product) => (
+                      <StaggerListItem key={product.id}>
+                        <ProductResultItem
+                          product={product}
+                          onSelect={handleSelectProduct}
+                        />
+                      </StaggerListItem>
+                    ))}
+                  </StaggerList>
+                </section>
+              )}
+            </div>
           )}
         </div>
 

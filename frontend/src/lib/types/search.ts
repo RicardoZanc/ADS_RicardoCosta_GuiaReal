@@ -1,5 +1,7 @@
 import type { FeedPagination } from "@/lib/types/feed";
 
+import type { NodesListResponse } from "@/lib/types/nodes";
+
 export type FacetType = "TECNOLOGIA" | "COMPOSICAO" | "ATRIBUTO";
 
 export interface FacetNode {
@@ -66,4 +68,9 @@ export interface ProductSearchParams {
 export interface ProductFacetsParams {
   tipo_id?: string;
   categoria_id?: string;
+}
+
+export interface GlobalSearchResponse {
+  nodes: NodesListResponse;
+  products: ProductSearchResponse;
 }
