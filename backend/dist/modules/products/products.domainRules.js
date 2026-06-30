@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { BadRequestError, ConflictError, NotFoundError, } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
+import { fetchNodeGraph } from "../../lib/nodeGraph";
 const forbiddenProductNodeTypes = ["ROOT", "TIPO"];
 const forbiddenProductNodeTypesSet = new Set(forbiddenProductNodeTypes);
 const allowedProductNodeTypes = [
@@ -143,9 +144,12 @@ export function buildDiscussionTabs(linkedNodes, productOpinionCount, nodeOpinio
     }
     return tabs;
 }
-export async function ensureNameAvailable(name) {
+export async function ensureNameAvailable(name, excludeId) {
     const existing = await prisma.products.findFirst({
-        where: { name: { equals: name.trim(), mode: "insensitive" } },
+        where: {
+            name: { equals: name.trim(), mode: "insensitive" },
+            ...(excludeId ? { id: { not: excludeId } } : {}),
+        },
         select: { id: true },
     });
     if (existing) {
@@ -182,16 +186,87 @@ export async function resolveProductSearchScope(query) {
     }
     throw new BadRequestError("Informe tipo_id ou categoria_id");
 }
-export async function ensureEanAvailable(ean) {
+export async function ensureEanAvailable(ean, excludeId) {
     if (!ean) {
         return;
     }
-    const existing = await prisma.products.findUnique({
-        where: { ean },
+    const existing = await prisma.products.findFirst({
+        where: {
+            ean,
+            ...(excludeId ? { id: { not: excludeId } } : {}),
+        },
         select: { id: true },
     });
     if (existing) {
         logger.warn("Cadastro de produto rejeitado: EAN já cadastrado", { ean });
         throw new ConflictError("Já existe produto com este EAN");
     }
+}
+export async function loadProductChangeState(productId) {
+    const product = await prisma.products.findUnique({
+        where: { id: productId },
+        select: {
+            id: true,
+            name: true,
+            image_url: true,
+            product_nodes: {
+                select: {
+                    node_id: true,
+                    nodes: {
+                        select: {
+                            id: true,
+                            name: true,
+                            type: true,
+                            parent_id: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+    if (!product) {
+        throw new NotFoundError("Produto não encontrado");
+    }
+    const seedNodes = product.product_nodes.map((item) => item.nodes);
+    const nodeById = await fetchNodeGraph(seedNodes.map((node) => node.id));
+    return {
+        name: product.name,
+        image_url: product.image_url,
+        nodeIds: product.product_nodes.map((item) => item.node_id),
+        taxonomy: buildProductTaxonomy(seedNodes, nodeById),
+    };
+}
+export async function validateProductUpdate(productId, input) {
+    const hasName = input.name !== undefined;
+    const hasImage = input.image_url !== undefined;
+    const hasNodeIds = input.nodeIds !== undefined;
+    if (!hasName && !hasImage && !hasNodeIds) {
+        throw new BadRequestError("Informe ao menos um campo para alterar");
+    }
+    await ensureProductExists(productId);
+    const current = await loadProductChangeState(productId);
+    if (hasName && input.name !== undefined) {
+        await ensureNameAvailable(input.name, productId);
+    }
+    if (hasNodeIds && input.nodeIds !== undefined) {
+        await validateProductNodeDependencies(input.nodeIds);
+    }
+    const nextName = hasName ? input.name : current.name;
+    const nextImage = hasImage ? input.image_url ?? null : current.image_url;
+    const nextNodeIds = hasNodeIds ? [...new Set(input.nodeIds)] : current.nodeIds;
+    const unchanged = nextName === current.name &&
+        nextImage === current.image_url &&
+        arraysEqual(nextNodeIds, current.nodeIds);
+    if (unchanged) {
+        throw new BadRequestError("Nenhuma alteração foi informada");
+    }
+    return current;
+}
+function arraysEqual(left, right) {
+    if (left.length !== right.length) {
+        return false;
+    }
+    const sortedLeft = [...left].sort();
+    const sortedRight = [...right].sort();
+    return sortedLeft.every((value, index) => value === sortedRight[index]);
 }

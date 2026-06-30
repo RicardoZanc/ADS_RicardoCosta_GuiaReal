@@ -18,6 +18,34 @@ export const createProductSchema = z.object({
             .min(2, "Um produto precisa de pelo menos uma CATEGORIA e uma MARCA em nodeIds"),
     }),
 });
+export const updateProductSchema = z.object({
+    params: z.object({
+        id: z.uuid("ID do produto inválido"),
+    }),
+    body: z
+        .object({
+        name: z
+            .string()
+            .trim()
+            .min(1, "O nome do produto é obrigatório")
+            .optional(),
+        image_url: z
+            .union([
+            z
+                .url("URL da imagem inválida")
+                .refine((url) => isAllowedProductImageUrl(url), "URL da imagem deve ser do bucket de produtos do Supabase"),
+            z.null(),
+        ])
+            .optional(),
+        nodeIds: z
+            .array(z.uuid("Cada nó associado deve ser um UUID válido"))
+            .min(2, "Um produto precisa de pelo menos uma CATEGORIA e uma MARCA em nodeIds")
+            .optional(),
+    })
+        .refine((data) => data.name !== undefined ||
+        data.image_url !== undefined ||
+        data.nodeIds !== undefined, { message: "Informe ao menos um campo para alterar" }),
+});
 export const getProductSchema = z.object({
     params: z.object({
         id: z.uuid("ID do produto inválido"),
@@ -73,8 +101,14 @@ const nodeIdsQuerySchema = z.preprocess((value) => {
     }
     return value;
 }, z.array(z.uuid("Cada node_id deve ser um UUID válido")));
+export const facetTypes = ["TECNOLOGIA", "COMPOSICAO", "ATRIBUTO"];
 export const productFacetsSchema = z.object({
-    query: productSearchScopeSchema,
+    query: productSearchScopeSchema.extend({
+        facet_type: z.enum(facetTypes).optional(),
+        q: z.string().trim().min(1).optional(),
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(50).default(15),
+    }),
 });
 export const productSearchSchema = z.object({
     query: productSearchScopeSchema.extend({

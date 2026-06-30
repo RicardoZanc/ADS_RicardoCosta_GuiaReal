@@ -28,6 +28,47 @@ export const createProductSchema = z.object({
 
 export type CreateProductInput = z.infer<typeof createProductSchema>["body"];
 
+export const updateProductSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID do produto inválido"),
+  }),
+  body: z
+    .object({
+      name: z
+        .string()
+        .trim()
+        .min(1, "O nome do produto é obrigatório")
+        .optional(),
+      image_url: z
+        .union([
+          z
+            .url("URL da imagem inválida")
+            .refine(
+              (url) => isAllowedProductImageUrl(url),
+              "URL da imagem deve ser do bucket de produtos do Supabase"
+            ),
+          z.null(),
+        ])
+        .optional(),
+      nodeIds: z
+        .array(z.uuid("Cada nó associado deve ser um UUID válido"))
+        .min(
+          2,
+          "Um produto precisa de pelo menos uma CATEGORIA e uma MARCA em nodeIds"
+        )
+        .optional(),
+    })
+    .refine(
+      (data) =>
+        data.name !== undefined ||
+        data.image_url !== undefined ||
+        data.nodeIds !== undefined,
+      { message: "Informe ao menos um campo para alterar" }
+    ),
+});
+
+export type UpdateProductInput = z.infer<typeof updateProductSchema>["body"];
+
 export const getProductSchema = z.object({
   params: z.object({
     id: z.uuid("ID do produto inválido"),

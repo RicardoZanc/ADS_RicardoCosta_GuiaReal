@@ -13,7 +13,7 @@ Documentação de referência para clientes (humanos e LLM) da API REST do GuiaR
 | Item | Valor |
 |------|-------|
 | Base URL | `http://localhost:3000/api` (dev) |
-| Content-Type (POST) | `application/json` |
+| Content-Type (POST/PATCH) | `application/json` |
 | Autenticação | JWT Bearer em todas as rotas deste módulo |
 
 ---
@@ -81,6 +81,53 @@ Cadastro de produto com vínculo total aos nós informados.
 | `409` | `Já existe produto com este nome` |
 | `409` | `Já existe produto com este EAN` |
 | `409` | `Produto já existe com os mesmos dados únicos` |
+| `422` | `Dados inválidos` |
+
+---
+
+## `PATCH /products/:id`
+
+Atualiza nome, imagem e/ou taxonomia (`nodeIds`) de um produto existente.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | JWT Bearer |
+| Sucesso (admin) | `200 OK` — alteração aplicada imediatamente |
+| Sucesso (usuário) | `202 Accepted` — solicitação de mudança criada para revisão |
+
+### Path
+
+| Parâmetro | Tipo | Regras |
+|-----------|------|--------|
+| `id` | uuid | ID do produto |
+
+### Body
+
+| Campo | Tipo | Obrigatório | Regras |
+|-------|------|-------------|--------|
+| `name` | string | não* | Não vazio (trim); único case insensitive se informado |
+| `image_url` | string \| null | não* | URL do bucket de produtos do Supabase, ou `null` para remover |
+| `nodeIds` | uuid[] | não* | Mesmas regras de `POST /products` quando informado |
+
+\* Pelo menos um campo deve ser informado.
+
+### Moderação
+
+- **Admin**: persiste direto e retorna o detalhe do produto (`GET /products/:id`).
+- **Usuário comum**: cria `change_requests` (`PENDING`) e retorna `202` com `change_request_id`.
+
+Revisão admin: `PATCH /api/change-requests/:id`.
+
+### Erros
+
+| Status | `message` típico |
+|--------|------------------|
+| `400` | `Informe ao menos um campo para alterar` |
+| `400` | `Nenhuma alteração foi informada` |
+| `400` | `O produto deve possuir exatamente uma CATEGORIA e exatamente uma MARCA` |
+| `404` | `Produto não encontrado` |
+| `409` | `Já existe produto com este nome` |
+| `409` | `Já existe uma solicitação pendente para esta entidade` |
 | `422` | `Dados inválidos` |
 
 ---

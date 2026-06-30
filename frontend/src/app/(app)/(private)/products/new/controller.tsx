@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { isApiError } from "@/lib/errors";
 import { notifyApiError } from "@/lib/notifyApiError";
+import { updateNode } from "@/lib/nodes";
 import { useNodeSearch } from "@/hooks/useNodeSearch";
 import {
   STEP_ORDER,
@@ -206,11 +207,14 @@ export function useProductCreateController() {
 
     setIsSubmitting(true);
     try {
-      const node = await apiClient<NodeRecord>(`/nodes/${current.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ name: trimmed }),
-      });
-      setSingleValue(step, toSelectedNode(node));
+      const result = await updateNode(current.id, { name: trimmed });
+      const nextName =
+        result.mode === "applied" ? result.data.name : trimmed;
+      setSingleValue(step, { ...current, name: nextName });
+
+      if (result.mode === "pending") {
+        toast.success("Renomeação do nó enviada para revisão");
+      }
     } catch (error) {
       if (notifyApiError(error)) return;
       throw error;

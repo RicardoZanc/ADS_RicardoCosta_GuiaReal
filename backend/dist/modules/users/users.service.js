@@ -43,6 +43,7 @@ function mapProfile(user, viewerId, interests) {
         reputation_score: user.reputation_score ?? 0,
         avatar_url: user.avatar_url,
         created_at: toIsoString(user.created_at),
+        is_admin: user.is_admin,
         interests,
     };
     if (user.id === viewerId) {
@@ -64,6 +65,7 @@ async function findActiveUserByUsername(username) {
             reputation_score: true,
             avatar_url: true,
             created_at: true,
+            is_admin: true,
         },
     });
     if (!user) {
@@ -195,6 +197,7 @@ const updateMe = async (userId, input) => {
             reputation_score: true,
             avatar_url: true,
             created_at: true,
+            is_admin: true,
         },
     });
     const interests = await fetchInterestsByUserId(userId);

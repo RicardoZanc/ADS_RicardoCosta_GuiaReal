@@ -8,6 +8,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { NodeContextPanel } from "@/components/node-detail/NodeContextPanel";
 import { OpinionComposer } from "@/components/product-detail/OpinionComposer";
 import { OpinionList } from "@/components/product-detail/OpinionList";
+import { EntityEditButton } from "@/components/entity-detail/EntityEditButton";
 import { useNodeDetailController } from "./controller";
 
 function DetailSkeleton() {
@@ -88,10 +89,11 @@ export default function NodeDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-      <div className="mb-8">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link href="/feed">← Voltar ao feed</Link>
         </Button>
+        <EntityEditButton href={`/nodes/${node.id}/edit`} />
       </div>
 
       <div className="flex flex-col gap-10 lg:gap-12">

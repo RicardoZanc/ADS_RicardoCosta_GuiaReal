@@ -10,6 +10,7 @@ import type {
   ListProductOpinionsQuery,
   ProductFacetsQuery,
   ProductSearchQuery,
+  UpdateProductInput,
 } from "./products.schema";
 import {
   buildDiscussionTabs,
@@ -18,8 +19,10 @@ import {
   ensureNameAvailable,
   ensureProductExists,
   ensureProductLinkedNode,
+  loadProductChangeState,
   resolveProductSearchScope,
   validateProductNodeDependencies,
+  validateProductUpdate,
 } from "./products.domainRules";
 import type { node_type } from "../../generated/prisma/enums";
 
@@ -580,8 +583,72 @@ const create = async (input: CreateProductInput) => {
   }
 };
 
+const applyProductUpdate = async (id: string, input: UpdateProductInput) => {
+  logger.debug("Atualização de produto: payload recebido", {
+    productId: id,
+    hasName: input.name !== undefined,
+    hasImage: input.image_url !== undefined,
+    hasNodeIds: input.nodeIds !== undefined,
+  });
+
+  await validateProductUpdate(id, input);
+
+  const data: { name?: string; image_url?: string | null } = {};
+  if (input.name !== undefined) {
+    data.name = input.name;
+  }
+  if (input.image_url !== undefined) {
+    data.image_url = input.image_url;
+  }
+
+  let validNodeIds: string[] | undefined;
+  if (input.nodeIds !== undefined) {
+    validNodeIds = await validateProductNodeDependencies(input.nodeIds);
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (validNodeIds) {
+        await tx.product_nodes.deleteMany({ where: { product_id: id } });
+        await tx.products.update({
+          where: { id },
+          data: {
+            ...data,
+            product_nodes: {
+              create: validNodeIds.map((nodeId) => ({ node_id: nodeId })),
+            },
+          },
+        });
+        return;
+      }
+
+      if (Object.keys(data).length > 0) {
+        await tx.products.update({ where: { id }, data });
+      }
+    });
+
+    logger.debug("Atualização de produto: persistência concluída", {
+      productId: id,
+    });
+
+    return getById(id);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      logger.warn("Atualização de produto rejeitada: conflito de unicidade", {
+        productId: id,
+      });
+      throw new ConflictError("Produto já existe com os mesmos dados únicos");
+    }
+    throw error;
+  }
+};
+
+const update = applyProductUpdate;
+
 export const productsService = {
   create,
+  update,
+  applyProductUpdate,
   getById,
   getFacets,
   listOpinions,

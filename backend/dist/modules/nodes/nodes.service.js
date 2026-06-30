@@ -5,7 +5,7 @@ import { listOpinionsPage } from "../../lib/opinionListing";
 import { ConflictError } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
 import { getNodesSearchFuzziness } from "./nodes.config";
-import { buildNodeContext, ensureNodeRenamable, ensureNodeViewable, resolveNodeCreationDependencies, } from "./nodes.domainRules";
+import { buildNodeContext, ensureNodeViewable, resolveNodeCreationDependencies, validateNodeUpdate, } from "./nodes.domainRules";
 function isUniqueConstraintError(error) {
     return (typeof error === "object" &&
         error !== null &&
@@ -48,6 +48,7 @@ const getById = async (id) => {
         name: node.name,
         type: node.type,
         wikidata_id: node.wikidata_id,
+        image_url: node.image_url,
         created_at: toIsoString(node.created_at),
         context,
         opinionCount,
@@ -84,6 +85,7 @@ const create = async (input) => {
             data: {
                 ...data,
                 type: data.type,
+                image_url: input.image_url,
             },
             select: {
                 id: true,
@@ -91,6 +93,7 @@ const create = async (input) => {
                 type: true,
                 parent_id: true,
                 wikidata_id: true,
+                image_url: true,
                 created_at: true,
             },
         });
@@ -111,23 +114,31 @@ const create = async (input) => {
         throw error;
     }
 };
-const update = async (id, name) => {
-    logger.debug("Renomeação de nó: payload recebido", { id, name });
-    await ensureNodeRenamable(id, name);
+const applyNodeUpdate = async (id, input) => {
+    logger.debug("Atualização de nó: payload recebido", { id, input });
+    await validateNodeUpdate(id, input);
+    const data = {};
+    if (input.name !== undefined) {
+        data.name = input.name;
+    }
+    if (input.image_url !== undefined) {
+        data.image_url = input.image_url;
+    }
     try {
         const node = await prisma.nodes.update({
             where: { id },
-            data: { name },
+            data,
             select: {
                 id: true,
                 name: true,
                 type: true,
                 parent_id: true,
                 wikidata_id: true,
+                image_url: true,
                 created_at: true,
             },
         });
-        logger.debug("Renomeação de nó: persistência concluída", {
+        logger.debug("Atualização de nó: persistência concluída", {
             nodeId: node.id,
             type: node.type,
         });
@@ -135,15 +146,15 @@ const update = async (id, name) => {
     }
     catch (error) {
         if (isUniqueConstraintError(error)) {
-            logger.warn("Renomeação de nó rejeitada: conflito de unicidade", {
+            logger.warn("Atualização de nó rejeitada: conflito de unicidade", {
                 id,
-                name,
             });
             throw new ConflictError("Já existe um nó com os mesmos dados únicos");
         }
         throw error;
     }
 };
+const update = applyNodeUpdate;
 const search = async (query) => {
     const fuzziness = getNodesSearchFuzziness();
     const offset = (query.page - 1) * query.limit;
@@ -165,7 +176,7 @@ const search = async (query) => {
       WHERE ${whereClause}
     `,
         prisma.$queryRaw `
-      SELECT id, name, type, parent_id, wikidata_id, created_at
+      SELECT id, name, type, parent_id, wikidata_id, image_url, created_at
       FROM nodes
       WHERE ${whereClause}
       ORDER BY ${orderClause}
@@ -198,6 +209,7 @@ const search = async (query) => {
 export const nodesService = {
     create,
     update,
+    applyNodeUpdate,
     search,
     getById,
     listOpinions,

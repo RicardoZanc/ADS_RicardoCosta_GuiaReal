@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { productsService } from "./products.service";
+import { changeRequestsService } from "../change-requests/changeRequests.service";
 import type {
   ListProductOpinionsQuery,
   ProductFacetsQuery,
@@ -72,6 +73,42 @@ const productsController = {
       productId: product.id,
     });
     res.status(201).json(product);
+  },
+  update: async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const user = req.user!;
+
+    logger.info("HTTP PATCH /api/products/:id - Iniciado", {
+      productId: id,
+      userId: user.id,
+      isAdmin: user.is_admin,
+    });
+
+    if (user.is_admin) {
+      const product = await productsService.update(id, req.body);
+      logger.info("HTTP PATCH /api/products/:id - Concluído (admin)", {
+        productId: product.id,
+      });
+      res.status(200).json(product);
+      return;
+    }
+
+    const request = await changeRequestsService.createForProduct(
+      user.id,
+      id,
+      req.body
+    );
+
+    logger.info("HTTP PATCH /api/products/:id - Solicitação criada", {
+      productId: id,
+      changeRequestId: request.id,
+    });
+
+    res.status(202).json({
+      change_request_id: request.id,
+      status: "PENDING",
+      request,
+    });
   },
 };
 

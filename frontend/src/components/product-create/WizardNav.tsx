@@ -7,6 +7,7 @@ interface WizardNavProps {
   isReviewStep: boolean;
   canProceed: boolean;
   isBusy: boolean;
+  submitLabel?: string;
   onBack: () => void;
   onNext: () => void;
   onSubmit: () => void;
@@ -17,6 +18,7 @@ export function WizardNav({
   isReviewStep,
   canProceed,
   isBusy,
+  submitLabel = "Cadastrar produto",
   onBack,
   onNext,
   onSubmit,
@@ -39,7 +41,7 @@ export function WizardNav({
           disabled={!canProceed}
           onClick={onSubmit}
         >
-          Cadastrar produto
+          {submitLabel}
         </Button>
       ) : (
         <Button

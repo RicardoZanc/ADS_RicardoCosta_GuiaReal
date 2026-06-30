@@ -5,7 +5,7 @@ import { listOpinionsPage } from "../../lib/opinionListing";
 import { ConflictError, NotFoundError } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
 import { getProductsSearchFuzziness } from "./products.config";
-import { buildDiscussionTabs, buildProductTaxonomy, ensureEanAvailable, ensureNameAvailable, ensureProductExists, ensureProductLinkedNode, resolveProductSearchScope, validateProductNodeDependencies, } from "./products.domainRules";
+import { buildDiscussionTabs, buildProductTaxonomy, ensureEanAvailable, ensureNameAvailable, ensureProductExists, ensureProductLinkedNode, resolveProductSearchScope, validateProductNodeDependencies, validateProductUpdate, } from "./products.domainRules";
 function isUniqueConstraintError(error) {
     return (typeof error === "object" &&
         error !== null &&
@@ -61,12 +61,14 @@ function buildSearchOrderClause(q) {
     }
     return Prisma.sql `p.name ASC`;
 }
-function mapFacetRows(rows) {
-    const toFacetNode = (row) => ({
+function toFacetNode(row) {
+    return {
         id: row.id,
         name: row.name,
         productCount: row.product_count,
-    });
+    };
+}
+function mapFacetRows(rows) {
     return {
         tecnologias: rows
             .filter((row) => row.type === "TECNOLOGIA")
@@ -78,6 +80,18 @@ function mapFacetRows(rows) {
             .filter((row) => row.type === "ATRIBUTO")
             .map(toFacetNode),
     };
+}
+function buildFacetNameFilterClause(q, fuzziness) {
+    if (!q) {
+        return Prisma.sql `TRUE`;
+    }
+    return Prisma.sql `similarity(n.name, ${q}) >= ${fuzziness}`;
+}
+function buildFacetOrderClause(q) {
+    if (q) {
+        return Prisma.sql `name_similarity DESC, product_count DESC, name ASC`;
+    }
+    return Prisma.sql `product_count DESC, name ASC`;
 }
 function mapProductSearchRow(row) {
     return {
@@ -94,10 +108,10 @@ function mapProductSearchRow(row) {
             : null,
     };
 }
-const getFacets = async (query) => {
+const getFacetsGrouped = async (query) => {
     const scope = await resolveProductSearchScope(query);
     const scopedProductsCte = buildScopedProductsCte(scope);
-    logger.debug("Facets de produto: consulta iniciada", scope);
+    logger.debug("Facets de produto: consulta agrupada iniciada", scope);
     const rows = await prisma.$queryRaw `
     WITH ${scopedProductsCte}
     SELECT
@@ -116,11 +130,94 @@ const getFacets = async (query) => {
     GROUP BY n.id, n.name, n.type
     ORDER BY n.type, n.name
   `;
-    logger.debug("Facets de produto: consulta concluída", {
+    logger.debug("Facets de produto: consulta agrupada concluída", {
         ...scope,
         totalFacets: rows.length,
     });
     return mapFacetRows(rows);
+};
+const searchFacets = async (query) => {
+    const scope = await resolveProductSearchScope(query);
+    const fuzziness = getProductsSearchFuzziness();
+    const scopedProductsCte = buildScopedProductsCte(scope);
+    const nameFilterClause = buildFacetNameFilterClause(query.q, fuzziness);
+    const orderClause = buildFacetOrderClause(query.q);
+    const offset = (query.page - 1) * query.limit;
+    logger.debug("Facets de produto: busca paginada iniciada", {
+        ...scope,
+        facetType: query.facet_type,
+        q: query.q,
+        page: query.page,
+        limit: query.limit,
+    });
+    const facetNodesCte = query.q
+        ? Prisma.sql `
+        facet_nodes AS (
+          SELECT
+            n.id,
+            n.name,
+            n.type,
+            COUNT(DISTINCT sp.id)::int AS product_count,
+            similarity(n.name, ${query.q}) AS name_similarity
+          FROM scoped_products sp
+          INNER JOIN product_nodes pn ON pn.product_id = sp.id
+          INNER JOIN nodes n ON n.id = pn.node_id
+          WHERE n.type = ${query.facet_type}::node_type
+            AND ${nameFilterClause}
+          GROUP BY n.id, n.name, n.type
+        )
+      `
+        : Prisma.sql `
+        facet_nodes AS (
+          SELECT
+            n.id,
+            n.name,
+            n.type,
+            COUNT(DISTINCT sp.id)::int AS product_count,
+            0::float AS name_similarity
+          FROM scoped_products sp
+          INNER JOIN product_nodes pn ON pn.product_id = sp.id
+          INNER JOIN nodes n ON n.id = pn.node_id
+          WHERE n.type = ${query.facet_type}::node_type
+          GROUP BY n.id, n.name, n.type
+        )
+      `;
+    const [countResult, rows] = await Promise.all([
+        prisma.$queryRaw `
+      WITH ${scopedProductsCte}, ${facetNodesCte}
+      SELECT COUNT(*)::int AS count FROM facet_nodes
+    `,
+        prisma.$queryRaw `
+      WITH ${scopedProductsCte}, ${facetNodesCte}
+      SELECT id, name, type, product_count
+      FROM facet_nodes
+      ORDER BY ${orderClause}
+      LIMIT ${query.limit} OFFSET ${offset}
+    `,
+    ]);
+    const total = countResult[0]?.count ?? 0;
+    const totalPages = total === 0 ? 0 : Math.ceil(total / query.limit);
+    logger.debug("Facets de produto: busca paginada concluída", {
+        ...scope,
+        facetType: query.facet_type,
+        total,
+        returned: rows.length,
+    });
+    return {
+        data: rows.map(toFacetNode),
+        pagination: {
+            page: query.page,
+            limit: query.limit,
+            total,
+            totalPages,
+        },
+    };
+};
+const getFacets = async (query) => {
+    if (query.facet_type) {
+        return searchFacets(query);
+    }
+    return getFacetsGrouped(query);
 };
 const search = async (query) => {
     const scope = await resolveProductSearchScope(query);
@@ -353,8 +450,64 @@ const create = async (input) => {
         throw error;
     }
 };
+const applyProductUpdate = async (id, input) => {
+    logger.debug("Atualização de produto: payload recebido", {
+        productId: id,
+        hasName: input.name !== undefined,
+        hasImage: input.image_url !== undefined,
+        hasNodeIds: input.nodeIds !== undefined,
+    });
+    await validateProductUpdate(id, input);
+    const data = {};
+    if (input.name !== undefined) {
+        data.name = input.name;
+    }
+    if (input.image_url !== undefined) {
+        data.image_url = input.image_url;
+    }
+    let validNodeIds;
+    if (input.nodeIds !== undefined) {
+        validNodeIds = await validateProductNodeDependencies(input.nodeIds);
+    }
+    try {
+        await prisma.$transaction(async (tx) => {
+            if (validNodeIds) {
+                await tx.product_nodes.deleteMany({ where: { product_id: id } });
+                await tx.products.update({
+                    where: { id },
+                    data: {
+                        ...data,
+                        product_nodes: {
+                            create: validNodeIds.map((nodeId) => ({ node_id: nodeId })),
+                        },
+                    },
+                });
+                return;
+            }
+            if (Object.keys(data).length > 0) {
+                await tx.products.update({ where: { id }, data });
+            }
+        });
+        logger.debug("Atualização de produto: persistência concluída", {
+            productId: id,
+        });
+        return getById(id);
+    }
+    catch (error) {
+        if (isUniqueConstraintError(error)) {
+            logger.warn("Atualização de produto rejeitada: conflito de unicidade", {
+                productId: id,
+            });
+            throw new ConflictError("Produto já existe com os mesmos dados únicos");
+        }
+        throw error;
+    }
+};
+const update = applyProductUpdate;
 export const productsService = {
     create,
+    update,
+    applyProductUpdate,
     getById,
     getFacets,
     listOpinions,

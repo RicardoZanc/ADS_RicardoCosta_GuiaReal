@@ -6,6 +6,7 @@ import {
 } from "../../lib/errors/BaseError";
 import { logger } from "../../utils/logger";
 import type { NodeGraphRow } from "../../lib/nodeGraph";
+import { fetchNodeGraph } from "../../lib/nodeGraph";
 import type { node_type } from "../../generated/prisma/enums";
 
 const forbiddenProductNodeTypes = ["ROOT", "TIPO"] as const;
@@ -241,9 +242,12 @@ export function buildDiscussionTabs(
   return tabs;
 }
 
-export async function ensureNameAvailable(name: string) {
+export async function ensureNameAvailable(name: string, excludeId?: string) {
   const existing = await prisma.products.findFirst({
-    where: { name: { equals: name.trim(), mode: "insensitive" } },
+    where: {
+      name: { equals: name.trim(), mode: "insensitive" },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
     select: { id: true },
   });
 
@@ -298,13 +302,16 @@ export async function resolveProductSearchScope(
   throw new BadRequestError("Informe tipo_id ou categoria_id");
 }
 
-export async function ensureEanAvailable(ean?: string) {
+export async function ensureEanAvailable(ean?: string, excludeId?: string) {
   if (!ean) {
     return;
   }
 
-  const existing = await prisma.products.findUnique({
-    where: { ean },
+  const existing = await prisma.products.findFirst({
+    where: {
+      ean,
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
     select: { id: true },
   });
 
@@ -312,4 +319,109 @@ export async function ensureEanAvailable(ean?: string) {
     logger.warn("Cadastro de produto rejeitado: EAN já cadastrado", { ean });
     throw new ConflictError("Já existe produto com este EAN");
   }
+}
+
+export type ProductUpdateInput = {
+  name?: string;
+  image_url?: string | null;
+  nodeIds?: string[];
+};
+
+export type ProductChangeTaxonomy = ProductTaxonomy;
+
+export type ProductChangeState = {
+  name: string;
+  image_url: string | null;
+  nodeIds: string[];
+  taxonomy: ProductChangeTaxonomy;
+};
+
+export async function loadProductChangeState(
+  productId: string
+): Promise<ProductChangeState> {
+  const product = await prisma.products.findUnique({
+    where: { id: productId },
+    select: {
+      id: true,
+      name: true,
+      image_url: true,
+      product_nodes: {
+        select: {
+          node_id: true,
+          nodes: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              parent_id: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!product) {
+    throw new NotFoundError("Produto não encontrado");
+  }
+
+  const seedNodes = product.product_nodes.map((item) => item.nodes);
+  const nodeById = await fetchNodeGraph(seedNodes.map((node) => node.id));
+
+  return {
+    name: product.name,
+    image_url: product.image_url,
+    nodeIds: product.product_nodes.map((item) => item.node_id),
+    taxonomy: buildProductTaxonomy(seedNodes, nodeById),
+  };
+}
+
+export async function validateProductUpdate(
+  productId: string,
+  input: ProductUpdateInput
+): Promise<ProductChangeState> {
+  const hasName = input.name !== undefined;
+  const hasImage = input.image_url !== undefined;
+  const hasNodeIds = input.nodeIds !== undefined;
+
+  if (!hasName && !hasImage && !hasNodeIds) {
+    throw new BadRequestError("Informe ao menos um campo para alterar");
+  }
+
+  await ensureProductExists(productId);
+  const current = await loadProductChangeState(productId);
+
+  if (hasName && input.name !== undefined) {
+    await ensureNameAvailable(input.name, productId);
+  }
+
+  if (hasNodeIds && input.nodeIds !== undefined) {
+    await validateProductNodeDependencies(input.nodeIds);
+  }
+
+  const nextName = hasName ? input.name! : current.name;
+  const nextImage = hasImage ? input.image_url ?? null : current.image_url;
+  const nextNodeIds = hasNodeIds ? [...new Set(input.nodeIds!)] : current.nodeIds;
+
+  const unchanged =
+    nextName === current.name &&
+    nextImage === current.image_url &&
+    arraysEqual(nextNodeIds, current.nodeIds);
+
+  if (unchanged) {
+    throw new BadRequestError("Nenhuma alteração foi informada");
+  }
+
+  return current;
+}
+
+function arraysEqual(left: string[], right: string[]) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  const sortedLeft = [...left].sort();
+  const sortedRight = [...right].sort();
+
+  return sortedLeft.every((value, index) => value === sortedRight[index]);
 }

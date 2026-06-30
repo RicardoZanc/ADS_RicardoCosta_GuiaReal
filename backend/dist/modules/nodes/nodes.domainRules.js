@@ -21,6 +21,7 @@ export async function ensureNodeViewable(id) {
             type: true,
             parent_id: true,
             wikidata_id: true,
+            image_url: true,
             created_at: true,
         },
     });
@@ -111,23 +112,56 @@ async function ensureNodeNameAvailable(type, name, parentId, excludeId) {
     }
 }
 export async function ensureNodeRenamable(id, name) {
+    const node = await ensureNodeEditable(id);
+    await ensureNodeNameAvailable(node.type, name, node.parent_id ?? "", id);
+    return node;
+}
+export async function ensureNodeEditable(id) {
     const node = await prisma.nodes.findUnique({
         where: { id },
-        select: { id: true, type: true, parent_id: true },
+        select: {
+            id: true,
+            name: true,
+            type: true,
+            parent_id: true,
+            image_url: true,
+        },
     });
     if (!node) {
-        logger.warn("Renomeação de nó rejeitada: nó não encontrado", { id });
+        logger.warn("Edição de nó rejeitada: nó não encontrado", { id });
         throw new NotFoundError("Nó não encontrado");
     }
     if (UNRENAMABLE_TYPES.has(node.type)) {
-        logger.warn("Renomeação de nó rejeitada: tipo de infraestrutura", {
+        logger.warn("Edição de nó rejeitada: tipo de infraestrutura", {
             id,
             type: node.type,
         });
-        throw new BadRequestError("Nós do tipo ROOT ou TIPO não podem ser renomeados");
+        throw new BadRequestError("Nós do tipo ROOT ou TIPO não podem ser editados");
     }
-    await ensureNodeNameAvailable(node.type, name, node.parent_id ?? "", id);
     return node;
+}
+export async function validateNodeUpdate(id, input) {
+    const hasName = input.name !== undefined;
+    const hasImage = input.image_url !== undefined;
+    if (!hasName && !hasImage) {
+        throw new BadRequestError("Informe ao menos um campo para alterar");
+    }
+    const node = await ensureNodeEditable(id);
+    if (hasName && input.name !== undefined) {
+        await ensureNodeNameAvailable(node.type, input.name, node.parent_id ?? "", id);
+    }
+    const nextState = {
+        name: hasName ? input.name : node.name,
+        image_url: hasImage ? input.image_url ?? null : node.image_url,
+    };
+    if (nextState.name === node.name &&
+        nextState.image_url === node.image_url) {
+        throw new BadRequestError("Nenhuma alteração foi informada");
+    }
+    return {
+        name: node.name,
+        image_url: node.image_url,
+    };
 }
 export async function resolveNodeCreationDependencies(input) {
     logger.debug("Resolução de dependências para criação de nó iniciada", {

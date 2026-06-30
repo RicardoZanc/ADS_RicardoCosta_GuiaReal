@@ -183,25 +183,7 @@ export async function ensureNodeRenamable(
   id: string,
   name: string
 ): Promise<{ id: string; type: node_type; parent_id: string | null }> {
-  const node = await prisma.nodes.findUnique({
-    where: { id },
-    select: { id: true, type: true, parent_id: true },
-  });
-
-  if (!node) {
-    logger.warn("Renomeação de nó rejeitada: nó não encontrado", { id });
-    throw new NotFoundError("Nó não encontrado");
-  }
-
-  if (UNRENAMABLE_TYPES.has(node.type)) {
-    logger.warn("Renomeação de nó rejeitada: tipo de infraestrutura", {
-      id,
-      type: node.type,
-    });
-    throw new BadRequestError(
-      "Nós do tipo ROOT ou TIPO não podem ser renomeados"
-    );
-  }
+  const node = await ensureNodeEditable(id);
 
   await ensureNodeNameAvailable(
     node.type as AllowedNodeType,
@@ -211,6 +193,92 @@ export async function ensureNodeRenamable(
   );
 
   return node;
+}
+
+export type NodeUpdateInput = {
+  name?: string;
+  image_url?: string | null;
+};
+
+export type NodeChangeState = {
+  name: string;
+  image_url: string | null;
+};
+
+export async function ensureNodeEditable(id: string): Promise<{
+  id: string;
+  name: string;
+  type: node_type;
+  parent_id: string | null;
+  image_url: string | null;
+}> {
+  const node = await prisma.nodes.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      parent_id: true,
+      image_url: true,
+    },
+  });
+
+  if (!node) {
+    logger.warn("Edição de nó rejeitada: nó não encontrado", { id });
+    throw new NotFoundError("Nó não encontrado");
+  }
+
+  if (UNRENAMABLE_TYPES.has(node.type)) {
+    logger.warn("Edição de nó rejeitada: tipo de infraestrutura", {
+      id,
+      type: node.type,
+    });
+    throw new BadRequestError(
+      "Nós do tipo ROOT ou TIPO não podem ser editados"
+    );
+  }
+
+  return node;
+}
+
+export async function validateNodeUpdate(
+  id: string,
+  input: NodeUpdateInput
+): Promise<NodeChangeState> {
+  const hasName = input.name !== undefined;
+  const hasImage = input.image_url !== undefined;
+
+  if (!hasName && !hasImage) {
+    throw new BadRequestError("Informe ao menos um campo para alterar");
+  }
+
+  const node = await ensureNodeEditable(id);
+
+  if (hasName && input.name !== undefined) {
+    await ensureNodeNameAvailable(
+      node.type as AllowedNodeType,
+      input.name,
+      node.parent_id ?? "",
+      id
+    );
+  }
+
+  const nextState: NodeChangeState = {
+    name: hasName ? input.name! : node.name,
+    image_url: hasImage ? input.image_url ?? null : node.image_url,
+  };
+
+  if (
+    nextState.name === node.name &&
+    nextState.image_url === node.image_url
+  ) {
+    throw new BadRequestError("Nenhuma alteração foi informada");
+  }
+
+  return {
+    name: node.name,
+    image_url: node.image_url,
+  };
 }
 
 export async function resolveNodeCreationDependencies(

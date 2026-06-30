@@ -19,3 +19,10 @@ export const createProfileImageUploadSchema = z.object({
         }),
     }),
 });
+export const createNodeImageUploadSchema = z.object({
+    body: z.object({
+        contentType: z.enum(ALLOWED_PRODUCT_IMAGE_CONTENT_TYPES, {
+            message: "Tipo de imagem não suportado",
+        }),
+    }),
+});

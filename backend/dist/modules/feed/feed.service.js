@@ -82,7 +82,11 @@ function buildDiscussionPreviews(opinions) {
             id: thread.id,
             content: thread.content,
             created_at: toIsoString(thread.created_at),
-            author: { id: thread.author.id, username: thread.author.username },
+            author: {
+                id: thread.author.id,
+                username: thread.author.username,
+                is_admin: thread.author.is_admin,
+            },
         });
         usedIds.add(thread.id);
     }
@@ -97,7 +101,11 @@ function buildDiscussionPreviews(opinions) {
                 id: opinion.id,
                 content: opinion.content,
                 created_at: toIsoString(opinion.created_at),
-                author: { id: opinion.users.id, username: opinion.users.username },
+                author: {
+                    id: opinion.users.id,
+                    username: opinion.users.username,
+                    is_admin: opinion.users.is_admin,
+                },
             });
             usedIds.add(opinion.id);
         }
@@ -127,14 +135,14 @@ const opinionSelect = {
     id: true,
     content: true,
     created_at: true,
-    users: { select: { id: true, username: true } },
+    users: { select: { id: true, username: true, is_admin: true } },
     discussion_threads: {
         select: {
             id: true,
             content: true,
             created_at: true,
             parent_interaction_id: true,
-            users: { select: { id: true, username: true } },
+            users: { select: { id: true, username: true, is_admin: true } },
         },
     },
 };
@@ -231,6 +239,7 @@ async function enrichFeedItems(itemRows) {
                 select: {
                     id: true,
                     name: true,
+                    image_url: true,
                     created_at: true,
                     type: true,
                     parent_id: true,
@@ -281,7 +290,7 @@ async function enrichFeedItems(itemRows) {
             id: node.id,
             name: node.name,
             brand_name: null,
-            image_url: null,
+            image_url: node.image_url,
             created_at: toIsoString(node.created_at),
             nodes: resolveNodesWithParents([seedNode], nodeById),
             discussionPreviews: buildDiscussionPreviews(node.opinions),

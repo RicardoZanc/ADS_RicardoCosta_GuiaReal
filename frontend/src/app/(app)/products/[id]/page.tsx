@@ -9,6 +9,7 @@ import { DiscussionTabBar } from "@/components/product-detail/DiscussionTabBar";
 import { OpinionComposer } from "@/components/product-detail/OpinionComposer";
 import { OpinionList } from "@/components/product-detail/OpinionList";
 import { ProductTaxonomyPanel } from "@/components/product-detail/ProductTaxonomyPanel";
+import { EntityEditButton } from "@/components/entity-detail/EntityEditButton";
 import { useProductDetailController } from "./controller";
 
 function DetailSkeleton() {
@@ -81,10 +82,11 @@ export default function ProductDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-      <div className="mb-8">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link href="/feed">← Voltar ao feed</Link>
         </Button>
+        <EntityEditButton href={`/products/${product.id}/edit`} />
       </div>
 
       <div className="flex flex-col gap-10 lg:gap-12">

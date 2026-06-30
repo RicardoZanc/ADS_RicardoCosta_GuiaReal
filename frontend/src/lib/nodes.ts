@@ -1,6 +1,12 @@
 import { apiClient } from "@/lib/api";
-import type { NodeDetailResponse } from "@/lib/types/nodes";
+import { patchEntity } from "@/lib/patchEntity";
+import type { NodeDetailResponse, NodeRecord } from "@/lib/types/nodes";
 import type { ProductOpinionsResponse } from "@/lib/types/products";
+
+export type UpdateNodePayload = {
+  name?: string;
+  image_url?: string | null;
+};
 
 export const NODE_OPINIONS_PAGE_LIMIT = 20;
 
@@ -26,4 +32,8 @@ export function fetchNodeOpinions(
       limit: String(limit),
     },
   });
+}
+
+export function updateNode(id: string, body: UpdateNodePayload) {
+  return patchEntity<NodeRecord>(`/nodes/${id}`, { body });
 }

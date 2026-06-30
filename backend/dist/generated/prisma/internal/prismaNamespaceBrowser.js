@@ -50,6 +50,8 @@ export const ModelName = {
     reaction_votes: 'reaction_votes',
     reports: 'reports',
     technical_facts: 'technical_facts',
+    change_requests: 'change_requests',
+    admin_requests: 'admin_requests',
     users: 'users',
     user_interests: 'user_interests'
 };
@@ -86,6 +88,7 @@ export const NodesScalarFieldEnum = {
     name: 'name',
     type: 'type',
     wikidata_id: 'wikidata_id',
+    image_url: 'image_url',
     created_at: 'created_at'
 };
 export const OpinionsScalarFieldEnum = {
@@ -156,6 +159,31 @@ export const Technical_factsScalarFieldEnum = {
     status: 'status',
     last_updated: 'last_updated'
 };
+export const Change_requestsScalarFieldEnum = {
+    id: 'id',
+    user_id: 'user_id',
+    entity_type: 'entity_type',
+    entity_id: 'entity_id',
+    changes: 'changes',
+    previous_state: 'previous_state',
+    status: 'status',
+    reviewer_id: 'reviewer_id',
+    reviewed_at: 'reviewed_at',
+    rejection_reason: 'rejection_reason',
+    created_at: 'created_at',
+    updated_at: 'updated_at'
+};
+export const Admin_requestsScalarFieldEnum = {
+    id: 'id',
+    user_id: 'user_id',
+    message: 'message',
+    status: 'status',
+    reviewer_id: 'reviewer_id',
+    reviewed_at: 'reviewed_at',
+    rejection_reason: 'rejection_reason',
+    created_at: 'created_at',
+    updated_at: 'updated_at'
+};
 export const UsersScalarFieldEnum = {
     id: 'id',
     email: 'email',
@@ -179,6 +207,9 @@ export const SortOrder = {
 };
 export const NullableJsonNullValueInput = {
     DbNull: DbNull,
+    JsonNull: JsonNull
+};
+export const JsonNullValueInput = {
     JsonNull: JsonNull
 };
 export const QueryMode = {

@@ -15,6 +15,8 @@ function mapThreadToReply(thread) {
         author: {
             id: thread.users.id,
             username: thread.users.username,
+            avatar_url: thread.users.avatar_url,
+            is_admin: thread.users.is_admin,
         },
         cached_upvotes: thread.cached_upvotes ?? 0,
         user_vote: null,
@@ -94,6 +96,8 @@ export async function listOpinionsPage({ whereClause, page, limit, userId, }) {
         o.created_at,
         u.id AS author_id,
         u.username,
+        u.avatar_url AS author_avatar_url,
+        u.is_admin AS author_is_admin,
         COALESCE(o.cached_upvotes, 0)::int AS cached_upvotes,
         o.reports_locked,
         (
@@ -109,7 +113,7 @@ export async function listOpinionsPage({ whereClause, page, limit, userId, }) {
       INNER JOIN users u ON u.id = o.user_id
       LEFT JOIN discussion_threads dt ON dt.opinion_id = o.id AND dt.is_hidden = false
       WHERE ${whereClause} AND o.is_hidden = false
-      GROUP BY o.id, u.id, u.username
+      GROUP BY o.id, u.id, u.username, u.avatar_url, u.is_admin
       ORDER BY
         has_replies DESC,
         score DESC,
@@ -135,7 +139,9 @@ export async function listOpinionsPage({ whereClause, page, limit, userId, }) {
                 created_at: true,
                 cached_upvotes: true,
                 reports_locked: true,
-                users: { select: { id: true, username: true } },
+                users: {
+                    select: { id: true, username: true, avatar_url: true, is_admin: true },
+                },
             },
         })
         : [];
@@ -180,7 +186,12 @@ export async function listOpinionsPage({ whereClause, page, limit, userId, }) {
             title: row.title,
             content: row.content,
             created_at: toIsoString(row.created_at),
-            author: { id: row.author_id, username: row.username },
+            author: {
+                id: row.author_id,
+                username: row.username,
+                avatar_url: row.author_avatar_url,
+                is_admin: row.author_is_admin,
+            },
             cached_upvotes: row.cached_upvotes,
             user_vote: votesByOpinionId.get(row.id) ?? null,
             score: row.score,

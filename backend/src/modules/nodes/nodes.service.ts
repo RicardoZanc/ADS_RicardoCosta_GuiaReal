@@ -9,13 +9,14 @@ import type {
   CreateNodeInput,
   ListNodeOpinionsQuery,
   ResolvedNodeSearchQuery,
+  UpdateNodeInput,
 } from "./nodes.schema";
 import {
   buildNodeContext,
-  ensureNodeRenamable,
   ensureNodeViewable,
   resolveNodeCreationDependencies,
   resolveNodeSearchQuery,
+  validateNodeUpdate,
 } from "./nodes.domainRules";
 import type { node_type } from "../../generated/prisma/enums";
 
@@ -178,15 +179,23 @@ const create = async (input: CreateNodeInput) => {
   }
 };
 
-const update = async (id: string, name: string) => {
-  logger.debug("Renomeação de nó: payload recebido", { id, name });
+const applyNodeUpdate = async (id: string, input: UpdateNodeInput) => {
+  logger.debug("Atualização de nó: payload recebido", { id, input });
 
-  await ensureNodeRenamable(id, name);
+  await validateNodeUpdate(id, input);
+
+  const data: { name?: string; image_url?: string | null } = {};
+  if (input.name !== undefined) {
+    data.name = input.name;
+  }
+  if (input.image_url !== undefined) {
+    data.image_url = input.image_url;
+  }
 
   try {
     const node = await prisma.nodes.update({
       where: { id },
-      data: { name },
+      data,
       select: {
         id: true,
         name: true,
@@ -198,7 +207,7 @@ const update = async (id: string, name: string) => {
       },
     });
 
-    logger.debug("Renomeação de nó: persistência concluída", {
+    logger.debug("Atualização de nó: persistência concluída", {
       nodeId: node.id,
       type: node.type,
     });
@@ -206,15 +215,16 @@ const update = async (id: string, name: string) => {
     return node;
   } catch (error) {
     if (isUniqueConstraintError(error)) {
-      logger.warn("Renomeação de nó rejeitada: conflito de unicidade", {
+      logger.warn("Atualização de nó rejeitada: conflito de unicidade", {
         id,
-        name,
       });
       throw new ConflictError("Já existe um nó com os mesmos dados únicos");
     }
     throw error;
   }
 };
+
+const update = applyNodeUpdate;
 
 const search = async (query: ResolvedNodeSearchQuery) => {
   const fuzziness = getNodesSearchFuzziness();
@@ -276,6 +286,7 @@ const search = async (query: ResolvedNodeSearchQuery) => {
 export const nodesService = {
   create,
   update,
+  applyNodeUpdate,
   search,
   getById,
   listOpinions,

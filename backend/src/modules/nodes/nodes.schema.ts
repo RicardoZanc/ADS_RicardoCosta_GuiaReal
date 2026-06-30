@@ -51,9 +51,24 @@ export const updateNodeSchema = z.object({
   params: z.object({
     id: z.uuid("ID do nó inválido"),
   }),
-  body: z.object({
-    name: z.string().trim().min(1, "O nome do nó é obrigatório"),
-  }),
+  body: z
+    .object({
+      name: z.string().trim().min(1, "O nome do nó é obrigatório").optional(),
+      image_url: z
+        .union([
+          z
+            .url("URL da imagem inválida")
+            .refine(
+              (url) => isAllowedNodeImageUrl(url),
+              "URL da imagem deve ser do bucket de nós do Supabase"
+            ),
+          z.null(),
+        ])
+        .optional(),
+    })
+    .refine((data) => data.name !== undefined || data.image_url !== undefined, {
+      message: "Informe ao menos um campo para alterar",
+    }),
 });
 
 export const getNodeSchema = z.object({

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const ADMIN_TABS = [
   { href: "/admin/reports", label: "Denúncias" },
+  { href: "/admin/change-requests", label: "Solicitações de mudança" },
   { href: "/admin/requests", label: "Solicitações de admin" },
 ] as const;
 
@@ -33,7 +34,7 @@ export default function AdminLayout({
       <SectionHeader
         eyebrow="Administração"
         title="Moderação"
-        description="Gerencie denúncias e solicitações de administrador da comunidade."
+        description="Gerencie denúncias, solicitações de mudança e pedidos de administrador."
       />
 
       <nav

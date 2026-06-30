@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api";
+import { patchEntity } from "@/lib/patchEntity";
 import type {
   CreateOpinionPayload,
   CreateOpinionResponse,
@@ -8,6 +9,12 @@ import type {
   ReactionAction,
   ReactionResponse,
 } from "@/lib/types/products";
+
+export type UpdateProductPayload = {
+  name?: string;
+  image_url?: string | null;
+  nodeIds?: string[];
+};
 
 export const PRODUCT_OPINIONS_PAGE_LIMIT = 20;
 
@@ -20,6 +27,10 @@ export type FetchProductOpinionsParams = {
 
 export function fetchProductDetail(id: string): Promise<ProductDetailResponse> {
   return apiClient<ProductDetailResponse>(`/products/${id}`);
+}
+
+export function updateProduct(id: string, body: UpdateProductPayload) {
+  return patchEntity<ProductDetailResponse>(`/products/${id}`, { body });
 }
 
 export function fetchProductOpinions(

@@ -170,6 +170,27 @@ model technical_facts {
   nodes            nodes?          @relation(fields: [node_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
+model change_requests {
+  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String                 @db.Uuid
+  entity_type      change_entity_type
+  entity_id        String                 @db.Uuid
+  changes          Json
+  previous_state   Json
+  status           change_request_status? @default(PENDING)
+  reviewer_id      String?                @db.Uuid
+  reviewed_at      DateTime?              @db.Timestamptz(6)
+  rejection_reason String?
+  created_at       DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?              @updatedAt @db.Timestamptz(6)
+  users            users                  @relation("change_requests_submitted", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reviewer         users?                 @relation("change_requests_reviewed", fields: [reviewer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([status])
+  @@index([entity_type, entity_id])
+  @@index([user_id])
+}
+
 model admin_requests {
   id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id          String                @db.Uuid
@@ -207,6 +228,8 @@ model users {
   reports_reviewed         reports[]            @relation("reports_reviewer")
   admin_requests_submitted admin_requests[]     @relation("admin_requests_submitted")
   admin_requests_reviewed  admin_requests[]     @relation("admin_requests_reviewed")
+  change_requests_submitted change_requests[]   @relation("change_requests_submitted")
+  change_requests_reviewed  change_requests[]   @relation("change_requests_reviewed")
   user_interests           user_interests[]
 }
 
@@ -265,4 +288,15 @@ enum admin_request_status {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum change_request_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum change_entity_type {
+  NODE
+  PRODUCT
 }

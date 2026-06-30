@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { nodesService } from "./nodes.service";
+import { changeRequestsService } from "../change-requests/changeRequests.service";
 import { resolveNodeSearchQuery } from "./nodes.domainRules";
 import type { ListNodeOpinionsQuery, ListNodesQuery } from "./nodes.schema";
 import { logger } from "../../utils/logger";
@@ -63,16 +64,40 @@ const nodesController = {
   },
   update: async (req: Request, res: Response) => {
     const id = req.params.id as string;
+    const user = req.user!;
+
     logger.info("HTTP PATCH /api/nodes/:id - Iniciado", {
       nodeId: id,
-      name: req.body.name,
+      userId: user.id,
+      isAdmin: user.is_admin,
     });
-    const node = await nodesService.update(id, req.body.name);
-    logger.info("HTTP PATCH /api/nodes/:id - Concluído", {
-      nodeId: node.id,
-      type: node.type,
+
+    if (user.is_admin) {
+      const node = await nodesService.update(id, req.body);
+      logger.info("HTTP PATCH /api/nodes/:id - Concluído (admin)", {
+        nodeId: node.id,
+        type: node.type,
+      });
+      res.status(200).json(node);
+      return;
+    }
+
+    const request = await changeRequestsService.createForNode(
+      user.id,
+      id,
+      req.body
+    );
+
+    logger.info("HTTP PATCH /api/nodes/:id - Solicitação criada", {
+      nodeId: id,
+      changeRequestId: request.id,
     });
-    res.status(200).json(node);
+
+    res.status(202).json({
+      change_request_id: request.id,
+      status: "PENDING",
+      request,
+    });
   },
 };
 

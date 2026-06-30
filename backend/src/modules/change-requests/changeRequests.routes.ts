@@ -1,0 +1,37 @@
+import { Router } from "express";
+import { changeRequestsController } from "./changeRequests.controller";
+import {
+  listChangeRequestsSchema,
+  listMyChangeRequestsSchema,
+  updateChangeRequestSchema,
+} from "./changeRequests.schema";
+import { validate } from "../../middlewares/validate.middleware";
+import { authenticateJwt } from "../../middlewares/auth.middleware";
+import { requireAdmin } from "../../middlewares/admin.middleware";
+
+const changeRequestsRoutes = Router();
+
+changeRequestsRoutes.get(
+  "/me",
+  authenticateJwt,
+  validate(listMyChangeRequestsSchema),
+  changeRequestsController.listMine
+);
+
+changeRequestsRoutes.get(
+  "/",
+  authenticateJwt,
+  requireAdmin,
+  validate(listChangeRequestsSchema),
+  changeRequestsController.list
+);
+
+changeRequestsRoutes.patch(
+  "/:id",
+  authenticateJwt,
+  requireAdmin,
+  validate(updateChangeRequestSchema),
+  changeRequestsController.review
+);
+
+export { changeRequestsRoutes };

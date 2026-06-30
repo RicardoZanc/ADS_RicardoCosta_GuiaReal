@@ -184,12 +184,13 @@ Detalhe de um nó visualizável.
 
 ## `PATCH /nodes/:id`
 
-Renomeia um nó existente.
+Atualiza nome e/ou imagem de um nó existente.
 
 | Item | Valor |
 |------|-------|
 | Autenticação | JWT Bearer |
-| Sucesso | `200 OK` |
+| Sucesso (admin) | `200 OK` — alteração aplicada imediatamente |
+| Sucesso (usuário) | `202 Accepted` — solicitação de mudança criada para revisão |
 
 ### Path
 
@@ -201,14 +202,33 @@ Renomeia um nó existente.
 
 | Campo | Tipo | Obrigatório | Regras |
 |-------|------|-------------|--------|
-| `name` | string | sim | Não vazio (trim) |
+| `name` | string | não* | Não vazio (trim) se informado |
+| `image_url` | string \| null | não* | URL do bucket de nós do Supabase, ou `null` para remover |
+
+\* Pelo menos um campo deve ser informado.
+
+### Moderação
+
+- **Admin** (`users.is_admin = true`): persiste direto e retorna o nó atualizado (`200`).
+- **Usuário comum**: cria registro em `change_requests` (`PENDING`) e retorna:
+
+```json
+{
+  "change_request_id": "uuid",
+  "status": "PENDING",
+  "request": { }
+}
+```
+
+Revisão admin: `PATCH /api/change-requests/:id` com `status: "APPROVED"` ou `"REJECTED"`.
 
 ### Regras de negócio
 
-- Nós `ROOT` e `TIPO` não podem ser renomeados.
+- Nós `ROOT` e `TIPO` não podem ser editados.
 - Nome único por `(type, parent_id)` — case insensitive.
+- No máximo uma solicitação `PENDING` por entidade.
 
-### Resposta
+### Resposta (admin, `200`)
 
 Mesmo formato de `POST /nodes` (objeto do nó atualizado).
 
@@ -216,9 +236,12 @@ Mesmo formato de `POST /nodes` (objeto do nó atualizado).
 
 | Status | `message` típico |
 |--------|------------------|
-| `400` | `Nós do tipo ROOT ou TIPO não podem ser renomeados` |
+| `400` | `Nós do tipo ROOT ou TIPO não podem ser editados` |
+| `400` | `Informe ao menos um campo para alterar` |
+| `400` | `Nenhuma alteração foi informada` |
 | `404` | `Nó não encontrado` |
 | `409` | `Já existe um nó com este nome para o tipo informado` |
+| `409` | `Já existe uma solicitação pendente para esta entidade` |
 | `422` | `Dados inválidos` |
 
 ---

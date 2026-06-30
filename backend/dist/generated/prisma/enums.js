@@ -40,3 +40,17 @@ export const report_status = {
     RESOLVED: 'RESOLVED',
     REJECTED: 'REJECTED'
 };
+export const admin_request_status = {
+    PENDING: 'PENDING',
+    APPROVED: 'APPROVED',
+    REJECTED: 'REJECTED'
+};
+export const change_request_status = {
+    PENDING: 'PENDING',
+    APPROVED: 'APPROVED',
+    REJECTED: 'REJECTED'
+};
+export const change_entity_type = {
+    NODE: 'NODE',
+    PRODUCT: 'PRODUCT'
+};

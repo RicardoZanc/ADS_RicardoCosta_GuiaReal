@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestError } from "../../lib/errors/BaseError";
-import { buildProfileImagePublicUrl, buildProductImagePublicUrl, getProfilesBucketName, getProductsBucketName, getSupabaseAdmin, } from "../../lib/supabase";
+import { buildNodeImagePublicUrl, buildProfileImagePublicUrl, buildProductImagePublicUrl, getNodesBucketName, getProfilesBucketName, getProductsBucketName, getSupabaseAdmin, } from "../../lib/supabase";
 const CONTENT_TYPE_EXTENSION = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -32,7 +32,11 @@ const createProductImageUpload = async (userId, contentType) => {
 const createProfileImageUpload = async (userId, contentType) => {
     return createSignedUpload(userId, contentType, getProfilesBucketName(), buildProfileImagePublicUrl);
 };
+const createNodeImageUpload = async (userId, contentType) => {
+    return createSignedUpload(userId, contentType, getNodesBucketName(), buildNodeImagePublicUrl);
+};
 export const uploadsService = {
     createProductImageUpload,
     createProfileImageUpload,
+    createNodeImageUpload,
 };

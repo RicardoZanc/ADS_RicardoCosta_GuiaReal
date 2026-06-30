@@ -6,6 +6,7 @@ import {
   listProductOpinionsSchema,
   productFacetsSchema,
   productSearchSchema,
+  updateProductSchema,
 } from "./products.schema";
 import { validate } from "../../middlewares/validate.middleware";
 import {
@@ -48,6 +49,13 @@ productsRoutes.post(
   authenticateJwt,
   validate(createProductSchema),
   productsController.create
+);
+
+productsRoutes.patch(
+  "/:id",
+  authenticateJwt,
+  validate(updateProductSchema),
+  productsController.update
 );
 
 export { productsRoutes };
