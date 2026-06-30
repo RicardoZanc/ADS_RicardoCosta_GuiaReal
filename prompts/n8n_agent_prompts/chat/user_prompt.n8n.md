@@ -33,9 +33,9 @@ Processe a mensagem do usuário no chat do GuiaReal e retorne o JSON conforme in
 
 ---
 
-## Versão com histórico futuro (placeholder)
+## Versão com histórico (recomendada)
 
-Quando o backend passar histórico de mensagens, estenda o prompt assim:
+O backend envia `message_history` no payload. Use quando o Webhook Trigger entrega o payload no `$json.body` ou `$json`:
 
 ```
 Processe a mensagem do usuário no chat do GuiaReal e retorne o JSON conforme instruído.
@@ -43,6 +43,5 @@ Processe a mensagem do usuário no chat do GuiaReal e retorne o JSON conforme in
 Payload recebido:
 {{ JSON.stringify($json.body ?? $json, null, 2) }}
 
-Histórico da conversa (se disponível):
-{{ JSON.stringify($json.message_history ?? [], null, 2) }}
+O campo message_history contém mensagens anteriores (sender + content), em ordem cronológica. A mensagem atual está em user_message (fora do histórico).
 ```

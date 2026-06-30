@@ -1,8 +1,8 @@
 "use client";
 
-import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { hasMessageSources } from "@/lib/chatEvidence";
+import { ChatMarkdown } from "@/components/chat/ChatMarkdown";
 import { ChatMessageSources } from "@/components/chat/ChatMessageSources";
 import type { ChatMessage as ChatMessageType } from "@/lib/types/chats";
 
@@ -31,8 +31,8 @@ export function ChatMessage({ message }: ChatMessageProps) {
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
           <>
-            <div className="prose prose-invert prose-sm max-w-none [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_code]:rounded [&_code]:bg-muted/40 [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/30 [&_pre]:p-3">
-              <Markdown>{message.content}</Markdown>
+            <div className="prose prose-sm max-w-none dark:prose-invert [&_code]:rounded [&_code]:bg-muted/40 [&_code]:px-1 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/30 [&_pre]:p-3">
+              <ChatMarkdown content={message.content} />
             </div>
             {showSources && (
               <ChatMessageSources

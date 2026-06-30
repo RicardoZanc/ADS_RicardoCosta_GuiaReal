@@ -10,7 +10,7 @@ Fluxo: `Webhook Trigger` → `AI Agent` (+ tools) → `HTTP Request` (`POST /too
 |---------|------------|
 | [chat/system_prompt.md](chat/system_prompt.md) | **System Message** do nó AI Agent |
 | [chat/user_prompt.n8n.md](chat/user_prompt.n8n.md) | **Text / User Message** do nó AI Agent (expressões n8n) |
-| [chat/structured_output_schema.json](chat/structured_output_schema.json) | **Structured Output Parser** (opcional, recomendado) |
+| [chat/structured_output_schema.json](chat/structured_output_schema.json) | **Structured Output Parser** — habilitar *Require Specific Output Format* no AI Agent |
 | [chat/http_request_callback.md](chat/http_request_callback.md) | Configuração do nó HTTP Request de callback |
 
 ### Payload recebido no webhook
@@ -20,9 +20,15 @@ Fluxo: `Webhook Trigger` → `AI Agent` (+ tools) → `HTTP Request` (`POST /too
   "chat_id": "uuid",
   "user_id": "uuid",
   "user_message": "texto da mensagem do usuário",
-  "should_name_conversation": true
+  "should_name_conversation": true,
+  "message_history": [
+    { "sender": "USER", "content": "mensagem anterior do usuário" },
+    { "sender": "ASSISTANT", "content": "resposta anterior do assistente" }
+  ]
 }
 ```
+
+`message_history` contém as últimas N mensagens anteriores à atual (sem a mensagem em `user_message`). Na primeira mensagem de um chat, o array vem vazio.
 
 ### Tools disponíveis para o agente
 

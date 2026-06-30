@@ -12,7 +12,7 @@
     },
     "assistant_message": {
       "type": "string",
-      "description": "Resposta completa do assistente ao usuário em pt-BR",
+      "description": "Resposta completa ao usuário em pt-BR, formatada em Markdown (GFM)",
       "minLength": 1
     },
     "mentioned_technical_facts": {
