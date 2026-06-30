@@ -1,6 +1,9 @@
 import { prisma } from "../../lib/prisma";
 import { logger } from "../../utils/logger";
-import { dispatchN8nChatWebhook } from "../../lib/n8nChatWebhook";
+import {
+  dispatchN8nChatWebhook,
+  type ChatHistoryMessage,
+} from "../../lib/n8nChatWebhook";
 import { chatRoomId, getIo } from "../../lib/socket";
 import {
   assertChatBelongsToUser,
@@ -56,6 +59,32 @@ const dedupeEvidence = (items: EvidenceRef[]): EvidenceRef[] => {
   }
 
   return unique;
+};
+
+const getChatContextMessageLimit = (): number => {
+  const parsed = Number(process.env.CHAT_CONTEXT_MESSAGE_LIMIT ?? 20);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 20;
+};
+
+const getMessageHistoryForAgent = async (
+  chatId: string,
+  excludeMessageId: string,
+  limit = getChatContextMessageLimit()
+): Promise<ChatHistoryMessage[]> => {
+  const messages = await prisma.chat_messages.findMany({
+    where: {
+      chat_id: chatId,
+      id: { not: excludeMessageId },
+    },
+    orderBy: { created_at: "desc" },
+    take: limit,
+    select: {
+      sender: true,
+      content: true,
+    },
+  });
+
+  return messages.reverse();
 };
 
 const resolveMentionedEvidence = (
@@ -117,6 +146,7 @@ const createWithFirstMessage = async (
     user_id: userId,
     user_message: input.content,
     should_name_conversation: true,
+    message_history: [],
   });
 
   logger.debug("Chat: persistência concluída", {
@@ -244,11 +274,17 @@ const sendMessage = async (
     select: messageSelect,
   });
 
+  const message_history = await getMessageHistoryForAgent(
+    chatId,
+    message.id
+  );
+
   dispatchN8nChatWebhook({
     chat_id: chatId,
     user_id: userId,
     user_message: input.content,
     should_name_conversation: false,
+    message_history,
   });
 
   logger.debug("Chat: mensagem do usuário persistida", {

@@ -205,12 +205,17 @@ A mensagem do usuário é retornada no `POST /chats` — não é emitida via soc
   "chat_id": "uuid",
   "user_id": "uuid",
   "user_message": "texto da mensagem",
-  "should_name_conversation": true
+  "should_name_conversation": true,
+  "message_history": [
+    { "sender": "USER", "content": "..." },
+    { "sender": "ASSISTANT", "content": "..." }
+  ]
 }
 ```
 
 - `should_name_conversation: true` — apenas na primeira mensagem (`POST /chats`)
 - `should_name_conversation: false` — mensagens subsequentes (`POST /chats/:id/messages`)
+- `message_history` — últimas N mensagens anteriores à atual (configurável via `CHAT_CONTEXT_MESSAGE_LIMIT`, default 20). Vazio na primeira mensagem.
 
 Falha no webhook não impede a criação do chat (log WARN no backend).
 

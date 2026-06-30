@@ -1,10 +1,16 @@
 import { logger } from "../utils/logger";
 
+export type ChatHistoryMessage = {
+  sender: "USER" | "ASSISTANT";
+  content: string;
+};
+
 export type N8nChatWebhookPayload = {
   chat_id: string;
   user_id: string;
   user_message: string;
   should_name_conversation: boolean;
+  message_history: ChatHistoryMessage[];
 };
 
 function getN8nChatWebhookUrl(): string | null {
@@ -24,6 +30,7 @@ export async function notifyN8nChatWebhook(
   logger.debug("Enviando payload ao webhook n8n chat", {
     chatId: payload.chat_id,
     userId: payload.user_id,
+    historyLength: payload.message_history.length,
   });
 
   const response = await fetch(webhookUrl, {
