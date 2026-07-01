@@ -55,15 +55,6 @@ const create = async (reporterId, input) => {
         },
     });
     const factIds = await findLinkedFactIds(target.targetType, target.targetId);
-    if (factIds.length > 0) {
-        dispatchN8nReportWebhook({
-            report_id: report.id,
-            source_type: target.targetType,
-            source_id: target.targetId,
-            reason: input.reason,
-            fact_ids: factIds,
-        });
-    }
     return {
         id: report.id,
         target_type: target.targetType,
@@ -166,6 +157,7 @@ const update = async (reportId, reviewerId, input) => {
         select: {
             id: true,
             status: true,
+            reason: true,
             target_opinion_id: true,
             target_interaction_id: true,
         },
@@ -185,6 +177,20 @@ const update = async (reportId, reviewerId, input) => {
     }
     if (input.status === "RESOLVED" || input.status === "REJECTED") {
         await applyTargetModeration(targetType, targetId, input.status);
+    }
+    if (input.status === "RESOLVED") {
+        const factIds = await findLinkedFactIds(targetType, targetId);
+        if (factIds.length > 0) {
+            dispatchN8nReportWebhook({
+                report_id: reportId,
+                source_type: targetType,
+                source_id: targetId,
+                reason: report.reason,
+                fact_ids: factIds,
+                resolution: "RESOLVED",
+                admin_notes: input.admin_notes ?? null,
+            });
+        }
     }
     const updated = await prisma.reports.update({
         where: { id: reportId },

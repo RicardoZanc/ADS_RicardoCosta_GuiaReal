@@ -605,13 +605,27 @@ const removeEvidence = async (
     throw new NotFoundError("Evidência não encontrada para este fato");
   }
 
-  await prisma.fact_evidence.delete({ where: { id: evidence.id } });
+  const factDeleted = await prisma.$transaction(async (tx) => {
+    await tx.fact_evidence.delete({ where: { id: evidence.id } });
+
+    const remaining = await tx.fact_evidence.count({
+      where: { fact_id: factId },
+    });
+
+    if (remaining === 0) {
+      await tx.technical_facts.delete({ where: { id: factId } });
+      return true;
+    }
+
+    return false;
+  });
 
   return {
     fact_id: factId,
     source_type: sourceType,
     source_id: sourceId,
     removed: true,
+    fact_deleted: factDeleted,
   };
 };
 

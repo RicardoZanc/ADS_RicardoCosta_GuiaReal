@@ -14,6 +14,8 @@ Processe a mensagem do usuário no chat do GuiaReal e retorne o JSON conforme in
 
 Payload recebido:
 {{ JSON.stringify($json.body ?? $json, null, 2) }}
+
+IMPORTANTE: use chat_id = {{ ($json.body ?? $json).chat_id }} em Report Progress e na resposta final. Nunca substitua por outro UUID.
 ```
 
 ---
@@ -29,6 +31,8 @@ Processe a mensagem do usuário no chat do GuiaReal e retorne o JSON conforme in
 - user_id: {{ $json.user_id }}
 - user_message: {{ $json.user_message }}
 - should_name_conversation: {{ $json.should_name_conversation }}
+
+IMPORTANTE: use chat_id = {{ $json.chat_id }} em Report Progress e na resposta final. Nunca substitua por outro UUID.
 ```
 
 ---
@@ -44,4 +48,6 @@ Payload recebido:
 {{ JSON.stringify($json.body ?? $json, null, 2) }}
 
 O campo message_history contém mensagens anteriores (sender + content), em ordem cronológica. A mensagem atual está em user_message (fora do histórico).
+
+IMPORTANTE: use chat_id = {{ ($json.body ?? $json).chat_id }} em Report Progress e na resposta final. Nunca substitua por outro UUID.
 ```

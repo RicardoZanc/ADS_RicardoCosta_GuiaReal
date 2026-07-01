@@ -7,6 +7,8 @@ export type N8nReportWebhookPayload = {
   source_id: string;
   reason: string;
   fact_ids: string[];
+  resolution: "RESOLVED";
+  admin_notes?: string | null;
 };
 
 function getN8nReportWebhookUrl(): string | null {

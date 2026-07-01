@@ -315,7 +315,7 @@ Atualiza um fato técnico existente (revisão pós-denúncia).
 
 ## `DELETE /technical-facts/:fact_id/evidence/:source_type/:source_id`
 
-Remove o vínculo de evidência entre um fato e uma opinião/thread.
+Remove o vínculo de evidência entre um fato e uma opinião/thread. Se a evidência removida era a última do fato, o fato técnico é excluído automaticamente.
 
 | Item | Valor |
 |------|-------|
@@ -329,6 +329,12 @@ Remove o vínculo de evidência entre um fato e uma opinião/thread.
   "fact_id": "uuid",
   "source_type": "thread",
   "source_id": "uuid",
-  "removed": true
+  "removed": true,
+  "fact_deleted": true
 }
 ```
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `removed` | boolean | Sempre `true` em sucesso |
+| `fact_deleted` | boolean | `true` se o fato foi excluído por ficar sem evidências; `false` se ainda restam outras evidências |

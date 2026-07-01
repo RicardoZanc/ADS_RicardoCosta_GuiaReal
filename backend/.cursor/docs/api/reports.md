@@ -39,7 +39,7 @@ Cria uma denúncia sobre uma opinião raiz ou comentário (thread).
 - Um usuário só pode denunciar o mesmo alvo uma vez
 - Conteúdo com `reports_locked = true` não pode ser denunciado
 - Conteúdo oculto (`is_hidden`) retorna `404`
-- Se o conteúdo estiver vinculado a fatos técnicos via `fact_evidence`, dispara webhook n8n (`N8N_REPORT_WEBHOOK_URL`) para revisão automática
+- `linked_fact_count` na resposta indica quantos fatos técnicos estão vinculados (informativo; revisão ocorre apenas após moderação)
 
 ### Resposta
 
@@ -139,7 +139,7 @@ Atualiza o status de uma denúncia (somente administradores).
 | Status | Efeito no conteúdo |
 |--------|-------------------|
 | `UNDER_REVIEW` | Apenas atualiza a denúncia |
-| `RESOLVED` | Oculta o conteúdo (`is_hidden = true`) |
+| `RESOLVED` | Oculta o conteúdo (`is_hidden = true`); se houver `fact_evidence` vinculada, dispara webhook n8n (`N8N_REPORT_WEBHOOK_URL`) para revisão automática dos fatos |
 | `REJECTED` | Bloqueia novas denúncias (`reports_locked = true`) |
 
 ### Resposta
@@ -159,7 +159,7 @@ Atualiza o status de uma denúncia (somente administradores).
 
 ## Webhook n8n (outbound)
 
-Quando uma denúncia é criada e há fatos técnicos vinculados:
+Quando um administrador marca uma denúncia como `RESOLVED` e o conteúdo denunciado possui fatos técnicos vinculados via `fact_evidence`:
 
 | Variável | Exemplo |
 |----------|---------|
@@ -173,7 +173,9 @@ Quando uma denúncia é criada e há fatos técnicos vinculados:
   "source_type": "thread",
   "source_id": "uuid",
   "reason": "MISLEADING",
-  "fact_ids": ["uuid", "uuid"]
+  "fact_ids": ["uuid", "uuid"],
+  "resolution": "RESOLVED",
+  "admin_notes": "Conteúdo ofensivo confirmado."
 }
 ```
 

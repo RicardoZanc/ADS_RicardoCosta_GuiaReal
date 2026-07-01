@@ -161,7 +161,7 @@ const technicalFactsController = {
 
     logger.info(
       "HTTP DELETE /tool/technical-facts/:fact_id/evidence/:source_type/:source_id - Concluído",
-      { factId, sourceType, sourceId }
+      { factId, sourceType, sourceId, factDeleted: result.fact_deleted }
     );
 
     res.status(200).json(result);

@@ -2,31 +2,36 @@
   "id": "n8rC4HvhRG1NXvRw",
   "name": "GuiaReal Report Fact Review",
   "active": true,
-  "versionId": "8b39a521-e44c-4642-ad31-3bf4c5c91d74",
+  "versionId": "73a87433-24b2-44e7-b0c2-35427a2e0f71",
+  "description": "Revisa fatos técnicos quando um admin aplica denúncia (RESOLVED) sobre conteúdo usado como evidência.",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "report-fact-review",
+        "responseMode": "onReceived",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [240, 300],
-      "id": "report-webhook-trigger",
+      "position": [0, 112],
+      "id": "0d32ef2c-b3d9-4964-a3d3-03196dad12cf",
       "name": "Report Webhook",
       "webhookId": "ec49624a-478b-411f-a939-6d0b78ee86c5"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "={\n  \"system_prompt\": \"Role: Moderador de Conhecimento Técnico e Auditor de Evidências.\\nContexto: Um comentário ou opinião foi denunciado na comunidade GuiaReal. Esse conteúdo pode estar vinculado como evidência a fatos técnicos existentes. Reavalie se essas evidências ainda sustentam os fatos após a denúncia.\\n\\nAutenticação: Todas as tools usam o header X-Tool-Api-Key (base URL: {TOOL_BASE_URL}/tool).\\n\\nFluxo:\\n1. Para cada fact_id no payload, chame GET /tool/technical-facts/by-evidence/{source_type}/{source_id}.\\n2. Se a evidência denunciada for inválida: DELETE /tool/technical-facts/{fact_id}/evidence/{source_type}/{source_id}.\\n3. Se questionável mas o fato permanece: PATCH /tool/technical-facts/{fact_id} ajustando status e/ou consensus_score.\\n4. Não crie novos fatos. Nunca invente UUIDs.\",\n  \"user_prompt\": {{ JSON.stringify($json.body ?? $json) }}\n}",
-        "options": {}
+        "text": "={{ JSON.stringify($json.body ?? $json) }}",
+        "options": {
+          "systemMessage": "Role: Moderador de Conhecimento Técnico e Auditor de Evidências.\nContexto: Um administrador confirmou uma denúncia (resolution: RESOLVED) sobre um comentário ou opinião na comunidade GuiaReal. O conteúdo foi ocultado. Esse conteúdo pode estar vinculado como evidência a fatos técnicos existentes. Reavalie se essas evidências ainda sustentam os fatos após a moderação confirmada.\n\nDenúncias pendentes ou rejeitadas não chegam a este fluxo — trate a evidência como confirmadamente problemática.\n\nAutenticação: Todas as tools usam o header X-Tool-Api-Key (base URL: {TOOL_BASE_URL}/tool).\n\nFluxo:\n1. Para cada fact_id no payload, chame GET /tool/technical-facts/by-evidence/{source_type}/{source_id}.\n2. Considere reason, admin_notes e o teor do conteúdo. Como a denúncia foi confirmada, tenda a remover ou rebaixar evidências.\n3. Se inválida: DELETE /tool/technical-facts/{fact_id}/evidence/{source_type}/{source_id}.\n4. Se questionável mas o fato permanece: PATCH /tool/technical-facts/{fact_id} ajustando status e/ou consensus_score.\n5. Não crie novos fatos. Nunca invente UUIDs. consensus_score entre 0.00 e 1.00.",
+          "maxIterations": 10
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
-      "position": [520, 300],
-      "id": "report-review-agent",
+      "position": [352, 112],
+      "id": "e94cf28b-170f-4231-88db-3031d9d08991",
       "name": "Report Review Agent"
     },
     {
@@ -36,13 +41,12 @@
           "mode": "list",
           "value": "gpt-5-mini"
         },
-        "builtInTools": {},
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
-      "position": [360, 520],
-      "id": "report-openai-model",
+      "position": [224, 336],
+      "id": "554ab5e2-a9f2-4f80-a795-a3c9af85ad2f",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
@@ -62,8 +66,8 @@
       },
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.4,
-      "position": [520, 520],
-      "id": "get-facts-by-evidence",
+      "position": [352, 336],
+      "id": "eb8852d2-c9de-4d4e-8251-fca95c9e098f",
       "name": "Get Facts By Evidence",
       "credentials": {
         "httpHeaderAuth": {
@@ -77,7 +81,7 @@
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "method": "PATCH",
-        "toolDescription": "Atualiza fato técnico existente. URL path id=uuid do fato. Body JSON: fact_label, fact_description, consensus_score, status.",
+        "toolDescription": "Atualiza fato técnico existente. Param fact_id (uuid). Body JSON: fact_label, fact_description, consensus_score, status.",
         "url": "={{ $env.TOOL_BASE_URL }}/technical-facts/{{ $fromAI('fact_id') }}",
         "sendBody": true,
         "specifyBody": "json",
@@ -86,8 +90,8 @@
       },
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.4,
-      "position": [720, 520],
-      "id": "patch-technical-fact",
+      "position": [480, 336],
+      "id": "3b69dc22-a71e-400e-be2a-a557bbccce94",
       "name": "Update Technical Fact",
       "credentials": {
         "httpHeaderAuth": {
@@ -107,8 +111,8 @@
       },
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.4,
-      "position": [920, 520],
-      "id": "delete-fact-evidence",
+      "position": [608, 336],
+      "id": "665a49fb-cc06-4d89-9f73-834b85260bda",
       "name": "Delete Fact Evidence",
       "credentials": {
         "httpHeaderAuth": {
@@ -137,7 +141,8 @@
   },
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "availableInMCP": true
   },
   "meta": {
     "templateCredsSetupCompleted": true

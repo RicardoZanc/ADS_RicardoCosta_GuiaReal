@@ -1,0 +1,4 @@
+# Versionamento interno dos workflows n8n — pode ficar desatualizado em relação
+# ao estado real publicado no n8n. IAs devem consultar o MCP do n8n
+# (get_workflow_details / search_workflows) como fonte de verdade, nunca estes arquivos.
+backend/n8n_workflows/

@@ -238,6 +238,8 @@ Persiste título e mensagem do assistente, emite eventos socket para a sala do c
 
 #### Body
 
+O backend aceita o body **flat** (campos na raiz) ou **wrapped** (`{ "output": { ... } }`). O n8n normaliza o payload antes do POST; o backend também desembrulha `output` quando presente.
+
 ```json
 {
   "chat_id": "uuid",
@@ -265,7 +267,7 @@ Persiste título e mensagem do assistente, emite eventos socket para a sala do c
 | `chat_id` | uuid | obrigatório |
 | `title` | string | máx. 255 caracteres; string vazia (`""`) quando o agente não deve alterar o título |
 | `assistant_message` | string | obrigatório, mínimo 1 caractere |
-| `mentioned_technical_facts` | array ou `null` | opcional; fatos técnicos usados na resposta, com `evidence[]` copiados da API |
+| `mentioned_technical_facts` | array ou `null` | opcional; fatos técnicos usados na resposta; `evidence[]` pode ser array vazio (`[]`) |
 | `mentioned_evidences` | array ou `null` | opcional; união deduplicada de opiniões/threads citadas. Se `mentioned_technical_facts` for enviado, o backend deriva este campo automaticamente |
 
 Quando `title` é string vazia, o backend **não atualiza** o título do chat e **não emite** `chat:title_updated`. Apenas a mensagem do assistente é persistida e propagada via socket.
