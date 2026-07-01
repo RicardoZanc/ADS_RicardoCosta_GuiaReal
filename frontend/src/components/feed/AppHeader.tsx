@@ -61,7 +61,7 @@ export function AppHeader({ username, isAdmin = false }: AppHeaderProps) {
 
   async function handleLogout() {
     await logout();
-    router.push("/login");
+    router.push("/");
   }
 
   return (
