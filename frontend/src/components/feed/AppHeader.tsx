@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "motion/react";
 import { SearchIcon } from "lucide-react";
@@ -52,7 +51,6 @@ function NavLink({ href, children, className }: NavLinkProps) {
 }
 
 export function AppHeader({ username, isAdmin = false }: AppHeaderProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const profilePath = `/users/${encodeURIComponent(username)}`;
@@ -61,7 +59,6 @@ export function AppHeader({ username, isAdmin = false }: AppHeaderProps) {
 
   async function handleLogout() {
     await logout();
-    router.push("/login");
   }
 
   return (
