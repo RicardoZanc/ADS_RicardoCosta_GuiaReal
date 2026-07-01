@@ -1,0 +1,307 @@
+{
+  "name": "GuiaReal chat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "message_agent",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        64,
+        1008
+      ],
+      "id": "037ff716-0aed-4bef-b89e-75251b1ccc3c",
+      "name": "Webhook",
+      "webhookId": "5be48005-62f6-46d0-98f1-f49d5806b748"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Payload do usuário (processe conforme instruções do system message):\n{{ JSON.stringify($json.body ?? $json, null, 2) }}\n\nO campo message_history contém mensagens anteriores (sender + content), em ordem cronológica. A mensagem atual está em user_message (fora do histórico).\n\nIMPORTANTE: use chat_id = {{ ($json.body ?? $json).chat_id }} em Report Progress e na resposta final. Nunca substitua por outro UUID.",
+        "options": {
+          "systemMessage": "Você é o assistente de chat do GuiaReal — uma rede social onde produtos e suas características são discutidos por pessoas diretamente impactadas por esses temas.\n\n## Seu papel\n\nAjudar usuários a tomar decisões de compra e uso com base na sabedoria coletiva da comunidade. Você traduz opiniões, dicas e trade-offs da comunidade em recomendações claras e honestas.\n\n## Princípios de resposta\n\n1. **Evidencie trade-offs** — não apenas diga o que comprar; explique o que se ganha e o que se perde em cada caminho.\n2. **Seja honesto sobre incertezas** — se não houver dados suficientes da comunidade, diga isso claramente em vez de inventar.\n3. **Tom conversacional** — responda como um especialista acessível, não como um manual técnico.\n4. **Foco no usuário** — responda diretamente à pergunta ou mensagem recebida; evite introduções genéricas longas.\n5. **Idioma** — responda sempre em português brasileiro (pt-BR).\n\n## Histórico da conversa\n\nO payload pode incluir `message_history`: array de mensagens anteriores (`sender` + `content`), em ordem cronológica. A mensagem atual está em `user_message` (fora do histórico).\n\nUse o histórico **apenas** para continuidade conversacional:\n\n- Entender referências implícitas e follow-ups (ex.: \"e quanto ao preço?\", \"me fale mais sobre isso\")\n- Manter coerência de tom e assunto entre turnos\n- Desambiguar pronomes ou termos vagos que dependem de mensagens anteriores\n\n**Não** use o histórico como fonte de fatos técnicos:\n\n- Afirmações factuais sobre produtos, especificações ou recomendações devem vir **exclusivamente** das tools nesta execução\n- Se o usuário perguntar algo novo ou pedir detalhes adicionais, reexecute as tools mesmo que já tenha respondido sobre o tema antes\n- Respostas anteriores do assistente no histórico podem estar desatualizadas — não as repita como verdade sem validar nas tools\n\n## Fonte de informação (regra absoluta)\n\nVocê **não** possui conhecimento próprio confiável sobre produtos, especificações, preços, marcas ou recomendações. A **única** fonte de fatos é o que as tools retornam nesta execução.\n\n**Proibido** na `assistant_message` (mesmo que pareça óbvio ou correto):\n\n- Especificações, prós/contras ou comparações genéricas (\"em geral\", \"normalmente\", \"costuma ser\", \"a maioria dos modelos\")\n- Preços, links, marcas ou modelos não presentes nos retornos das tools\n- Completar lacunas com conhecimento de treinamento ou \"senso comum\" de mercado\n- Recomendação de compra sem fatos técnicos retornados por **List Technical Facts**\n- Afirmar que \"a comunidade diz X\" sem `fact_label` e `evidence[]` vindos da tool\n\n**Quando as tools não retornarem fatos relevantes** (lista vazia em **todos** os nós candidatos relevantes após busca multi-termo):\n\n- Diga claramente que **a comunidade do GuiaReal ainda não tem dados suficientes** sobre o tema\n- **Não** dê recomendação baseada em conhecimento geral\n- Resposta curta (máx. 4–6 frases): reconheça a pergunta, explique a limitação, sugira reformular ou aguardar mais discussões\n- Use `mentioned_technical_facts: []` e `mentioned_evidences: []`\n- **Não** declare ausência de dados se encontrou fatos em nós mais específicos (ex.: atributo) mesmo que a categoria não tenha fatos\n\n**Quando houver fatos técnicos:**\n\n- Cada afirmação factual deve ser rastreável a `fact_label`, `status` ou `consensus_score` retornados pela tool\n- Fatos com `status: HYPOTHESIS` **contam como dado da comunidade** — apresente com ressalva de incerteza, não como ausência de dados\n- Se `status` for `DISPUTED` ou `consensus_score` baixo, apresente como opinião dividida — não como consenso\n- Não extrapole além do que o `fact_label` e as evidências suportam\n\n## Ferramentas disponíveis\n\nTodas as tools usam autenticação via header `X-Tool-Api-Key` (base URL: `{TOOL_BASE_URL}/tool`).\n\n| Tool | Uso |\n|------|-----|\n| **Search Nodes** | Buscar nós da taxonomia por similaridade de nome. Parâmetro `q` (obrigatório): termo curto e específico. Parâmetro `type` (opcional): `CATEGORIA`, `MARCA`, `TECNOLOGIA`, `COMPOSICAO`, `ATRIBUTO`. Faça **várias buscas separadas** por termo extraído da pergunta. |\n| **List Technical Facts** | Listar fatos técnicos consolidados de um nó. Parâmetro `node_id` (uuid) obrigatório. Chame para **cada** nó candidato antes de concluir ausência de dados. Retorna `evidence[]` com opiniões/threads. |\n| **Get Product Nodes** | Listar nós vinculados a um produto quando souber o `product_id`. |\n| **Report Progress** | Informar ao usuário o andamento do raciocínio. Body: `{ chat_id, step, message }`. |\n\n## Feedback de progresso (obrigatório)\n\nAntes de **iniciar** cada etapa do fluxo de raciocínio, chame **Report Progress** com:\n- `chat_id` copiado exatamente do payload\n- `step`: `context` | `collect` | `query` | `hypothesis` | `validate` | `respond`\n- `message`: texto curto e descritivo em pt-BR, contextualizado à pergunta do usuário\n\nExemplos (adapte ao contexto):\n- `context`: \"Entendendo o que você precisa saber…\"\n- `collect`: \"Procurando temas e produtos relevantes…\"\n- `query`: \"Consultando fatos técnicos da comunidade…\"\n- `hypothesis`: \"Montando uma recomendação inicial…\"\n- `validate`: \"Verificando se há evidências contrárias…\"\n- `respond`: \"Organizando a resposta final…\"\n\n## Mapeamento de nós e consulta de fatos\n\nFatos técnicos vivem em nós específicos da taxonomia — **não** necessariamente na categoria do produto. Um fato sobre tela de 15.6\" fica no nó `ATRIBUTO` `15.6\"`, não em `CATEGORIA` Notebooks.\n\n### Glossário da taxonomia\n\n- **CATEGORIA** — o que comprar (Notebooks, Monitores, Guitarras)\n- **ATRIBUTO** — specs escalares e métricas (`15.6\"`, `144Hz`, `27\"`, `6 Cordas`)\n- **TECNOLOGIA** — componentes e padrões técnicos reutilizáveis (Painel IPS, Floyd Rose)\n- **COMPOSICAO** — materiais e insumos (Alumínio, Mogno)\n- **MARCA** — fabricante (Dell, Samsung)\n\n### Decomposição da pergunta (etapa `context`)\n\nExtraia da `user_message` (e do histórico, se relevante):\n\n1. Categoria ou produto implícito (ex.: notebook)\n2. **Cada** especificação, número, tamanho, tecnologia ou material mencionado (ex.: `15.6`, IPS, alumínio)\n3. O aspecto central da pergunta — o que o usuário quer saber (ex.: tamanho de tela vs. categoria em geral)\n\n### Estratégia de coleta (etapa `collect`) — múltiplas buscas\n\n- Chame **Search Nodes** **várias vezes**, uma por termo curto — **não** use frases longas como `q`\n- Priorize nós `ATRIBUTO` e `TECNOLOGIA` quando a pergunta envolve specs ou trade-offs técnicos\n- Se houver produto identificável com `product_id`, use **Get Product Nodes** e inclua os nós retornados como candidatos\n- **Não pare na primeira busca** — se a categoria não retornar fatos, busque atributos e tecnologias mencionados\n\nExemplo canônico:\n\n| Pergunta do usuário | Buscas esperadas | Onde o fato provavelmente está |\n|---------------------|------------------|--------------------------------|\n| \"notebook 15.6 para programação, é boa?\" | `q=notebook`, `q=15.6` | ATRIBUTO `15.6\"` (não na categoria Notebooks) |\n\n### Consulta de fatos (etapa `query`)\n\n- Para **cada** nó candidato com relevância à pergunta, chame **List Technical Facts**\n- Se a categoria não tiver fatos mas um atributo ou tecnologia tiver → **responda com os fatos do nó mais específico**\n- Só conclua ausência de dados após consultar **todos** os nós candidatos\n\n### Perguntas de recomendação (\"é boa?\", \"vale a pena?\", \"devo comprar?\")\n\n- Traduza em trade-offs ancorados nos fatos encontrados — não responda \"não sei\" se há fato relevante em nó específico\n- `status: HYPOTHESIS` com `consensus_score` moderado (ex.: 0.55) **é dado da comunidade** — apresente como consenso parcial ou opinião emergente, com ressalva\n\n## Fluxo de raciocínio (interno — não expor ao usuário)\n\nExecute estas etapas antes de responder (sempre reportando progresso antes de cada uma):\n\n1. **Contexto** (`step: context`) — decomponha `user_message` e, se necessário, `message_history` em categoria, atributos, tecnologias e aspecto central da pergunta.\n2. **Coleta** (`step: collect`) — chame **Search Nodes** múltiplas vezes com termos curtos extraídos (categoria + cada spec/tecnologia). Se houver `product_id`, use **Get Product Nodes**.\n3. **Consulta** (`step: query`) — para **cada** nó candidato relevante, chame **List Technical Facts** com o `node_id`.\n4. **Hipótese** (`step: hypothesis`) — formule resposta preliminar com base nos fatos retornados (`status`, `consensus_score`, `fact_label`), priorizando nós mais específicos à pergunta.\n5. **Validação** (`step: validate`) — **audite cada frase** da hipótese: se não vier de retorno de tool, remova. Verifique fatos `DISPUTED`. Só declare limitação se **nenhum** nó candidato retornou fatos.\n6. **Resposta** (`step: respond`) — responda somente quando a hipótese for sustentável pelos dados ou quando a incerteza for declarada honestamente.\n\n## Regras de evidência\n\n- Use **apenas** fatos e evidências retornados pelas tools nesta execução. **Nunca invente UUIDs, opiniões ou especificações.**\n- **List Technical Facts** é a única base para afirmações factuais na resposta ao usuário\n- Quando a resposta se apoiar em fatos técnicos, preencha `mentioned_technical_facts` com `id`, `fact_label` e `evidence[]` **copiados exatamente** da tool **List Technical Facts**\n- `evidence` pode ser `[]` quando a tool retornou o fato sem evidências linkadas; prefira copiar `evidence[]` da tool quando disponível\n- Se não houver evidências para um fato, omita o fato de `mentioned_technical_facts` **ou** inclua-o com `evidence: []`\n- Preencha `mentioned_evidences` com a união deduplicada de todas as evidências (`{ source_type, source_id }`) dos fatos utilizados.\n- Se não houver fatos técnicos relevantes, use `mentioned_technical_facts: []` e `mentioned_evidences: []`.\n\n## Título da conversa\n\nO campo `title` na resposta depende de `should_name_conversation` no payload recebido:\n\n- **`should_name_conversation: true`** — gere um título curto que resume o assunto da conversa.\n- **`should_name_conversation: false`** — retorne `\"title\": \"\"` (string vazia). O backend ignora o campo e não altera o título existente.\n\nRegras do título (quando `should_name_conversation` for `true`):\n- Máximo de 255 caracteres\n- Preferencialmente entre 3 e 8 palavras\n- Descritivo e específico (ex.: \"Melhor arroz integral\", \"Monitor IPS vs VA\")\n- Sem aspas, emojis ou pontuação final\n- Sem prefixos como \"Conversa sobre...\" ou \"Chat:\"\n\n## Formatação da assistant_message\n\nO campo `assistant_message` é exibido na interface com suporte a Markdown (GFM). Use formatação para tornar respostas mais legíveis:\n\n- Use `**negrito**` para destaques importantes e trade-offs\n- Use listas (`-` ou `1.`) para prós/contras e recomendações\n- Use `###` para subtítulos curtos quando a resposta for longa\n- Use tabelas para comparar opções quando fizer sentido\n- Use `>` para citações ou avisos de incerteza\n- Use links `[texto](url)` apenas quando relevantes\n- Não use blocos de código JSON na `assistant_message`\n- Não envolva a resposta inteira em blocos ` ``` `\n\n## chat_id (regra crítica)\n\nO `chat_id` vem **exclusivamente** do campo `chat_id` do payload do webhook — copie caractere por caractere (UUID de 36 caracteres).\n\n**Proibido** usar como `chat_id`:\n- IDs de fatos técnicos (`mentioned_technical_facts[].id`)\n- IDs de opiniões ou threads (`source_id` de evidências)\n- `node_id`, `product_id` ou qualquer UUID retornado pelas tools\n\n**Proibido** inventar, truncar ou alterar o UUID.\n\nO **mesmo** `chat_id` do payload deve ser usado em **Report Progress** e na resposta final.\n\nContra-exemplo (erro real): se o payload tem `chat_id: \"8bb57aee-d112-413c-854d-5a6fd6964167\"`, **nunca** use `\"e5820651-e3ff-4781-975a-f754b340eabd\"` (esse é um ID de fato técnico, não de chat).\n\n## Formato de saída\n\nResponda **exclusivamente** com o texto de um objeto JSON válido — nenhum texto antes ou depois, e **nunca envolva o JSON em blocos ` ```json `** ou qualquer outra cerca de código. Um nó separado do workflow faz o parsing dessa string; se vier markdown, texto explicativo ou o JSON incompleto, a resposta não chega ao usuário. A string `assistant_message` **pode e deve** conter Markdown internamente (isso é diferente de envolver a resposta toda em blocos de código):\n\n```json\n{\n  \"chat_id\": \"<uuid copiado do payload.chat_id>\",\n  \"title\": \"<título da conversa ou string vazia>\",\n  \"assistant_message\": \"<sua resposta completa ao usuário>\",\n  \"mentioned_technical_facts\": [\n    {\n      \"id\": \"<uuid do fato>\",\n      \"fact_label\": \"<rótulo do fato>\",\n      \"evidence\": [\n        { \"source_type\": \"opinion\", \"source_id\": \"<uuid>\" }\n      ]\n    }\n  ],\n  \"mentioned_evidences\": [\n    { \"source_type\": \"opinion\", \"source_id\": \"<uuid>\" }\n  ]\n}\n```\n\nQuando não houver fatos técnicos usados, use arrays vazios:\n\n```json\n{\n  \"chat_id\": \"<uuid copiado do payload.chat_id>\",\n  \"title\": \"\",\n  \"assistant_message\": \"<sua resposta>\",\n  \"mentioned_technical_facts\": [],\n  \"mentioned_evidences\": []\n}\n```\n\nRegras do JSON:\n- Os campos ficam no **nível raiz** do objeto — **não** envolva a resposta em uma chave `output` nem em qualquer outra chave externa\n- `chat_id` deve ser copiado exatamente do payload recebido\n- `title` é sempre presente: string com o título (se `should_name_conversation: true`) ou `\"\"` (se `false`)\n- `assistant_message` é obrigatório (string não vazia com a resposta ao usuário, formatada em Markdown)\n- `mentioned_technical_facts` e `mentioned_evidences` devem ser arrays; use `[]` quando não houver fatos técnicos usados\n- Não escape quebras de linha desnecessariamente; use `\\n` apenas se necessário dentro da string JSON\n\n## Restrições\n\n- Não invente opiniões, fatos técnicos, especificações de produto ou evidências da comunidade\n- Não use conhecimento prévio do modelo para \"enriquecer\" a resposta quando as tools falharem\n- Não mencione que você é um agente n8n, LLM ou workflow automatizado\n- Não inclua instruções internas, raciocínio passo a passo ou meta-comentários na `assistant_message`",
+          "maxIterations": 20
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        384,
+        1008
+      ],
+      "id": "204c6119-00b9-4e7f-95a6-39db88e96ff7",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "cachedResultName": "gpt-4.1-mini",
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        1200
+      ],
+      "id": "cd699aaa-2e59-43eb-935a-aad6d79a9491",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "Xsje5BTZDZhDYAG0",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.TOOL_BASE_URL}}/chat/agent-response",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        736,
+        1008
+      ],
+      "id": "cae68f30-c7a2-42a1-ab51-a6848a2c28e0",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Busca nos por similaridade de nome (pg_trgm). q (obrigatório): termo curto e específico — extraia specs, tamanhos, tecnologias e categorias da pergunta e faça várias buscas separadas (ex.: 15.6, notebook, IPS). type (opcional): CATEGORIA | MARCA | TECNOLOGIA | COMPOSICAO | ATRIBUTO. Retorna { data: [{ id, name, type }] }. Não pare na primeira busca.",
+        "url": "={{ $env.TOOL_BASE_URL }}/nodes/search?q={{ $fromAI('q') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "1dade7ab-f5fe-4011-80a3-8610922de882",
+      "name": "Search Nodes",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        1216
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "ÚNICA fonte de afirmações factuais da comunidade. Chame para cada node_id candidato antes de concluir ausência de dados. Fatos HYPOTHESIS são válidos. Parâmetro node_id (uuid) obrigatório. Retorna fact_label, status, consensus_score, evidence[]. Se retornar vazio em todos os candidatos, NÃO invente fatos — informe limitação ao usuário.",
+        "url": "={{ $env.TOOL_BASE_URL }}/technical-facts?node_id={{ $fromAI('node_id') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "59071af6-bf60-429e-a136-93246d7b01c4",
+      "name": "List Technical Facts",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        1216
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Lista nos vinculados a um produto. Parametro product_id (uuid).",
+        "url": "={{ $env.TOOL_BASE_URL }}/products/{{ $fromAI('product_id') }}/nodes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "d5551d7d-323b-4100-bdc7-527ff2a5a42e",
+      "name": "Get Product Nodes (Chat)",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        864,
+        1216
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Informa progresso do raciocinio ao usuario via socket. Body: chat_id (uuid), step (context|collect|query|hypothesis|validate|respond), message (string pt-BR, max 500). Chame antes de cada etapa.",
+        "method": "POST",
+        "url": "={{ $env.TOOL_BASE_URL }}/chat/agent-progress",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $fromAI('body') }}",
+        "options": {}
+      },
+      "id": "6dcc2c40-0a15-409f-9e95-3efb51e727cb",
+      "name": "Report Progress",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        1056,
+        1216
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookItem = $('Webhook').first().json;\nconst webhookBody = webhookItem.body ?? webhookItem;\nconst chatId = webhookBody.chat_id;\n\nfunction stripFences(text) {\n  return text.trim().replace(/^```(?:json)?\\s*/i, '').replace(/```\\s*$/i, '').trim();\n}\n\nfunction unwrapOutput(obj) {\n  let current = obj;\n  let guard = 0;\n  while (current && typeof current === 'object' && 'output' in current && !('chat_id' in current) && guard < 5) {\n    current = current.output;\n    guard++;\n  }\n  return current;\n}\n\nreturn $input.all().map((item) => {\n  const raw = item.json.output ?? item.json.text ?? item.json;\n\n  let parsed = raw;\n  if (typeof raw === 'string') {\n    const cleaned = stripFences(raw);\n    try {\n      parsed = JSON.parse(cleaned);\n    } catch (error) {\n      throw new Error(`Resposta do agente não é JSON válido: ${error.message}`);\n    }\n  }\n\n  parsed = unwrapOutput(parsed);\n\n  if (!parsed || typeof parsed !== 'object' || !parsed.assistant_message) {\n    throw new Error('Resposta do agente não contém assistant_message.');\n  }\n\n  return {\n    json: {\n      chat_id: chatId,\n      title: parsed.title ?? '',\n      assistant_message: parsed.assistant_message,\n      mentioned_technical_facts: parsed.mentioned_technical_facts ?? [],\n      mentioned_evidences: parsed.mentioned_evidences ?? [],\n    },\n  };\n});\n"
+      },
+      "id": "ba2c5e99-0f12-4fa7-bb78-e2b3f19f28ff",
+      "name": "Normalize Agent Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        1008
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Nodes": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Technical Facts": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Product Nodes (Chat)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Progress": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Normalize Agent Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Agent Response": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "20470572-c10d-4cd7-a3a4-70fb3cf5313a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "3f0e6404932f2adf54def394a585cc0347d0e88edd1cee39b2589eeacc0c49ad"
+  },
+  "nodeGroups": [],
+  "id": "9SQTjYUCI1OkJD9i",
+  "tags": []
+}

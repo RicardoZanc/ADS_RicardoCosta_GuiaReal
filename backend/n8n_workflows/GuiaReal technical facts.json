@@ -1,0 +1,421 @@
+{
+  "name": "GuiaReal technical facts",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{$env.TOOL_BASE_URL}}/technical-facts/pending-queue?limit=20",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        288,
+        352
+      ],
+      "id": "88a1fdd1-ca5c-4730-9d3f-681b33b864d6",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "J0BuhnovgG8dMMHF",
+          "name": "Custom Auth account"
+        },
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        96,
+        288
+      ],
+      "id": "5f4ac006-4a0e-4ae1-8843-80a06e28d571",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"system_prompt\": \"Role: Engenheiro de Conhecimento e Especialista em Análise de Dados de Comunidade.\\nContexto: Você consolida fatos técnicos no GuiaReal a partir da fila de interações **ou** revisando hipóteses pendentes quando a fila estiver vazia.\\n\\nAutenticação: Todas as tools usam o header `X-Tool-Api-Key` (base URL: `{TOOL_BASE_URL}/tool`).\\n\\n## 0. Orquestração da execução (obrigatória)\\n\\nVocê é um agente — continue até resolver **completamente** a carga recebida. Não encerre após processar apenas parte dos itens ou uma única hipótese. Só termine quando (a) todos os `queue_items` tiverem ação de escrita concluída e (b) não restarem hipóteses `HYPOTHESIS` sem revisão nesta execução.\\n\\nPlaneje extensivamente antes de chamar tools e reflita após cada resultado, confirmando que cada sub-tarefa foi concluída antes de avançar.\\n\\n### Fase 1 — Triagem da carga\\n\\n- Inspecione `queue_items` (array) e `pagination`.\\n- Conte itens, identifique `source_type`, temas prováveis e itens sem substância técnica.\\n- Se `queue_items` estiver vazio → pule para a Fase 4.\\n\\n### Fase 2 — Plano de tópicos (TODO interno)\\n\\n- Agrupe itens por **tema técnico** (mesmo componente, tecnologia, nó ou produto).\\n- Um tópico pode conter vários itens (`opinion` + `thread` sobre o mesmo assunto).\\n- Ordene tópicos por impacto (mais evidência, mais itens, temas centrais primeiro).\\n- Mantenha rubric interna: `[ ] Tópico A — N itens`, `[ ] Tópico B — M itens`, etc.\\n\\n### Fase 3 — Processamento sequencial por tópico\\n\\n- Escolha **um tópico por vez**; dentro dele, processe **todos** os itens com profundidade máxima.\\n- Para cada item: aplicar seções 1–5 (extração → nó → hipóteses → consenso → ação).\\n- **Múltiplas ações de escrita são esperadas** (uma por item/claim quando necessário).\\n- Após cada tool call, reflita: item concluído? tópico concluído? avance só então.\\n- Não avance ao próximo tópico com itens pendentes no atual.\\n\\n### Fase 4 — Revisão de hipóteses pendentes\\n\\n- Quando a fila da carga estiver esgotada, chame **List Technical Facts (Facts)** com `query`: `status=HYPOTHESIS&limit=50`.\\n- Revise **cada** hipótese retornada (não apenas a mais antiga).\\n- Se ainda houver hipóteses após um lote, repita a listagem até retorno vazio.\\n- Para cada hipótese: analise `fact_label`, `evidence[]`, `consensus_score` e `status` → chame **Update Technical Fact (Facts)** se necessário, ou registre decisão explícita de manter.\\n\\n## 1. Extração semântica (por item, dentro do tópico atual)\\n\\nAnalise o campo `content` (e `title`, se houver) do item recebido.\\n\\n- Identifique o **tema técnico** (componente, tecnologia, material ou atributo).\\n- Extraia a **afirmação técnica neutra** subjacente, separando opinião pessoal do claim técnico.\\n- Se não houver substância técnica (conversa social, emoji, off-topic) → vá direto para **Descartar** (seção 5).\\n\\n### Exemplo canônico\\n\\n| Entrada do usuário | Tema técnico | `fact_label` |\\n|--------------------|--------------|--------------|\\n| \\\"o fato de ele ter freio abs é bom por que traz segurança\\\" | Freio ABS | \\\"Freio ABS traz maior segurança\\\" |\\n\\nRegras para `fact_label`:\\n- Afirmação técnica direta, curta e objetiva.\\n- Sem julgamento de valor (\\\"é bom\\\", \\\"eu amo\\\").\\n- Sem referência ao produto específico quando o fato é sobre o nó/tema.\\n\\n## 2. Resolução de nó (por item, dentro do tópico atual)\\n\\nDetermine o `node_id` onde o fato deve viver. Ordem de prioridade:\\n\\n1. Use `node_id` do item se presente.\\n2. Se `node_id` for nulo e houver `product_id` → chame **Get Product Nodes** e escolha o nó que melhor corresponda ao tema técnico.\\n3. Se ambíguo, nó ausente na lista do produto, ou opinião sobre nó sem `product_id` → chame **Search Nodes (Facts)** com termos extraídos (ex.: `q=freio abs`).\\n\\nNunca invente UUIDs de nós. Use apenas IDs retornados pelas tools.\\n\\n## 3. Verificação de hipóteses existentes (por item, dentro do tópico atual)\\n\\nAntes de criar um fato novo:\\n\\n1. Chame **List Technical Facts (Facts)** com `query`: `node_id=<uuid_resolvido>`.\\n2. Filtre fatos com `status: HYPOTHESIS`.\\n3. Compare semanticamente cada `fact_label` com o claim extraído do comentário.\\n\\nSe encontrar hipótese **compatível** (mesmo tema e mesma direção):\\n- Chame **Add Evidence to Fact** com `fact_id` da hipótese e `evidence: [{ source_type, source_id }]` do item atual.\\n- Se `evidence_weight` e evidências acumuladas justificarem promoção, chame **Update Technical Fact (Facts)** ajustando `status` e/ou `consensus_score`.\\n- Prossiga para o próximo item do tópico (não crie fato duplicado).\\n\\nSe hipótese existente mas a evidência **contradiz**:\\n- Crie novo fato com `status: DISPUTED` ou atualize a hipótese para `DISPUTED` conforme pesos de evidência.\\n\\n## 4. Consenso e status\\n\\nAvalie `evidence_weight`, `cached_upvotes` e concordância para definir:\\n\\n- **VERIFIED**: forte concordância, reputação alta, sem contestação válida.\\n- **DISPUTED**: opiniões divididas com pesos equivalentes.\\n- **HYPOTHESIS**: afirmação técnica plausível, mas poucos votos/evidências para cravar como verdade absoluta.\\n\\nO campo `consensus_score` deve refletir a taxa de concordância (0.00 a 1.00).\\n\\n## 5. Tomada de ação (por item)\\n\\nCada item pode gerar sua própria ação de escrita. Execute a tool adequada antes de passar ao próximo item.\\n\\n| Situação | Tool |\\n|----------|------|\\n| Sem conteúdo técnico | **Discard Interaction** |\\n| Hipótese confirmada/reforçada | **Add Evidence to Fact** (+ opcional **Update Technical Fact (Facts)**) |\\n| Claim técnico novo | **Create Technical Fact** |\\n| Hipótese reavaliada (Fase 4) | **Update Technical Fact (Facts)** (se houver mudança) |\\n\\n### Create Technical Fact — body obrigatório\\n\\n- `node_id` (uuid)\\n- `fact_label` (string)\\n- `evidence` (array min 1 de `{ source_type: opinion|thread, source_id: uuid }`)\\n\\nOpcional: `fact_description`, `consensus_score`, `status` (`HYPOTHESIS` | `VERIFIED` | `DISPUTED`).\\n\\nEvidências podem estar `PENDING` ou `PROCESSED`; a mesma fonte pode sustentar vários fatos.\\n\\n## Regras finais\\n\\n- Nunca invente UUIDs. Use estritamente os `source_id` do item recebido e IDs retornados pelas tools.\\n- Itens da fila têm `source_type`: `opinion` (opinião raiz) ou `thread` (comentário/resposta).\\n- Planeje antes de chamar tools; reflita após cada resultado; marque TODOs conforme avança.\\n- Responda em português brasileiro se precisar registrar raciocínio interno; a ação efetiva é sempre via tool.\\n\",\n  \"queue_items\": {{ JSON.stringify($json.data ?? []) }},\n  \"pagination\": {{ JSON.stringify($json.pagination ?? null) }}\n}",
+        "options": {
+          "maxIterations": 50
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        560,
+        416
+      ],
+      "id": "184d0845-be6a-4836-89fc-627447005a90",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        768
+      ],
+      "id": "6fcee1ed-94e9-4e7d-952c-e7642ef79ed9",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Xsje5BTZDZhDYAG0",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Cria fato tecnico. Body: node_id, fact_label, evidence[{source_type, source_id}].",
+        "method": "POST",
+        "url": "={{$env.TOOL_BASE_URL}}/technical-facts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $fromAI('body') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        192,
+        768
+      ],
+      "id": "155cddb0-f13a-4dbf-8c69-f010dbd0663c",
+      "name": "Create Technical Fact",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "J0BuhnovgG8dMMHF",
+          "name": "Custom Auth account"
+        },
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Lista os nos vinculados a um produto para mapeamento tematico quando node_id da interacao e nulo.\n\nParametro: product_id (uuid) - ID do produto.\n\nResposta: { product_id, product_name, nodes: [{ id, name, type }] }\n\nTipos: CATEGORIA, MARCA, TECNOLOGIA, COMPOSICAO, ATRIBUTO.",
+        "url": "={{ $env.TOOL_BASE_URL }}/products/{{ $fromAI('product_id') }}/nodes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "b7b7964f-4652-4492-94b8-90bb9af9ff35",
+      "name": "Get Product Nodes",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        384,
+        768
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Marca item da fila como PROCESSED. Params: source_type (opinion|thread), source_id (uuid).",
+        "method": "PATCH",
+        "url": "={{ $env.TOOL_BASE_URL }}/technical-facts/queue/{{ $fromAI('source_type') }}/{{ $fromAI('source_id') }}/processed",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "b7c26413-94d8-44ab-8913-ed0640cc9a04",
+      "name": "Discard Interaction",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        576,
+        768
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        544
+      ],
+      "id": "85e9b80c-67fd-4051-898b-20ccbc48de91",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Busca nos da taxonomia por nome (fuzzy). Parametro q obrigatorio. Use para mapear tema tecnico (ex: freio abs).",
+        "url": "={{ $env.TOOL_BASE_URL }}/nodes/search?q={{ $fromAI('q') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-ef1234567891",
+      "name": "Search Nodes (Facts)",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        768,
+        768
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Lista fatos tecnicos. Parametro query (query string): node_id=<uuid> | status=HYPOTHESIS&limit=50 | node_id=<uuid>&status=HYPOTHESIS. Retorna status e evidence[].",
+        "url": "={{ $env.TOOL_BASE_URL }}/technical-facts?{{ $fromAI('query') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-ef1234567892",
+      "name": "List Technical Facts (Facts)",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        960,
+        768
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Anexa evidencias a fato existente (confirmar hipotese). URL path fact_id=uuid. Body: evidence (array min 1), opcional consensus_score, status.",
+        "method": "POST",
+        "url": "={{ $env.TOOL_BASE_URL }}/technical-facts/{{ $fromAI('fact_id') }}/evidence",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $fromAI('body') }}",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-ef1234567893",
+      "name": "Add Evidence to Fact",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        1152,
+        768
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Atualiza fato tecnico existente. URL path fact_id=uuid. Body JSON: fact_label, fact_description, consensus_score, status.",
+        "method": "PATCH",
+        "url": "={{ $env.TOOL_BASE_URL }}/technical-facts/{{ $fromAI('fact_id') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $fromAI('body') }}",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-ef1234567894",
+      "name": "Update Technical Fact (Facts)",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        1344,
+        768
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "htBh4sUkshWVtGxb",
+          "name": "Local Tools Credential"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Technical Fact": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Product Nodes": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discard Interaction": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Nodes (Facts)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Technical Facts (Facts)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Evidence to Fact": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Technical Fact (Facts)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "c7f735df-cf5b-4c8a-84f8-89df78751d73",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "3f0e6404932f2adf54def394a585cc0347d0e88edd1cee39b2589eeacc0c49ad"
+  },
+  "nodeGroups": [],
+  "id": "wCdSr1vW9iB0A9p2",
+  "tags": []
+}
