@@ -16,6 +16,7 @@ import { ThreadReplyNode } from "./ThreadReplyNode";
 import { VoteControls } from "./VoteControls";
 import { ReportDialog } from "@/components/reports/ReportDialog";
 import { useAuthStore } from "@/store/authStore";
+import { DiscussionEmptyState } from "./DiscussionEmptyState";
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -235,11 +236,7 @@ export function OpinionList({
   }, []);
 
   if (opinions.length === 0) {
-    return (
-      <p className="text-comment text-muted">
-        Nenhuma discussão ainda. Seja o primeiro a comentar.
-      </p>
-    );
+    return <DiscussionEmptyState />;
   }
 
   return (

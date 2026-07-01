@@ -39,7 +39,7 @@ function NodeImage({
   initials: string;
 }) {
   const frameClass =
-    "size-20 shrink-0 overflow-hidden rounded-lg border border-border/15 bg-muted/10 lg:size-28 lg:rounded-2xl";
+    "aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border/15 bg-muted/5 lg:aspect-[4/5] lg:min-h-[22rem]";
 
   if (node.image_url) {
     return (
@@ -47,7 +47,7 @@ function NodeImage({
       <img
         src={node.image_url}
         alt={node.name}
-        className={cn(frameClass, "object-cover")}
+        className={cn(frameClass, "h-full w-full object-contain")}
       />
     );
   }
@@ -56,7 +56,7 @@ function NodeImage({
     <div
       className={cn(
         frameClass,
-        "flex items-center justify-center text-small font-medium text-muted"
+        "flex items-center justify-center text-h3 font-medium text-muted"
       )}
       aria-hidden
     >
@@ -71,22 +71,29 @@ export function NodeContextPanel({ node }: NodeContextPanelProps) {
 
   return (
     <section className="rounded-2xl border border-border/15 bg-card p-5 shadow-[var(--shadow-card)] sm:p-6 lg:p-8">
-      <div className="grid gap-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start lg:gap-10">
-        <NodeImage node={node} initials={initials} />
-        <div className="min-w-0 lg:pt-1">
-          <Tag variant="accent">{typeLabel}</Tag>
-          <h1 className="text-product-name mt-2">{node.name}</h1>
-          <p className="mt-1 text-body text-muted lg:text-h4">
-            {formatOpinionCount(node.opinionCount)}
-          </p>
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-start lg:gap-10">
+        <div className="order-2 flex min-w-0 flex-col lg:order-1">
+          <div>
+            <Tag variant="accent">{typeLabel}</Tag>
+            <h1 className="text-product-name mt-2 font-bold text-foreground">
+              {node.name}
+            </h1>
+            <p className="mt-2 text-body text-muted lg:text-h4">
+              {formatOpinionCount(node.opinionCount)}
+            </p>
+          </div>
+
+          {node.type === "CATEGORIA" && node.context.parentTipo && (
+            <div className="mt-8 border-t border-border/15 pt-8 lg:mt-10 lg:pt-10">
+              <ContextRow label="Tipo" value={node.context.parentTipo.name} />
+            </div>
+          )}
+        </div>
+
+        <div className="order-1 lg:order-2">
+          <NodeImage node={node} initials={initials} />
         </div>
       </div>
-
-      {node.type === "CATEGORIA" && node.context.parentTipo && (
-        <div className="mt-6 border-t border-border/15 pt-6 lg:mt-8 lg:pt-8">
-          <ContextRow label="Tipo" value={node.context.parentTipo.name} />
-        </div>
-      )}
     </section>
   );
 }

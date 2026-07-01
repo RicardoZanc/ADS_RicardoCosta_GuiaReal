@@ -14,7 +14,13 @@ import { useNodeDetailController } from "./controller";
 function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-10 lg:gap-12">
-      <div className="skeleton-shimmer h-64 rounded-2xl border border-border/15 lg:h-48" />
+      <div className="grid gap-6 rounded-2xl border border-border/15 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:p-8">
+        <div className="order-2 space-y-6 lg:order-1">
+          <div className="skeleton-shimmer h-20 rounded-xl" />
+          <div className="skeleton-shimmer h-10 rounded-xl" />
+        </div>
+        <div className="skeleton-shimmer order-1 aspect-square rounded-2xl lg:order-2 lg:aspect-[4/5] lg:min-h-[22rem]" />
+      </div>
       <div className="skeleton-shimmer h-96 rounded-2xl border border-border/15" />
     </div>
   );
