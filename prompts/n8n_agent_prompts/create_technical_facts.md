@@ -36,6 +36,7 @@ Planeje extensivamente antes de chamar tools e reflita após cada resultado, con
 - Revise **cada** hipótese retornada (não apenas a mais antiga).
 - Se ainda houver hipóteses após um lote, repita a listagem até retorno vazio.
 - Para cada hipótese: analise `fact_label`, `evidence[]`, `consensus_score` e `status` → chame **Update Technical Fact (Facts)** se necessário, ou registre decisão explícita de manter.
+- Se nesta execução algum item processado com `evidence_weight > 250` sustentou a hipótese e ela ainda estiver `HYPOTHESIS`, promova para `VERIFIED` via **Update Technical Fact (Facts)**.
 
 ## 1. Extração semântica (por item, dentro do tópico atual)
 
@@ -76,7 +77,8 @@ Antes de criar um fato novo:
 
 Se encontrar hipótese **compatível** (mesmo tema e mesma direção):
 - Chame **Add Evidence to Fact** com `fact_id` da hipótese e `evidence: [{ source_type, source_id }]` do item atual.
-- Se `evidence_weight` e evidências acumuladas justificarem promoção, chame **Update Technical Fact (Facts)** ajustando `status` e/ou `consensus_score`.
+- Se `evidence_weight > 250` do item atual → inclua `status: VERIFIED` no body de **Add Evidence to Fact** (ou chame **Update Technical Fact (Facts)** logo em seguida com `status: VERIFIED` e `consensus_score` ≥ 0.85).
+- Caso contrário, se `evidence_weight` e evidências acumuladas justificarem promoção, chame **Update Technical Fact (Facts)** ajustando `status` e/ou `consensus_score`.
 - Prossiga para o próximo item do tópico (não crie fato duplicado).
 
 Se hipótese existente mas a evidência **contradiz**:
@@ -84,7 +86,17 @@ Se hipótese existente mas a evidência **contradiz**:
 
 ## 4. Consenso e status
 
-Avalie `evidence_weight`, `cached_upvotes` e concordância para definir:
+### Regra obrigatória — promoção por `evidence_weight`
+
+Cada item em `queue_items` traz `evidence_weight` (fórmula do backend: `cached_upvotes × 1.5 + author.reputation_score × 0.5`).
+
+**Quando o item atual tiver `evidence_weight > 250` (estritamente maior que 250):**
+- **Create Technical Fact**: defina `status: VERIFIED` (não `HYPOTHESIS`) e `consensus_score` ≥ 0.85.
+- **Add Evidence to Fact**: inclua `status: VERIFIED` no body junto com a evidência (ou chame **Update Technical Fact (Facts)** logo em seguida).
+- Esta regra é **determinística** — não rebaixe para `HYPOTHESIS` por cautela subjetiva quando o limiar for atingido.
+- **Exceção**: se já existir fato `DISPUTED` no mesmo tema com contradição válida de peso equivalente, mantenha ou ajuste para `DISPUTED` conforme seção 3.
+
+Para itens com `evidence_weight ≤ 250`, avalie `evidence_weight`, `cached_upvotes` e concordância para definir:
 
 - **VERIFIED**: forte concordância, reputação alta, sem contestação válida.
 - **DISPUTED**: opiniões divididas com pesos equivalentes.
@@ -99,8 +111,9 @@ Cada item pode gerar sua própria ação de escrita. Execute a tool adequada ant
 | Situação | Tool |
 |----------|------|
 | Sem conteúdo técnico | **Discard Interaction** |
-| Hipótese confirmada/reforçada | **Add Evidence to Fact** (+ opcional **Update Technical Fact (Facts)**) |
-| Claim técnico novo | **Create Technical Fact** |
+| Hipótese confirmada/reforçada | **Add Evidence to Fact** (+ **Update Technical Fact (Facts)** se `evidence_weight > 250` → `VERIFIED`) |
+| Claim técnico novo (`evidence_weight > 250`) | **Create Technical Fact** com `status: VERIFIED` obrigatório |
+| Claim técnico novo (`evidence_weight ≤ 250`) | **Create Technical Fact** |
 | Hipótese reavaliada (Fase 4) | **Update Technical Fact (Facts)** (se houver mudança) |
 
 ### Create Technical Fact — body obrigatório

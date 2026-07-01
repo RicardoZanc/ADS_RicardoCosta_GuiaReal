@@ -100,66 +100,81 @@ export function ReportDialog({
             </DialogDescription>
           </DialogHeader>
 
-          {success ? (
-            <p className="text-small text-foreground">
-              Denúncia enviada com sucesso. Obrigado por ajudar a manter a
-              comunidade segura.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              <fieldset className="space-y-2">
-                <legend className="text-small font-medium text-foreground">
-                  Motivo
-                </legend>
-                {REPORT_REASONS.map((item) => (
-                  <label
-                    key={item.value}
-                    className="flex cursor-pointer items-center gap-2 text-small text-foreground/90"
-                  >
-                    <input
-                      type="radio"
-                      name="report-reason"
-                      value={item.value}
-                      checked={reason === item.value}
-                      onChange={() => setReason(item.value)}
-                    />
-                    {item.label}
-                  </label>
-                ))}
-              </fieldset>
-              {error ? (
-                <p className="text-small text-destructive" role="alert">
-                  {error}
-                </p>
-              ) : null}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 px-6 pb-6">
+          <div className="space-y-4 px-6 pb-6">
             {success ? (
-              <Button type="button" onClick={() => handleOpenChange(false)}>
-                Fechar
-              </Button>
+              <p className="text-small text-foreground">
+                Denúncia enviada com sucesso. Obrigado por ajudar a manter a
+                comunidade segura.
+              </p>
             ) : (
               <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleOpenChange(false)}
-                  disabled={isSubmitting}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => void handleSubmit()}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Enviando..." : "Enviar denúncia"}
-                </Button>
+                <fieldset>
+                  <legend className="mb-3 text-small font-medium text-foreground">
+                    Motivo
+                  </legend>
+                  <div className="space-y-2">
+                    {REPORT_REASONS.map((item) => {
+                      const isSelected = reason === item.value;
+
+                      return (
+                        <label
+                          key={item.value}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-small transition-colors",
+                            "has-focus-visible:ring-2 has-focus-visible:ring-accent/30",
+                            isSelected
+                              ? "border-accent/40 bg-accent/10 text-foreground"
+                              : "border-border/15 bg-card/50 text-foreground/90 hover:border-border/30 hover:bg-muted/10"
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="report-reason"
+                            value={item.value}
+                            checked={isSelected}
+                            onChange={() => setReason(item.value)}
+                            className="size-4 shrink-0 accent-accent"
+                          />
+                          {item.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+                {error ? (
+                  <p className="text-small text-destructive" role="alert">
+                    {error}
+                  </p>
+                ) : null}
               </>
             )}
+
+            <div className="flex justify-end gap-2">
+              {success ? (
+                <Button type="button" onClick={() => handleOpenChange(false)}>
+                  Fechar
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleOpenChange(false)}
+                    disabled={isSubmitting}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => void handleSubmit()}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Enviando..." : "Enviar denúncia"}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

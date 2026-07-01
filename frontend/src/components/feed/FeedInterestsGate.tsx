@@ -26,31 +26,17 @@ function InterestsPlaceholder() {
   );
 }
 
-export function FeedInterestsGate({
-  isAuthenticated,
-  items,
-  username,
-}: FeedInterestsGateProps) {
-  const { openAuthPrompt } = useAuthGate();
+interface InterestsGateOverlayProps {
+  title: string;
+  description: string;
+  actions: React.ReactNode;
+}
 
-  if (isAuthenticated) {
-    return (
-      <FeedSectionRow
-        title="Dos seus interesses"
-        items={items}
-        emptyMessage="Configure seus interesses para ver recomendações."
-        emptyAction={
-          username
-            ? {
-                label: "Editar interesses no perfil",
-                href: `/users/${encodeURIComponent(username)}`,
-              }
-            : undefined
-        }
-      />
-    );
-  }
-
+function InterestsGateOverlay({
+  title,
+  description,
+  actions,
+}: InterestsGateOverlayProps) {
   return (
     <section className="relative space-y-4">
       <Eyebrow>Dos seus interesses</Eyebrow>
@@ -60,14 +46,36 @@ export function FeedInterestsGate({
         </div>
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-background/40 px-6 text-center backdrop-blur-md">
           <div className="max-w-md space-y-2">
-            <p className="text-body font-medium text-foreground">
-              Inscreva-se para personalizar essa seção
-            </p>
-            <p className="text-small text-muted">
-              Escolha seus interesses e receba recomendações feitas para você.
-            </p>
+            <p className="text-body font-medium text-foreground">{title}</p>
+            <p className="text-small text-muted">{description}</p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-2 sm:flex-row">{actions}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function FeedInterestsGate({
+  isAuthenticated,
+  items,
+  username,
+}: FeedInterestsGateProps) {
+  const { openAuthPrompt } = useAuthGate();
+
+  if (isAuthenticated && items.length > 0) {
+    return (
+      <FeedSectionRow title="Dos seus interesses" items={items} />
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <InterestsGateOverlay
+        title="Inscreva-se para personalizar essa seção"
+        description="Escolha seus interesses e receba recomendações feitas para você."
+        actions={
+          <>
             <Button asChild size="sm">
               <Link href="/register">Criar conta</Link>
             </Button>
@@ -83,9 +91,25 @@ export function FeedInterestsGate({
             >
               Saiba mais
             </Button>
-          </div>
-        </div>
-      </div>
-    </section>
+          </>
+        }
+      />
+    );
+  }
+
+  return (
+    <InterestsGateOverlay
+      title="Configure seus interesses para ver recomendações."
+      description="Escolha categorias no seu perfil e receba recomendações feitas para você."
+      actions={
+        username ? (
+          <Button asChild size="sm">
+            <Link href={`/users/${encodeURIComponent(username)}`}>
+              Editar interesses no perfil
+            </Link>
+          </Button>
+        ) : null
+      }
+    />
   );
 }
