@@ -11,6 +11,7 @@ import type {
   AdminRequestEligibility,
   AdminRequestItem,
 } from "@/lib/types/adminRequests";
+import { cn } from "@/lib/utils";
 
 interface UserProfileViewProps {
   profile: UserProfile;
@@ -83,7 +84,14 @@ export function UserProfileView({
               )}
               <p className="text-body text-foreground lg:text-h4">
                 <span className="text-muted">Reputação:</span>{" "}
-                <span className="font-medium text-accent">
+                <span
+                  className={cn(
+                    "font-medium",
+                    profile.reputation_score < 0
+                      ? "text-destructive"
+                      : "text-accent"
+                  )}
+                >
                   {profile.reputation_score}
                 </span>
               </p>

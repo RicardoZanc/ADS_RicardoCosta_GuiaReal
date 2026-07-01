@@ -1,6 +1,8 @@
 import { prisma } from "../../lib/prisma";
 import { BadRequestError, NotFoundError } from "../../lib/errors/BaseError";
 import { dispatchN8nReportWebhook } from "../../lib/n8nReportWebhook";
+import { REPUTATION_REPORT_RESOLVED } from "../users/users.domainRules";
+import { usersService } from "../users/users.service";
 import {
   assertCanReport,
   assertNoExistingReport,
@@ -13,6 +15,11 @@ import type {
   ListReportsQuery,
   UpdateReportInput,
 } from "./reports.schema";
+
+type TransactionClient = Omit<
+  typeof prisma,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
+>;
 
 function toIsoString(date: Date | null | undefined): string {
   return (date ?? new Date(0)).toISOString();
@@ -34,12 +41,13 @@ async function findLinkedFactIds(
 }
 
 async function applyTargetModeration(
+  tx: TransactionClient,
   targetType: ReportTargetType,
   targetId: string,
   status: "RESOLVED" | "REJECTED"
 ): Promise<void> {
   if (targetType === "opinion") {
-    await prisma.opinions.update({
+    await tx.opinions.update({
       where: { id: targetId },
       data:
         status === "RESOLVED"
@@ -49,7 +57,7 @@ async function applyTargetModeration(
     return;
   }
 
-  await prisma.discussion_threads.update({
+  await tx.discussion_threads.update({
     where: { id: targetId },
     data:
       status === "RESOLVED"
@@ -225,9 +233,68 @@ const update = async (
     throw new BadRequestError("Denúncia sem alvo válido");
   }
 
-  if (input.status === "RESOLVED" || input.status === "REJECTED") {
-    await applyTargetModeration(targetType, targetId, input.status);
-  }
+  const reviewedAt = new Date();
+  const moderationStatus =
+    input.status === "RESOLVED" || input.status === "REJECTED"
+      ? input.status
+      : null;
+
+  const updated =
+    moderationStatus !== null
+      ? await prisma.$transaction(async (tx) => {
+          if (moderationStatus === "RESOLVED") {
+            const target = await loadReportTarget(targetType, targetId);
+            if (!target.isHidden) {
+              await usersService.applyReputationDelta(
+                target.authorId,
+                REPUTATION_REPORT_RESOLVED,
+                tx
+              );
+            }
+          }
+
+          await applyTargetModeration(
+            tx,
+            targetType,
+            targetId,
+            moderationStatus
+          );
+
+          return tx.reports.update({
+            where: { id: reportId },
+            data: {
+              status: input.status,
+              admin_notes: input.admin_notes,
+              reviewer_id: reviewerId,
+              reviewed_at: reviewedAt,
+            },
+            select: {
+              id: true,
+              status: true,
+              admin_notes: true,
+              reviewed_at: true,
+              target_opinion_id: true,
+              target_interaction_id: true,
+            },
+          });
+        })
+      : await prisma.reports.update({
+          where: { id: reportId },
+          data: {
+            status: input.status,
+            admin_notes: input.admin_notes,
+            reviewer_id: reviewerId,
+            reviewed_at: reviewedAt,
+          },
+          select: {
+            id: true,
+            status: true,
+            admin_notes: true,
+            reviewed_at: true,
+            target_opinion_id: true,
+            target_interaction_id: true,
+          },
+        });
 
   if (input.status === "RESOLVED") {
     const factIds = await findLinkedFactIds(targetType, targetId);
@@ -243,24 +310,6 @@ const update = async (
       });
     }
   }
-
-  const updated = await prisma.reports.update({
-    where: { id: reportId },
-    data: {
-      status: input.status,
-      admin_notes: input.admin_notes,
-      reviewer_id: reviewerId,
-      reviewed_at: new Date(),
-    },
-    select: {
-      id: true,
-      status: true,
-      admin_notes: true,
-      reviewed_at: true,
-      target_opinion_id: true,
-      target_interaction_id: true,
-    },
-  });
 
   return {
     id: updated.id,

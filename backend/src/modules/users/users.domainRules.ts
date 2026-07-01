@@ -1,5 +1,6 @@
 export const REPUTATION_UPVOTE_RECEIVED = 2;
 export const REPUTATION_DOWNVOTE_RECEIVED = -1;
+export const REPUTATION_REPORT_RESOLVED = -10;
 
 type UserVote = 1 | -1 | null;
 

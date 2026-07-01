@@ -139,7 +139,7 @@ Atualiza o status de uma denúncia (somente administradores).
 | Status | Efeito no conteúdo |
 |--------|-------------------|
 | `UNDER_REVIEW` | Apenas atualiza a denúncia |
-| `RESOLVED` | Oculta o conteúdo (`is_hidden = true`); se houver `fact_evidence` vinculada, dispara webhook n8n (`N8N_REPORT_WEBHOOK_URL`) para revisão automática dos fatos |
+| `RESOLVED` | Oculta o conteúdo (`is_hidden = true`); se o conteúdo ainda estava visível, aplica **-10** na `reputation_score` do autor; se houver `fact_evidence` vinculada, dispara webhook n8n (`N8N_REPORT_WEBHOOK_URL`) para revisão automática dos fatos |
 | `REJECTED` | Bloqueia novas denúncias (`reports_locked = true`) |
 
 ### Resposta
