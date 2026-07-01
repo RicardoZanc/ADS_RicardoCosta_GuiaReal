@@ -33,6 +33,12 @@ export const sendMessageSchema = z.object({
 
 export type SendMessageInput = z.infer<typeof sendMessageSchema>["body"];
 
+export const retryChatSchema = z.object({
+  params: z.object({
+    id: z.uuid("ID do chat inválido"),
+  }),
+});
+
 const evidenceRefSchema = z.object({
   source_type: z.enum(["opinion", "thread"]),
   source_id: z.uuid("ID de evidência inválido"),

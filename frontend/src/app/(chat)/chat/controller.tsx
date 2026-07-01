@@ -9,9 +9,14 @@ import {
   subscribeChatSocket,
 } from "@/lib/chatSocket";
 import {
+  CHAT_ASSISTANT_TIMEOUT_MESSAGE,
+  getChatAssistantInactivityTimeoutMs,
+} from "@/lib/chatAssistantTimeout";
+import {
   createChat,
   fetchChat,
   fetchChats,
+  retryChatAssistant,
   sendChatMessage,
 } from "@/lib/chats";
 import { notifyApiError } from "@/lib/notifyApiError";
@@ -33,9 +38,15 @@ export function useChatController(chatId?: string) {
   const [isLoadingChat, setIsLoadingChat] = useState(Boolean(chatId));
   const [isSending, setIsSending] = useState(false);
   const [isAwaitingAssistant, setIsAwaitingAssistant] = useState(false);
+  const [assistantError, setAssistantError] = useState<string | null>(null);
+  const [assistantActivityTick, setAssistantActivityTick] = useState(0);
   const [agentProgress, setAgentProgress] =
     useState<ChatAgentProgressEvent | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const bumpAssistantActivity = useCallback(() => {
+    setAssistantActivityTick((tick) => tick + 1);
+  }, []);
 
   const loadChats = useCallback(async () => {
     setIsLoadingChats(true);
@@ -56,16 +67,19 @@ export function useChatController(chatId?: string) {
       const chat = await fetchChat(targetChatId);
       setMessages(chat.messages);
       setTitle(chat.title);
-      setIsAwaitingAssistant(
-        chat.messages.at(-1)?.sender === "USER"
-      );
+      const awaiting = chat.messages.at(-1)?.sender === "USER";
+      setIsAwaitingAssistant(awaiting);
+      setAssistantError(null);
+      if (awaiting) {
+        bumpAssistantActivity();
+      }
     } catch (error) {
       if (notifyApiError(error)) return;
       throw error;
     } finally {
       setIsLoadingChat(false);
     }
-  }, []);
+  }, [bumpAssistantActivity]);
 
   useEffect(() => {
     setIsSidebarCollapsed(getSidebarCollapsed());
@@ -78,6 +92,7 @@ export function useChatController(chatId?: string) {
       setTitle(null);
       setIsLoadingChat(false);
       setIsAwaitingAssistant(false);
+      setAssistantError(null);
       setAgentProgress(null);
       return;
     }
@@ -94,6 +109,7 @@ export function useChatController(chatId?: string) {
       onAssistantMessage: (event) => {
         if (chatId && event.chatId !== chatId) return;
 
+        bumpAssistantActivity();
         setMessages((prev) => {
           if (prev.some((message) => message.id === event.message.id)) {
             return prev;
@@ -101,10 +117,12 @@ export function useChatController(chatId?: string) {
           return [...prev, event.message];
         });
         setIsAwaitingAssistant(false);
+        setAssistantError(null);
         setAgentProgress(null);
       },
       onAgentProgress: (event) => {
         if (chatId && event.chatId !== chatId) return;
+        bumpAssistantActivity();
         setAgentProgress(event);
       },
       onTitleUpdated: (event) => {
@@ -116,22 +134,38 @@ export function useChatController(chatId?: string) {
 
         if (!chatId || event.chatId === chatId) {
           setTitle(event.title);
+          bumpAssistantActivity();
         }
       },
       onError: (event) => {
         toast.error(event.message);
+        setAssistantError(event.message);
         setIsAwaitingAssistant(false);
         setAgentProgress(null);
       },
     });
 
     return unsubscribe;
-  }, [accessToken, chatId]);
+  }, [accessToken, chatId, bumpAssistantActivity]);
 
   useEffect(() => {
     if (!chatId || !accessToken) return;
     joinChatRoom(chatId);
   }, [chatId, accessToken]);
+
+  useEffect(() => {
+    if (!isAwaitingAssistant) return;
+
+    const timeoutMs = getChatAssistantInactivityTimeoutMs();
+    const timeoutId = window.setTimeout(() => {
+      setAssistantError(CHAT_ASSISTANT_TIMEOUT_MESSAGE);
+      setIsAwaitingAssistant(false);
+      setAgentProgress(null);
+      toast.error(CHAT_ASSISTANT_TIMEOUT_MESSAGE);
+    }, timeoutMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isAwaitingAssistant, assistantActivityTick]);
 
   function toggleSidebarCollapse() {
     setIsSidebarCollapsed((prev) => {
@@ -145,6 +179,7 @@ export function useChatController(chatId?: string) {
     if (isSending || isAwaitingAssistant) return;
 
     setIsSending(true);
+    setAssistantError(null);
 
     try {
       if (!chatId) {
@@ -160,6 +195,7 @@ export function useChatController(chatId?: string) {
         ]);
         setIsAwaitingAssistant(true);
         setAgentProgress(null);
+        bumpAssistantActivity();
         router.push(`/chat/${chat.id}`);
         return;
       }
@@ -168,8 +204,31 @@ export function useChatController(chatId?: string) {
       setMessages((prev) => [...prev, response.message]);
       setIsAwaitingAssistant(true);
       setAgentProgress(null);
+      bumpAssistantActivity();
     } catch (error) {
       if (notifyApiError(error)) return;
+      throw error;
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  async function retryAssistant() {
+    if (!chatId || isSending || isAwaitingAssistant) return;
+
+    setIsSending(true);
+    setAssistantError(null);
+
+    try {
+      await retryChatAssistant(chatId);
+      setIsAwaitingAssistant(true);
+      setAgentProgress(null);
+      bumpAssistantActivity();
+    } catch (error) {
+      if (notifyApiError(error)) {
+        setAssistantError("Não foi possível reenviar a mensagem. Tente novamente.");
+        return;
+      }
       throw error;
     } finally {
       setIsSending(false);
@@ -184,9 +243,11 @@ export function useChatController(chatId?: string) {
     isLoadingChat,
     isSending,
     isAwaitingAssistant,
+    assistantError,
     agentProgress,
     isSidebarCollapsed,
     toggleSidebarCollapse,
     sendMessage,
+    retryAssistant,
   };
 }

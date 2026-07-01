@@ -1,24 +1,36 @@
 "use client";
 
-import { SendIcon } from "lucide-react";
-import { useRef, type KeyboardEvent } from "react";
+import { RotateCwIcon, SendIcon } from "lucide-react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ChatComposerProps {
   disabled?: boolean;
   isSending?: boolean;
+  assistantError?: string | null;
   onSend: (content: string) => void;
+  onRetry?: () => void;
 }
 
 export function ChatComposer({
   disabled = false,
   isSending = false,
+  assistantError = null,
   onSend,
+  onRetry,
 }: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [hasDraft, setHasDraft] = useState(false);
+
+  const showRetryButton = Boolean(assistantError) && !hasDraft && !isSending;
 
   function handleSubmit() {
+    if (showRetryButton) {
+      onRetry?.();
+      return;
+    }
+
     const value = textareaRef.current?.value.trim() ?? "";
     if (!value || disabled || isSending) return;
 
@@ -26,6 +38,7 @@ export function ChatComposer({
     if (textareaRef.current) {
       textareaRef.current.value = "";
       textareaRef.current.style.height = "auto";
+      setHasDraft(false);
     }
   }
 
@@ -41,6 +54,7 @@ export function ChatComposer({
     if (!textarea) return;
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    setHasDraft(textarea.value.trim().length > 0);
   }
 
   return (
@@ -59,12 +73,13 @@ export function ChatComposer({
           type="button"
           size="icon"
           className="shrink-0 bg-accent text-background hover:bg-accent/90"
-          disabled={disabled || isSending}
+          disabled={(disabled && !showRetryButton) || isSending}
           loading={isSending}
           onClick={handleSubmit}
-          aria-label="Enviar mensagem"
+          aria-label={showRetryButton ? "Tentar novamente" : "Enviar mensagem"}
         >
-          {!isSending && <SendIcon />}
+          {!isSending &&
+            (showRetryButton ? <RotateCwIcon /> : <SendIcon />)}
         </Button>
       </div>
     </div>

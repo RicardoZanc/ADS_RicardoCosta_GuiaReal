@@ -4,6 +4,7 @@ import {
   createChatSchema,
   getChatSchema,
   listChatsSchema,
+  retryChatSchema,
   sendMessageSchema,
 } from "./chats.schema";
 import { validate } from "../../middlewares/validate.middleware";
@@ -37,6 +38,13 @@ chatsRoutes.post(
   authenticateJwt,
   validate(sendMessageSchema),
   chatsController.sendMessage
+);
+
+chatsRoutes.post(
+  "/:id/retry",
+  authenticateJwt,
+  validate(retryChatSchema),
+  chatsController.retry
 );
 
 export { chatsRoutes };

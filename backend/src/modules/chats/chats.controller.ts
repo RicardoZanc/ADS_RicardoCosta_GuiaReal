@@ -62,6 +62,25 @@ const chatsController = {
 
     res.status(201).json(result);
   },
+
+  retry: async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const chatId = req.params.id as string;
+
+    logger.info("HTTP POST /api/chats/:id/retry - Iniciado", {
+      userId,
+      chatId,
+    });
+
+    const result = await chatsService.retryAssistantResponse(userId, chatId);
+
+    logger.info("HTTP POST /api/chats/:id/retry - Concluído", {
+      userId,
+      chatId,
+    });
+
+    res.status(200).json(result);
+  },
 };
 
 export { chatsController };

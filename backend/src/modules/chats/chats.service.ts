@@ -1,3 +1,4 @@
+import { ConflictError } from "../../lib/errors/BaseError";
 import { prisma } from "../../lib/prisma";
 import { logger } from "../../utils/logger";
 import {
@@ -296,6 +297,42 @@ const sendMessage = async (
   return { message };
 };
 
+const retryAssistantResponse = async (userId: string, chatId: string) => {
+  await assertChatBelongsToUser(chatId, userId);
+
+  const chat = await prisma.chats.findUniqueOrThrow({
+    where: { id: chatId },
+    select: chatSelect,
+  });
+
+  const lastMessage = await prisma.chat_messages.findFirst({
+    where: { chat_id: chatId },
+    orderBy: { created_at: "desc" },
+    select: messageSelect,
+  });
+
+  if (!lastMessage || lastMessage.sender !== "USER") {
+    throw new ConflictError("Não há mensagem pendente para reenviar");
+  }
+
+  const message_history = await getMessageHistoryForAgent(
+    chatId,
+    lastMessage.id
+  );
+
+  dispatchN8nChatWebhook({
+    chat_id: chatId,
+    user_id: userId,
+    user_message: lastMessage.content,
+    should_name_conversation: chat.title === null,
+    message_history,
+  });
+
+  logger.debug("Chat: reenvio do agente disparado", { chatId, userId });
+
+  return { ok: true as const };
+};
+
 const emitAgentProgress = async (input: AgentProgressInput) => {
   await assertChatExists(input.chat_id);
 
@@ -319,4 +356,5 @@ export const chatsService = {
   listByUser,
   getById,
   sendMessage,
+  retryAssistantResponse,
 };

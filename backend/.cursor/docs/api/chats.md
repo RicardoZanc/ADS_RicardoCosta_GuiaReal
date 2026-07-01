@@ -155,6 +155,28 @@ O webhook n8n é enviado com `should_name_conversation: false`.
 
 ---
 
+### `POST /chats/:id/retry`
+
+Reenvia a última mensagem do usuário ao agente n8n **sem criar nova mensagem** no banco. Útil quando a resposta do assistente falhou ou expirou por timeout de inatividade no frontend.
+
+| Item | Valor |
+|------|-------|
+| Autenticação | JWT Bearer |
+| Sucesso | `200 OK` |
+| Conflito | `409 Conflict` — última mensagem não é do usuário (não há pendência) |
+
+#### Resposta
+
+```json
+{
+  "ok": true
+}
+```
+
+O webhook n8n é reenviado com o conteúdo da última mensagem `USER`. `should_name_conversation` é `true` apenas se o chat ainda não tiver título (`title === null`).
+
+---
+
 ## Socket.IO
 
 **URL:** mesma origem do backend (`http://localhost:3000`)
@@ -187,6 +209,12 @@ Entra na sala `chat:{chatId}`. Requer que o chat pertença ao usuário autentica
 | `chat:error` | `{ message: string }` |
 
 `chat:agent_progress` é efêmero (não persistido). Valores de `step`: `context`, `collect`, `query`, `hypothesis`, `validate`, `respond`. O frontend exibe apenas a última mensagem de progresso enquanto aguarda a resposta.
+
+### Timeout de inatividade (frontend)
+
+Variável: `NEXT_PUBLIC_CHAT_ASSISTANT_INACTIVITY_TIMEOUT_MS` (default `120000` = 2 minutos).
+
+O frontend encerra a espera se nenhum evento do assistente (`chat:agent_progress`, `chat:assistant_message`, `chat:title_updated`) chegar dentro desse intervalo. O usuário pode reenviar via `POST /chats/:id/retry`.
 
 A mensagem do usuário é retornada no `POST /chats` — não é emitida via socket na criação.
 

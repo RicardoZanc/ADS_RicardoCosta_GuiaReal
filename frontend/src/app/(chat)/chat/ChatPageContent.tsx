@@ -21,10 +21,12 @@ export function ChatPageContent({ chatId }: ChatPageContentProps) {
     isLoadingChat,
     isSending,
     isAwaitingAssistant,
+    assistantError,
     agentProgress,
     isSidebarCollapsed,
     toggleSidebarCollapse,
     sendMessage,
+    retryAssistant,
   } = useChatController(chatId);
 
   const showEmptyState = !chatId && messages.length === 0;
@@ -60,6 +62,7 @@ export function ChatPageContent({ chatId }: ChatPageContentProps) {
         <ChatMessageList
           messages={messages}
           isAwaitingAssistant={isAwaitingAssistant}
+          assistantError={assistantError}
           progressMessage={agentProgress?.message}
           progressStep={agentProgress?.step}
         />
@@ -68,7 +71,9 @@ export function ChatPageContent({ chatId }: ChatPageContentProps) {
       <ChatComposer
         disabled={composerDisabled}
         isSending={isSending}
+        assistantError={assistantError}
         onSend={sendMessage}
+        onRetry={retryAssistant}
       />
     </ChatShell>
   );

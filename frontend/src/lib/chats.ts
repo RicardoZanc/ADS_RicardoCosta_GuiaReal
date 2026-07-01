@@ -30,3 +30,11 @@ export function sendChatMessage(
     body: JSON.stringify({ content }),
   });
 }
+
+export function retryChatAssistant(
+  chatId: string
+): Promise<{ ok: true }> {
+  return apiClient<{ ok: true }>(`/chats/${chatId}/retry`, {
+    method: "POST",
+  });
+}
