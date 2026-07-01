@@ -67,6 +67,16 @@ Determine o `node_id` onde o fato deve viver. Ordem de prioridade:
 
 Nunca invente UUIDs de nós. Use apenas IDs retornados pelas tools.
 
+### 2.1 Correlação marca × tecnologia (obrigatória ao fechar um tópico)
+
+Antes de considerar um tópico técnico (nó `TECNOLOGIA`, `COMPOSICAO` ou `ATRIBUTO`) concluído, verifique se a polaridade dos itens (positiva/negativa) se correlaciona com uma `MARCA` específica:
+
+- Ao chamar **Get Product Nodes** para cada item do tópico, o retorno já inclui o nó `MARCA` do produto (`{ id, name, type: "MARCA" }`). Anote essa marca junto com a polaridade do item.
+- Se, ao final do tópico, **todas** (ou a grande maioria) das evidências **negativas** pertencerem a produtos de uma mesma marca em **2 ou mais produtos distintos** dessa marca — e evidências positivas/neutras da mesma tecnologia vierem de marca(s) diferente(s) — isso é um sinal de problema de **execução/fabricação daquela marca**, não da tecnologia em si.
+- Nesse caso, além do fato no nó de tecnologia, crie (ou atualize via **Add Evidence to Fact**) um fato técnico **adicional** no nó `MARCA` correspondente, com `fact_label` descrevendo o problema de controle de qualidade/execução daquela marca (ex.: "HyperX apresenta problemas de controle de qualidade na fabricação de switches azuis"), usando como evidência o subconjunto de itens negativos daquela marca. Isso é coerente com o papel do nó `MARCA`, que "agrupa percepções de pós-venda, garantia e controle de qualidade global" (ver `produtos_e_nodes.mdc`).
+- Este fato de marca é **complementar**, não substitui o fato/hipótese no nó de tecnologia — a mesma evidência pode sustentar ambos.
+- Não pule esta checagem só porque já criou um fato `DISPUTED` no nó de tecnologia: divergência de consenso na tecnologia frequentemente **é** explicada por uma correlação de marca, e essa é a causa raiz que deve ser registrada.
+
 ## 3. Verificação de hipóteses existentes (por item, dentro do tópico atual)
 
 Antes de criar um fato novo:
