@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Input } from "@/components/ui/input";
+import { DuplicateNodeDialog } from "@/components/product-create/DuplicateNodeDialog";
 import { NodeSearchField } from "@/components/product-create/NodeSearchField";
 import { ProductImageField } from "@/components/product-create/ProductImageField";
 import { SelectedNodeCard } from "@/components/product-create/SelectedNodeCard";
@@ -217,34 +218,17 @@ export default function NodeCreatePage() {
           />
         </section>
 
-        {duplicate && (
-          <div className="rounded-xl border border-border/15 bg-muted/5 p-4">
-            <p className="text-comment text-foreground">
-              Já existe um nó com o nome &quot;{duplicate.name}&quot;. Deseja
-              usar o existente?
-            </p>
-            <div className="mt-3 flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                loading={isSubmitting}
-                onClick={useExistingDuplicate}
-              >
-                Usar existente
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                disabled={isSubmitting}
-                onClick={dismissDuplicate}
-              >
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
+
+      <DuplicateNodeDialog
+        open={duplicate !== null}
+        name={duplicate?.name ?? ""}
+        isSubmitting={isSubmitting}
+        onConfirm={useExistingDuplicate}
+        onOpenChange={(open) => {
+          if (!open) dismissDuplicate();
+        }}
+      />
     </div>
   );
 }

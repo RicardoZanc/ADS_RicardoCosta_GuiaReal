@@ -83,13 +83,38 @@ function buildUrlQuery(input: {
   return serialized ? `?${serialized}` : "";
 }
 
-async function resolveTipoFromUrl(tipoId: string): Promise<SelectedNode | null> {
-  const response = await apiClient<NodesListResponse>("/nodes", {
-    params: { type: "TIPO", limit: "100" },
-  });
+function getUrlParamsKey(searchParams: URLSearchParams): string {
+  return [
+    searchParams.get("tipo_id") ?? "",
+    searchParams.get("categoria_id") ?? "",
+    searchParams.get("node_ids") ?? "",
+    searchParams.get("q") ?? "",
+    searchParams.get("page") ?? "",
+  ].join("|");
+}
 
-  const found = response.data.find((node) => node.id === tipoId);
-  return found ? toSelectedNode(found) : null;
+async function resolveTipoFromUrl(tipoId: string): Promise<SelectedNode | null> {
+  let page = 1;
+  const limit = 100;
+
+  while (true) {
+    const response = await apiClient<NodesListResponse>("/nodes", {
+      params: { type: "TIPO", limit: String(limit), page: String(page) },
+    });
+
+    const found = response.data.find((node) => node.id === tipoId);
+    if (found) {
+      return toSelectedNode(found);
+    }
+
+    if (page >= response.pagination.totalPages) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return null;
 }
 
 async function resolveCategoriaFromUrl(
@@ -139,6 +164,22 @@ async function resolveSelectedFacetMeta(
   return meta;
 }
 
+function clearFacetFilters(
+  bumpFacetReset: () => void,
+  setters: {
+    setSelectedNodeIds: (value: Set<string>) => void;
+    setSelectedFacetMeta: (value: Map<string, SelectedFacetMeta>) => void;
+    setProductQuery: (value: string) => void;
+    setPage: (value: number) => void;
+  }
+) {
+  setters.setSelectedNodeIds(new Set());
+  setters.setSelectedFacetMeta(new Map());
+  setters.setProductQuery("");
+  setters.setPage(1);
+  bumpFacetReset();
+}
+
 export function useBuscaController() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -161,12 +202,17 @@ export function useBuscaController() {
   const [facetResetKey, setFacetResetKey] = useState(0);
   const [products, setProducts] = useState<ProductSearchItem[]>([]);
   const [pagination, setPagination] = useState<FeedPagination | null>(null);
-  const [isHydrating, setIsHydrating] = useState(true);
+  const [isHydratingScope, setIsHydratingScope] = useState(true);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   const debouncedQuery = useDebouncedValue(productQuery, 300);
-  const hasHydratedRef = useRef(false);
   const skipUrlSyncRef = useRef(true);
+  const lastSyncedParamsKeyRef = useRef<string | null>(null);
+
+  const urlParamsKey = useMemo(
+    () => getUrlParamsKey(searchParams),
+    [searchParams]
+  );
 
   const scopeParams = useMemo(() => {
     if (categoria) {
@@ -183,38 +229,60 @@ export function useBuscaController() {
   const hasScope = scopeParams !== null;
 
   useEffect(() => {
-    if (hasHydratedRef.current) {
+    if (lastSyncedParamsKeyRef.current === urlParamsKey) {
       return;
     }
 
     let active = true;
 
     async function hydrateFromUrl() {
-      setIsHydrating(true);
+      setIsHydratingScope(true);
+      skipUrlSyncRef.current = true;
 
       try {
         const categoriaId = searchParams.get("categoria_id");
         const tipoId = searchParams.get("tipo_id");
         const nodeIds = parseNodeIds(searchParams.get("node_ids"));
+        const queryFromUrl = searchParams.get("q") ?? "";
+        const pageFromUrl = Number.parseInt(searchParams.get("page") ?? "1", 10);
+
+        setProductQuery(queryFromUrl);
+        setPage(
+          Number.isNaN(pageFromUrl) || pageFromUrl < 1 ? 1 : pageFromUrl
+        );
+        setSelectedNodeIds(new Set(nodeIds));
 
         if (categoriaId) {
           const resolved = await resolveCategoriaFromUrl(categoriaId);
           if (active && resolved) {
             setCategoria(resolved.categoria);
             setTipo(resolved.tipo);
+          } else if (active) {
+            setCategoria(null);
+            setTipo(null);
           }
         } else if (tipoId) {
           const resolvedTipo = await resolveTipoFromUrl(tipoId);
           if (active && resolvedTipo) {
             setTipo(resolvedTipo);
             setCategoria(null);
+          } else if (active) {
+            setTipo(null);
+            setCategoria(null);
           }
+        } else if (active) {
+          setTipo(null);
+          setCategoria(null);
         }
 
-        if (active && nodeIds.length > 0) {
-          const meta = await resolveSelectedFacetMeta(nodeIds);
-          if (active) {
-            setSelectedFacetMeta(meta);
+        if (active) {
+          if (nodeIds.length > 0) {
+            const meta = await resolveSelectedFacetMeta(nodeIds);
+            if (active) {
+              setSelectedFacetMeta(meta);
+            }
+          } else {
+            setSelectedFacetMeta(new Map());
           }
         }
       } catch (error) {
@@ -223,9 +291,9 @@ export function useBuscaController() {
         }
       } finally {
         if (active) {
-          hasHydratedRef.current = true;
+          lastSyncedParamsKeyRef.current = urlParamsKey;
           skipUrlSyncRef.current = false;
-          setIsHydrating(false);
+          setIsHydratingScope(false);
         }
       }
     }
@@ -235,10 +303,10 @@ export function useBuscaController() {
     return () => {
       active = false;
     };
-  }, [searchParams]);
+  }, [searchParams, urlParamsKey]);
 
   useEffect(() => {
-    if (!hasHydratedRef.current || skipUrlSyncRef.current) {
+    if (skipUrlSyncRef.current) {
       return;
     }
 
@@ -250,13 +318,19 @@ export function useBuscaController() {
       page,
     });
 
+    lastSyncedParamsKeyRef.current = getUrlParamsKey(
+      new URLSearchParams(nextQuery.startsWith("?") ? nextQuery.slice(1) : nextQuery)
+    );
+
     router.replace(`/busca${nextQuery}`, { scroll: false });
   }, [tipo, categoria, selectedNodeIds, debouncedQuery, page, router]);
 
   useEffect(() => {
-    if (!scopeParams) {
-      setProducts([]);
-      setPagination(null);
+    if (!scopeParams || isHydratingScope) {
+      if (!scopeParams) {
+        setProducts([]);
+        setPagination(null);
+      }
       return;
     }
 
@@ -292,34 +366,72 @@ export function useBuscaController() {
     return () => {
       active = false;
     };
-  }, [scopeParams, selectedNodeIds, debouncedQuery, page]);
+  }, [scopeParams, selectedNodeIds, debouncedQuery, page, isHydratingScope]);
 
   const bumpFacetReset = useCallback(() => {
     setFacetResetKey((current) => current + 1);
   }, []);
 
+  const facetFilterSetters = useMemo(
+    () => ({
+      setSelectedNodeIds,
+      setSelectedFacetMeta,
+      setProductQuery,
+      setPage,
+    }),
+    []
+  );
+
   const handleSelectTipo = useCallback(
     (node: NodeRecord) => {
       setTipo(toSelectedNode(node));
       setCategoria(null);
-      setSelectedNodeIds(new Set());
-      setSelectedFacetMeta(new Map());
-      setPage(1);
-      bumpFacetReset();
+      clearFacetFilters(bumpFacetReset, facetFilterSetters);
     },
-    [bumpFacetReset]
+    [bumpFacetReset, facetFilterSetters]
   );
 
   const handleSelectCategoria = useCallback(
-    (node: NodeRecord) => {
+    async (node: NodeRecord) => {
       setCategoria(toSelectedNode(node));
+      clearFacetFilters(bumpFacetReset, facetFilterSetters);
+
+      try {
+        const detail = await apiClient<NodeDetailResponse>(`/nodes/${node.id}`);
+        if (detail.context.parentTipo) {
+          setTipo({
+            id: detail.context.parentTipo.id,
+            name: detail.context.parentTipo.name,
+            type: "TIPO",
+          });
+        } else {
+          setTipo(null);
+        }
+      } catch (error) {
+        notifyApiError(error);
+      }
+    },
+    [bumpFacetReset, facetFilterSetters]
+  );
+
+  const handleClearTipoSelection = useCallback(() => {
+    setTipo(null);
+
+    if (!categoria) {
       setSelectedNodeIds(new Set());
       setSelectedFacetMeta(new Map());
+      setProductQuery("");
       setPage(1);
+      setProducts([]);
+      setPagination(null);
       bumpFacetReset();
-    },
-    [bumpFacetReset]
-  );
+    }
+  }, [categoria, bumpFacetReset]);
+
+  const handleClearCategoriaSelection = useCallback(() => {
+    setCategoria(null);
+    clearFacetFilters(bumpFacetReset, facetFilterSetters);
+  }, [bumpFacetReset, facetFilterSetters]);
 
   const handleClearScope = useCallback(() => {
     setTipo(null);
@@ -361,12 +473,8 @@ export function useBuscaController() {
   );
 
   const clearFilters = useCallback(() => {
-    setSelectedNodeIds(new Set());
-    setSelectedFacetMeta(new Map());
-    setProductQuery("");
-    setPage(1);
-    bumpFacetReset();
-  }, [bumpFacetReset]);
+    clearFacetFilters(bumpFacetReset, facetFilterSetters);
+  }, [bumpFacetReset, facetFilterSetters]);
 
   const goToPreviousPage = useCallback(() => {
     setPage((current) => Math.max(1, current - 1));
@@ -396,12 +504,14 @@ export function useBuscaController() {
     products,
     pagination,
     hasScope,
-    isLoading: isHydrating,
+    isHydratingScope,
     isLoadingProducts,
     hasActiveFilters,
     emptyProductsMessage,
     handleSelectTipo,
     handleSelectCategoria,
+    handleClearTipoSelection,
+    handleClearCategoriaSelection,
     handleClearScope,
     toggleFacet,
     clearFilters,

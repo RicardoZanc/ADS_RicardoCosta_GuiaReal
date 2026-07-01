@@ -1,10 +1,13 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { FacetFilterPanel } from "@/components/search/FacetFilterPanel";
+import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { Button } from "@/components/ui/button";
 import { useFacetFilter } from "@/hooks/useFacetFilter";
+import { easeOut, fadeInUp } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { FacetType, SelectedFacetMeta } from "@/lib/types/search";
 
@@ -118,6 +121,7 @@ export function FilterSidebar({
   onClearFilters,
 }: FilterSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const selectedCount = selectedIds.size;
 
   const sidebarContent = (
@@ -138,8 +142,16 @@ export function FilterSidebar({
     </div>
   );
 
+  const mobilePanelVariants = prefersReducedMotion
+    ? { hidden: { opacity: 0 }, visible: { opacity: 1 }, exit: { opacity: 0 } }
+    : {
+        hidden: { opacity: 0, height: 0 },
+        visible: { opacity: 1, height: "auto" },
+        exit: { opacity: 0, height: 0 },
+      };
+
   return (
-    <>
+    <div className="w-full min-w-0 lg:w-auto">
       <div className="lg:hidden">
         <Button
           type="button"
@@ -161,28 +173,46 @@ export function FilterSidebar({
           />
         </Button>
 
-        {isExpanded && (
-          <aside className="mt-4 rounded-xl border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground">
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <h2 className="text-small font-medium">Refinar busca</h2>
-              {hasActiveFilters && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={onClearFilters}
-                >
-                  Limpar
-                </Button>
-              )}
-            </div>
-            {sidebarContent}
-          </aside>
-        )}
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.aside
+              key="mobile-filters"
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={mobilePanelVariants}
+              transition={easeOut}
+              className="overflow-hidden"
+            >
+              <div className="mt-4 rounded-xl border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground">
+                <div className="mb-4 flex items-center justify-between gap-2">
+                  <h2 className="text-small font-medium">Refinar busca</h2>
+                  {hasActiveFilters && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={onClearFilters}
+                    >
+                      Limpar
+                    </Button>
+                  )}
+                </div>
+                {sidebarContent}
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </div>
 
-      <aside className="hidden lg:sticky lg:top-6 lg:block lg:w-72 lg:shrink-0">
-        <div className="rounded-xl border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground">
+      <aside className="hidden lg:sticky lg:top-6 lg:block">
+        <motion.div
+          initial={prefersReducedMotion ? false : "hidden"}
+          animate="visible"
+          variants={fadeInUp}
+          transition={easeOut}
+          className="rounded-xl border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground"
+        >
           <div className="mb-2 flex items-center justify-between gap-2 border-b border-sidebar-border pb-4">
             <h2 className="text-small font-medium">Filtros</h2>
             {hasActiveFilters && (
@@ -197,8 +227,8 @@ export function FilterSidebar({
             )}
           </div>
           {sidebarContent}
-        </div>
+        </motion.div>
       </aside>
-    </>
+    </div>
   );
 }
